@@ -32,15 +32,7 @@ response = litelm.embedding("openai/text-embedding-3-small", input=["hello world
 
 Every function has an async variant: `acompletion`, `aembedding`, `aresponses`, `atext_completion`.
 
-### Drop-in for any litellm consumer
-
-```python
-import sys, litelm
-sys.modules["litellm"] = litelm  # must happen before importing the consumer
-
-from my_app import agent  # anything that uses litellm internally now uses litelm
-agent.run()
-```
+The API mirrors litellm — same function names, same arguments, same response types. If you're using litellm today, switching is `s/litellm/litelm/` in your imports.
 
 ## What's in / what's out
 
