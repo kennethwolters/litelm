@@ -1,47 +1,8 @@
 # litelm
 
-[litellm](https://github.com/BerriAI/litellm) is bloated. 86 MB of dependencies for what is mostly a router.
+litellm's routing + translation in ~2,200 lines and 2 dependencies (`openai`, `httpx`).
 
-litelm strips it to core routing + formatting. ~2,000 lines. Two deps (`openai`, `httpx`).
-
-## Strategy
-
-litellm has become infrastructure — dozens of frameworks depend on it. We validate litelm as a drop-in replacement one consumer at a time, starting with the most popular.
-
-**Current target: [DSPy](https://github.com/stanfordnlp/dspy)** — full drop-in verified. All 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output). 6 providers tested.
-
-**Next targets:** [LangChain](https://github.com/langchain-ai/langchain), [CrewAI](https://github.com/crewAIInc/crewAI), [AutoGen](https://github.com/microsoft/autogen) — litellm's most depended-on consumers. Each one we pass is proof the API surface is correct.
-
-The litellm test suite itself runs against litelm unmodified via `sys.modules` shimming — 206 tests passing and climbing.
-
----
-
-```python
-import litelm
-
-response = litelm.completion("openai/gpt-4o", messages=[{"role": "user", "content": "Hello!"}])
-response = litelm.completion("groq/llama-3.1-70b-versatile", messages=[...], stream=True)
-response = litelm.embedding("openai/text-embedding-3-small", input=["hello world"])
-```
-
-Every function has an async variant: `acompletion`, `aembedding`, `aresponses`, `atext_completion`.
-
-### Drop-in usage (DSPy example)
-
-```python
-import sys, litelm
-sys.modules["litellm"] = litelm
-
-import dspy  # now uses litelm for all LLM calls
-
-lm = dspy.LM("openai/gpt-4o-mini")
-dspy.configure(lm=lm)
-dspy.Predict("question -> answer")(question="What is 2+2?")
-```
-
-The `sys.modules` swap must happen **before** the consumer import.
-
----
+litellm routes LLM calls across providers and translates between message formats. That core is buried under 100k+ LOC of proxy servers, caching layers, cost tracking, and dozens of features most users never touch. litelm extracts just the call path — model routing, message translation, streaming, tool use, embeddings — and nothing else. No Router class, no proxy, no caching.
 
 ## Install
 
@@ -52,32 +13,73 @@ pip install litelm[bedrock]       # + boto3
 pip install litelm[all]           # everything
 ```
 
+## Usage
+
+```python
+import litelm
+
+# Basic completion
+response = litelm.completion("openai/gpt-4o", messages=[{"role": "user", "content": "Hello!"}])
+print(response.choices[0].message.content)
+
+# Streaming
+for chunk in litelm.completion("groq/llama-3.1-70b-versatile", messages=[...], stream=True):
+    print(chunk.choices[0].delta.content or "", end="")
+
+# Embeddings
+response = litelm.embedding("openai/text-embedding-3-small", input=["hello world"])
+```
+
+Every function has an async variant: `acompletion`, `aembedding`, `aresponses`, `atext_completion`.
+
+### Drop-in for any litellm consumer
+
+```python
+import sys, litelm
+sys.modules["litellm"] = litelm  # must happen before importing the consumer
+
+from my_app import agent  # anything that uses litellm internally now uses litelm
+agent.run()
+```
+
+## What's in / what's out
+
+| | litellm | litelm |
+|---|---|---|
+| Model routing (`provider/model` → right endpoint) | ✓ | ✓ |
+| Message translation (Anthropic, Bedrock, Cloudflare, Mistral) | ✓ | ✓ |
+| Streaming + `stream_chunk_builder` | ✓ | ✓ |
+| Tool use (function calling) | ✓ | ✓ |
+| Embeddings | ✓ | ✓ |
+| Text completions | ✓ | ✓ |
+| OpenAI Responses API | ✓ | ✓ |
+| Mock responses | ✓ | ✓ |
+| Router (load balancing, fallbacks) | ✓ | ✗ |
+| Proxy server | ✓ | ✗ |
+| Caching / budgeting / cost tracking | ✓ | ✗ |
+| Token counting | ✓ | ✗ |
+| Image gen, audio, OCR, fine-tuning | ✓ | ✗ |
+| Agents, guardrails, scheduler | ✓ | ✗ |
+
 ## Providers
 
-`"provider/model-name"` → routes to the right base URL and API key.
+Routes to 16+ providers via `"provider/model-name"` syntax. Any OpenAI-compatible endpoint works via `api_base`.
 
-OpenAI, Azure, Groq, Together, Fireworks, Mistral, DeepSeek, OpenRouter, Anthropic, Perplexity, xAI, Gemini, Cohere, Cloudflare, Bedrock, Ollama — and any OpenAI-compatible endpoint via `api_base`.
+**Verified live** (6): OpenAI, Anthropic, Groq, Mistral, xAI, OpenRouter
 
-Custom handlers (non-OpenAI-compat): Anthropic, Bedrock, Cloudflare, Mistral.
+**Custom handlers** (non-OpenAI-compat): Anthropic, Bedrock, Cloudflare, Mistral
 
-## What's Implemented
+**OpenAI-compat passthrough**: Azure, Together, Fireworks, DeepSeek, Perplexity, Gemini, Cohere, Ollama, and any custom endpoint.
 
-| Function | Status |
-|----------|--------|
-| `completion` / `acompletion` | Implemented |
-| `embedding` / `aembedding` | Implemented |
-| `responses` / `aresponses` | Implemented |
-| `text_completion` / `atext_completion` | Implemented |
-| `stream_chunk_builder` | Implemented |
-| `mock_response` | Implemented |
-| `supports_function_calling` | Stub (always True) |
-| `supports_response_schema` | Stub (always True) |
-| `supports_reasoning` | Implemented (pattern match) |
-| `get_supported_openai_params` | Implemented |
+## Status
 
-## What's Not Implemented (by design)
+**Alpha.** Proven against litellm's own test suite — 206 ported tests passing unmodified via `sys.modules` shimming. 92 own tests.
 
-Proxy, router, caching, budgeting, agents, guardrails, image gen, audio, OCR, fine-tuning, batches, assistants, scheduler, token counting, cost tracking.
+[DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
+
+## Roadmap
+
+Validating as a drop-in replacement one litellm consumer at a time — DSPy is done. More consumers, providers, and end-to-end verifications will follow.
 
 ## Tests
 
