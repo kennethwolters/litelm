@@ -1,7 +1,7 @@
 """Text completion (legacy completions API)."""
 
 from litelm._client_cache import get_async_client, get_sync_client
-from litelm._completion import _bad_request_errors, _prepare_call, _wrap_context_window_error
+from litelm._completion import _bad_request_errors, _map_openai_error, _openai_errors, _prepare_call, _wrap_context_window_error
 
 
 class TextCompletionResponse:
@@ -47,6 +47,8 @@ def text_completion(model, prompt, *, timeout=None, shared_session=None, **kwarg
         response = client.completions.create(**sdk_kwargs)
     except _bad_request_errors as e:
         _wrap_context_window_error(e)
+    except _openai_errors as e:
+        _map_openai_error(e)
     return TextCompletionResponse(response)
 
 
@@ -71,4 +73,6 @@ async def atext_completion(model, prompt, *, timeout=None, shared_session=None, 
         response = await client.completions.create(**sdk_kwargs)
     except _bad_request_errors as e:
         _wrap_context_window_error(e)
+    except _openai_errors as e:
+        _map_openai_error(e)
     return TextCompletionResponse(response)

@@ -143,6 +143,9 @@ class ChatCompletion:
         self.object = object
         self.usage = CompletionUsage(**usage) if isinstance(usage, dict) else usage
 
+    def model_dump(self):
+        return _to_dict(self)
+
     def model_dump_json(self):
         return json.dumps(_to_dict(self))
 
@@ -186,6 +189,9 @@ class ChatCompletionChunk:
         self.created = created
         self.object = object
         self.usage = CompletionUsage(**usage) if isinstance(usage, dict) else usage
+
+    def model_dump(self):
+        return _to_dict(self)
 
     def model_dump_json(self):
         return json.dumps(_to_dict(self))
@@ -252,6 +258,9 @@ class ModelResponse:
 
     def __getitem__(self, key):
         return getattr(self._completion, key)
+
+    def model_dump(self):
+        return _to_dict(self._completion)
 
     def json(self):
         return self._completion.model_dump_json()

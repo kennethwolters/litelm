@@ -1,6 +1,7 @@
 """Embedding functions wrapping the OpenAI SDK."""
 
 from litelm._client_cache import get_async_client, get_sync_client
+from litelm._completion import _map_openai_error, _openai_errors
 from litelm._dispatch import get_handler
 from litelm._providers import parse_model
 
@@ -55,7 +56,10 @@ def embedding(model, input, *, timeout=None, caching=False,
     sdk_kwargs = dict(model=model_name, input=input, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout
-    return EmbeddingResponse(client.embeddings.create(**sdk_kwargs))
+    try:
+        return EmbeddingResponse(client.embeddings.create(**sdk_kwargs))
+    except _openai_errors as e:
+        _map_openai_error(e)
 
 
 async def aembedding(model, input, *, timeout=None, caching=False,
@@ -77,4 +81,7 @@ async def aembedding(model, input, *, timeout=None, caching=False,
     sdk_kwargs = dict(model=model_name, input=input, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout
-    return EmbeddingResponse(await client.embeddings.create(**sdk_kwargs))
+    try:
+        return EmbeddingResponse(await client.embeddings.create(**sdk_kwargs))
+    except _openai_errors as e:
+        _map_openai_error(e)

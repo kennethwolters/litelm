@@ -1,6 +1,7 @@
 """OpenAI Responses API wrapper."""
 
 from litelm._client_cache import get_async_client, get_sync_client
+from litelm._completion import _map_openai_error, _openai_errors
 from litelm._dispatch import get_handler
 from litelm._providers import parse_model
 
@@ -27,7 +28,10 @@ def responses(model, *, input=None, previous_response_id=None, cache=None,
 
     client = get_sync_client(provider, base_url, resolved_api_key, max_retries=num_retries, api_version=api_version)
     extra_headers = headers or None
-    return client.responses.create(model=model_name, extra_headers=extra_headers, **kwargs)
+    try:
+        return client.responses.create(model=model_name, extra_headers=extra_headers, **kwargs)
+    except _openai_errors as e:
+        _map_openai_error(e)
 
 
 async def aresponses(model, *, input=None, previous_response_id=None, cache=None,
@@ -52,4 +56,7 @@ async def aresponses(model, *, input=None, previous_response_id=None, cache=None
 
     client = get_async_client(provider, base_url, resolved_api_key, max_retries=num_retries, api_version=api_version)
     extra_headers = headers or None
-    return await client.responses.create(model=model_name, extra_headers=extra_headers, **kwargs)
+    try:
+        return await client.responses.create(model=model_name, extra_headers=extra_headers, **kwargs)
+    except _openai_errors as e:
+        _map_openai_error(e)

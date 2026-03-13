@@ -101,6 +101,30 @@ def test_choice_delta_to_dict():
     assert result["reasoning_content"] is None
 
 
+def test_model_response_model_dump():
+    r = ModelResponse(
+        choices=[{"message": {"content": "Hello!", "role": "assistant"}}],
+        model="gpt-4o",
+    )
+    d = r.model_dump()
+    assert isinstance(d, dict)
+    assert d["model"] == "gpt-4o"
+    assert d["choices"][0]["message"]["content"] == "Hello!"
+
+
+def test_chat_completion_model_dump():
+    from litelm._types import ChatCompletion, Choice, ChatCompletionMessage, CompletionUsage
+    c = ChatCompletion(
+        id="test", model="gpt-4o",
+        choices=[Choice(index=0, message=ChatCompletionMessage(content="hi"), finish_reason="stop")],
+        usage=CompletionUsage(prompt_tokens=1, completion_tokens=2, total_tokens=3),
+    )
+    d = c.model_dump()
+    assert isinstance(d, dict)
+    assert d["id"] == "test"
+    assert d["usage"]["total_tokens"] == 3
+
+
 def test_model_response_coerces_dict_choices():
     r = ModelResponse(choices=[
         {"message": {"content": "a", "role": "assistant"}, "finish_reason": "stop", "index": 0},

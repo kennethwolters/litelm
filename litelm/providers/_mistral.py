@@ -6,6 +6,7 @@ Transforms:
 """
 
 from litelm._client_cache import get_async_client, get_sync_client
+from litelm._completion import _map_openai_error, _openai_errors
 from litelm._types import ModelResponse, ModelResponseStream
 
 
@@ -44,7 +45,10 @@ def completion(model_name, messages, *, stream=False, api_key=None, base_url=Non
     sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout
-    response = client.chat.completions.create(**sdk_kwargs)
+    try:
+        response = client.chat.completions.create(**sdk_kwargs)
+    except _openai_errors as e:
+        _map_openai_error(e)
     if stream:
         return _wrap_stream_sync(response)
     _fix_response(response)
@@ -58,7 +62,10 @@ async def acompletion(model_name, messages, *, stream=False, api_key=None, base_
     sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout
-    response = await client.chat.completions.create(**sdk_kwargs)
+    try:
+        response = await client.chat.completions.create(**sdk_kwargs)
+    except _openai_errors as e:
+        _map_openai_error(e)
     if stream:
         return _wrap_stream_async(response)
     _fix_response(response)

@@ -2,7 +2,18 @@
 
 from litelm._client_cache import get_async_client, get_sync_client
 from litelm._dispatch import get_handler
-from litelm._exceptions import BadRequestError, ContextWindowExceededError, is_context_window_error
+from litelm._exceptions import (
+    AuthenticationError,
+    APIConnectionError,
+    APIStatusError,
+    BadRequestError,
+    ContextWindowExceededError,
+    InternalServerError,
+    LitelmError,
+    RateLimitError,
+    Timeout,
+    is_context_window_error,
+)
 from litelm._providers import parse_model
 from litelm._types import (
     ChatCompletion,
@@ -15,14 +26,56 @@ from litelm._types import (
     ModelResponseStream,
 )
 
-# Build tuple of BadRequestError types to catch (ours + openai's if available)
+# Build tuple of all openai SDK error types to catch
+_openai_errors: tuple = ()
 _bad_request_errors = [BadRequestError]
 try:
     import openai as _openai
     _bad_request_errors.append(_openai.BadRequestError)
+    _openai_errors = (_openai.APIError,)
 except ImportError:
     pass
 _bad_request_errors = tuple(_bad_request_errors)
+
+
+def _map_openai_error(e):
+    """Map openai SDK exceptions to litelm exception types. Re-raises as litelm error."""
+    try:
+        import openai
+    except ImportError:
+        raise LitelmError(message=str(e)) from e
+
+    msg = str(e)
+
+    if isinstance(e, openai.BadRequestError):
+        if is_context_window_error(msg):
+            raise ContextWindowExceededError(
+                message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+            ) from e
+        raise BadRequestError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.RateLimitError):
+        raise RateLimitError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.AuthenticationError):
+        raise AuthenticationError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.APITimeoutError):
+        raise Timeout(request=getattr(e, "request", None)) from e
+    elif isinstance(e, openai.APIConnectionError):
+        raise APIConnectionError(request=getattr(e, "request", None)) from e
+    elif isinstance(e, openai.InternalServerError):
+        raise InternalServerError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.APIStatusError):
+        raise APIStatusError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    raise LitelmError(message=msg) from e
 
 # kwargs that are litellm-specific and must be stripped before passing to OpenAI SDK
 _LITELLM_ONLY_KWARGS = {"cache", "num_retries", "retry_strategy", "caching"}
@@ -90,6 +143,8 @@ def completion(model, messages=None, *, timeout=None, stream=False,
         response = client.chat.completions.create(**sdk_kwargs)
     except _bad_request_errors as e:
         _wrap_context_window_error(e)
+    except _openai_errors as e:
+        _map_openai_error(e)
 
     if stream:
         return _wrap_stream_sync(response)
@@ -125,6 +180,8 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False,
         response = await client.chat.completions.create(**sdk_kwargs)
     except _bad_request_errors as e:
         _wrap_context_window_error(e)
+    except _openai_errors as e:
+        _map_openai_error(e)
 
     if stream:
         return _wrap_stream_async(response)

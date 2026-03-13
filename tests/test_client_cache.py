@@ -87,6 +87,27 @@ def test_azure_async_client():
     assert isinstance(client, openai.AsyncAzureOpenAI)
 
 
+def test_azure_sync_different_api_version():
+    """Different api_version returns different client (Bug 1 regression)."""
+    c1 = get_sync_client("azure", "https://test.openai.azure.com", "sk-az", api_version="2024-02-01")
+    c2 = get_sync_client("azure", "https://test.openai.azure.com", "sk-az", api_version="2025-01-01")
+    assert c1 is not c2
+
+
+def test_azure_async_different_api_version():
+    """Different api_version returns different async client (Bug 1 regression)."""
+    c1 = get_async_client("azure", "https://test.openai.azure.com", "sk-az", api_version="2024-02-01")
+    c2 = get_async_client("azure", "https://test.openai.azure.com", "sk-az", api_version="2025-01-01")
+    assert c1 is not c2
+
+
+def test_azure_same_api_version_cached():
+    """Same api_version returns same cached client."""
+    c1 = get_sync_client("azure", "https://test.openai.azure.com", "sk-az", api_version="2024-02-01")
+    c2 = get_sync_client("azure", "https://test.openai.azure.com", "sk-az", api_version="2024-02-01")
+    assert c1 is c2
+
+
 @pytest.mark.asyncio
 async def test_close_async_clients():
     """close_async_clients clears the async cache."""

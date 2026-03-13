@@ -20,7 +20,7 @@ def _require_openai():
 
 
 def get_sync_client(provider, base_url, api_key, max_retries=0, api_version=None):
-    key = ("sync", provider, base_url, api_key, max_retries)
+    key = ("sync", provider, base_url, api_key, max_retries, api_version)
     if key not in _sync_clients:
         with _lock:
             if key not in _sync_clients:
@@ -31,7 +31,7 @@ def get_sync_client(provider, base_url, api_key, max_retries=0, api_version=None
 
 
 def get_async_client(provider, base_url, api_key, max_retries=0, api_version=None):
-    key = ("async", provider, base_url, api_key, max_retries)
+    key = ("async", provider, base_url, api_key, max_retries, api_version)
     if key not in _async_clients:
         with _lock:
             if key not in _async_clients:

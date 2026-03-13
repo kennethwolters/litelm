@@ -4,6 +4,7 @@ Model strings: bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
 """
 
 import os
+import threading
 
 from litelm._exceptions import (
     AuthenticationError,
@@ -48,8 +49,25 @@ def _get_bedrock_url(region=None):
     return f"https://bedrock-runtime.{region}.amazonaws.com/openai/v1"
 
 
+_client_lock = threading.Lock()
+_client_cache: dict[tuple, object] = {}
+
+
 def _get_openai_client(base_url, region, async_client=False):
-    """Create an OpenAI client with Bedrock auth via httpx auth hook."""
+    """Get or create an OpenAI client with Bedrock auth via httpx auth hook."""
+    region = region or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+    base_url = base_url or _get_bedrock_url(region)
+    key = (base_url, region, async_client)
+
+    if key not in _client_cache:
+        with _client_lock:
+            if key not in _client_cache:
+                _client_cache[key] = _create_openai_client(base_url, region, async_client)
+    return _client_cache[key]
+
+
+def _create_openai_client(base_url, region, async_client):
+    """Create a new OpenAI client with Bedrock SigV4 auth."""
     openai = _require_openai()
     _get_boto3()
     from botocore.auth import SigV4Auth
@@ -62,7 +80,6 @@ def _get_openai_client(base_url, region, async_client=False):
     if credentials is None:
         raise ValueError("No AWS credentials found. Configure AWS credentials for Bedrock access.")
     frozen_credentials = credentials.get_frozen_credentials()
-    region = region or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
 
     class SigV4AuthFlow(httpx.Auth):
         def auth_flow(self, request):
@@ -77,7 +94,6 @@ def _get_openai_client(base_url, region, async_client=False):
                 request.headers[key] = value
             yield request
 
-    base_url = base_url or _get_bedrock_url(region)
     if async_client:
         http_client = httpx.AsyncClient(auth=SigV4AuthFlow())
         return openai.AsyncOpenAI(
