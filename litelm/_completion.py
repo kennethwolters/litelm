@@ -1,0 +1,245 @@
+"""Chat completion functions — openai SDK imported lazily only when needed."""
+
+from litelm._client_cache import get_async_client, get_sync_client
+from litelm._dispatch import get_handler
+from litelm._exceptions import BadRequestError, ContextWindowExceededError
+from litelm._providers import parse_model
+from litelm._types import (
+    ChatCompletion,
+    ChatCompletionMessage,
+    ChatCompletionMessageToolCall,
+    Choice,
+    CompletionUsage,
+    Function,
+    ModelResponse,
+    ModelResponseStream,
+)
+
+# Build tuple of BadRequestError types to catch (ours + openai's if available)
+_bad_request_errors = [BadRequestError]
+try:
+    import openai as _openai
+    _bad_request_errors.append(_openai.BadRequestError)
+except ImportError:
+    pass
+_bad_request_errors = tuple(_bad_request_errors)
+
+# kwargs that are litellm-specific and must be stripped before passing to OpenAI SDK
+_LITELLM_ONLY_KWARGS = {"cache", "num_retries", "retry_strategy", "caching"}
+
+
+def _prepare_call(model, kwargs):
+    """Parse model, build client kwargs, strip litellm-specific params."""
+    num_retries = kwargs.pop("num_retries", 0)
+    kwargs.pop("retry_strategy", None)
+    kwargs.pop("cache", None)
+    kwargs.pop("caching", None)
+
+    api_key = kwargs.pop("api_key", None)
+    api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
+    api_version = kwargs.pop("api_version", None)
+    headers = kwargs.pop("headers", None)
+
+    provider, model_name, base_url, resolved_api_key, resolved_api_version = parse_model(
+        model, api_key=api_key, api_base=api_base, api_version=api_version
+    )
+
+    if headers:
+        kwargs["extra_headers"] = headers
+
+    return provider, model_name, base_url, resolved_api_key, resolved_api_version or api_version, num_retries, kwargs
+
+
+def _wrap_context_window_error(e):
+    """Convert BadRequestError to ContextWindowExceededError if about context length."""
+    msg = str(e).lower()
+    if "context" in msg or "token" in msg or "length" in msg or "too long" in msg:
+        raise ContextWindowExceededError(
+            message=str(e),
+            response=getattr(e, "response", None),
+            body=getattr(e, "body", None),
+        ) from e
+    raise e
+
+
+def completion(model, messages=None, *, timeout=None, stream=False,
+               shared_session: "ClientSession | None" = None, **kwargs):
+    """Synchronous chat completion."""
+    mock = kwargs.pop("mock_response", None)
+    provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
+
+    if mock is not None:
+        content = str(mock) if mock is not True else "mock"
+        return ModelResponse(ChatCompletion(
+            id="mock", choices=[Choice(index=0, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop")],
+            created=0, model=model_name, object="chat.completion",
+            usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+        ))
+
+    handler = get_handler(provider)
+    if handler:
+        return handler.completion(model_name, messages, stream=stream,
+                                  api_key=api_key, base_url=base_url, **kwargs)
+
+    client = get_sync_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
+
+    try:
+        sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
+        if timeout is not None:
+            sdk_kwargs["timeout"] = timeout
+        response = client.chat.completions.create(**sdk_kwargs)
+    except _bad_request_errors as e:
+        _wrap_context_window_error(e)
+
+    if stream:
+        return _wrap_stream_sync(response)
+    return ModelResponse(response)
+
+
+async def acompletion(model, messages=None, *, timeout=None, stream=False,
+                      shared_session: "ClientSession | None" = None, **kwargs):
+    """Async chat completion."""
+    mock = kwargs.pop("mock_response", None)
+    provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
+
+    if mock is not None:
+        content = str(mock) if mock is not True else "mock"
+        return ModelResponse(ChatCompletion(
+            id="mock", choices=[Choice(index=0, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop")],
+            created=0, model=model_name, object="chat.completion",
+            usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+        ))
+
+    handler = get_handler(provider)
+    if handler:
+        return await handler.acompletion(model_name, messages, stream=stream,
+                                         api_key=api_key, base_url=base_url, **kwargs)
+
+    client = get_async_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
+
+    try:
+        sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
+        if timeout is not None:
+            sdk_kwargs["timeout"] = timeout
+        response = await client.chat.completions.create(**sdk_kwargs)
+    except _bad_request_errors as e:
+        _wrap_context_window_error(e)
+
+    if stream:
+        return _wrap_stream_async(response)
+    return ModelResponse(response)
+
+
+def _wrap_stream_sync(stream):
+    """Wrap sync stream to yield ModelResponseStream objects."""
+    for chunk in stream:
+        yield ModelResponseStream(chunk)
+
+
+async def _wrap_stream_async(stream):
+    """Wrap async stream to yield ModelResponseStream objects."""
+    async for chunk in stream:
+        yield ModelResponseStream(chunk)
+
+
+def stream_chunk_builder(chunks):
+    """Build a ModelResponse from a list of ModelResponseStream chunks."""
+    if not chunks:
+        return ModelResponse(ChatCompletion(
+            id="empty",
+            choices=[],
+            created=0,
+            model="",
+            object="chat.completion",
+        ))
+
+    # Gather content, tool calls, and usage from chunks
+    content_parts = []
+    role = "assistant"
+    model = ""
+    chunk_id = ""
+    tool_calls_by_index = {}
+    usage = None
+    finish_reason = None
+    reasoning_content_parts = []
+
+    for c in chunks:
+        chunk = c._chunk if hasattr(c, "_chunk") else c
+        chunk_id = chunk_id or chunk.id
+        model = model or chunk.model
+
+        if hasattr(chunk, "usage") and chunk.usage is not None:
+            if usage is None:
+                usage = CompletionUsage(
+                    prompt_tokens=chunk.usage.prompt_tokens,
+                    completion_tokens=chunk.usage.completion_tokens,
+                    total_tokens=chunk.usage.total_tokens,
+                )
+            else:
+                # Accumulate: take max of each field (Anthropic splits across chunks)
+                usage.prompt_tokens = max(usage.prompt_tokens, chunk.usage.prompt_tokens)
+                usage.completion_tokens = max(usage.completion_tokens, chunk.usage.completion_tokens)
+                # Preserve API's total if it includes hidden categories (e.g. reasoning tokens)
+                computed = usage.prompt_tokens + usage.completion_tokens
+                usage.total_tokens = max(usage.total_tokens, chunk.usage.total_tokens, computed)
+
+        if chunk.choices:
+            choice = chunk.choices[0]
+            finish_reason = choice.finish_reason or finish_reason
+            delta = choice.delta
+            if delta:
+                if delta.role:
+                    role = delta.role
+                if delta.content:
+                    content_parts.append(delta.content)
+                # Collect reasoning_content if present
+                rc = getattr(delta, "reasoning_content", None)
+                if rc:
+                    reasoning_content_parts.append(rc)
+                if delta.tool_calls:
+                    for tc in delta.tool_calls:
+                        idx = tc.index
+                        if idx not in tool_calls_by_index:
+                            tool_calls_by_index[idx] = {
+                                "id": tc.id or "",
+                                "type": "function",
+                                "function": {"name": tc.function.name or "", "arguments": ""},
+                            }
+                        else:
+                            if tc.id:
+                                tool_calls_by_index[idx]["id"] = tc.id
+                            if tc.function.name:
+                                tool_calls_by_index[idx]["function"]["name"] = tc.function.name
+                        if tc.function.arguments:
+                            tool_calls_by_index[idx]["function"]["arguments"] += tc.function.arguments
+
+    content = "".join(content_parts) or None
+    tool_calls = None
+    if tool_calls_by_index:
+        tool_calls = [
+            ChatCompletionMessageToolCall(
+                id=tc["id"],
+                type=tc["type"],
+                function=Function(name=tc["function"]["name"], arguments=tc["function"]["arguments"]),
+            )
+            for _, tc in sorted(tool_calls_by_index.items())
+        ]
+
+    message = ChatCompletionMessage(
+        role=role, content=content, tool_calls=tool_calls,
+        reasoning_content="".join(reasoning_content_parts) if reasoning_content_parts else None,
+    )
+
+    if usage is None:
+        usage = CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+
+    completion_obj = ChatCompletion(
+        id=chunk_id or "chatcmpl-stream",
+        choices=[Choice(index=0, message=message, finish_reason=finish_reason or "stop")],
+        created=0,
+        model=model,
+        object="chat.completion",
+        usage=usage,
+    )
+
+    return ModelResponse(completion_obj)

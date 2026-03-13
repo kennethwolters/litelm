@@ -1,0 +1,32 @@
+# Build / packaging
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Env / secrets
+.venv/
+.env
+.env.*
+
+# Claude Code
+CLAUDE.md
+.claude/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test / logs
+.pytest_cache/
+helicone.log
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
