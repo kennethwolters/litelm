@@ -17,6 +17,7 @@ from litelm._exceptions import (
     InternalServerError,
     RateLimitError,
     Timeout,
+    is_context_window_error,
 )
 from litelm._types import (
     ChatCompletion,
@@ -427,8 +428,7 @@ def _map_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, sdk.BadRequestError):
-        lower = msg.lower()
-        if "context" in lower or "token" in lower or "length" in lower or "too long" in lower:
+        if is_context_window_error(msg):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
@@ -454,11 +454,13 @@ def _map_error(e):
 # Public API
 # ---------------------------------------------------------------------------
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Synchronous Anthropic chat completion."""
     sdk = _get_sdk()
     client = _get_client(api_key, base_url)
     req = _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwargs)
+    if timeout is not None:
+        req["timeout"] = timeout
 
     try:
         if stream:
@@ -486,11 +488,13 @@ def _stream_sync(client, req):
         _map_error(e)
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Async Anthropic chat completion."""
     sdk = _get_sdk()
     client = _get_client(api_key, base_url, async_client=True)
     req = _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwargs)
+    if timeout is not None:
+        req["timeout"] = timeout
 
     try:
         if stream:

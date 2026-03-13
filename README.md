@@ -57,11 +57,25 @@ The API mirrors litellm — same function names, same arguments, same response t
 
 Routes to 16+ providers via `"provider/model-name"` syntax. Any OpenAI-compatible endpoint works via `api_base`.
 
-**Verified live** (6): OpenAI, Anthropic, Groq, Mistral, xAI, OpenRouter
-
-**Custom handlers** (non-OpenAI-compat): Anthropic, Bedrock, Cloudflare, Mistral
-
-**OpenAI-compat passthrough**: Azure, Together, Fireworks, DeepSeek, Perplexity, Gemini, Cohere, Ollama, and any custom endpoint.
+| Provider | Env Var | Handler | Verified |
+|----------|---------|---------|:--------:|
+| OpenAI | `OPENAI_API_KEY` | OpenAI SDK | Yes |
+| Anthropic | `ANTHROPIC_API_KEY` | Custom | Yes |
+| Groq | `GROQ_API_KEY` | OpenAI-compat | Yes |
+| Mistral | `MISTRAL_API_KEY` | Custom | Yes |
+| xAI | `XAI_API_KEY` | OpenAI-compat | Yes |
+| OpenRouter | `OPENROUTER_API_KEY` | OpenAI-compat | Yes |
+| Azure | `AZURE_API_KEY` | OpenAI SDK (Azure) | No |
+| Bedrock | `AWS_ACCESS_KEY_ID` | Custom | No |
+| Cloudflare | `CLOUDFLARE_API_TOKEN` | Custom | No |
+| Together | `TOGETHERAI_API_KEY` | OpenAI-compat | No |
+| Fireworks | `FIREWORKS_API_KEY` | OpenAI-compat | No |
+| DeepSeek | `DEEPSEEK_API_KEY` | OpenAI-compat | No |
+| Perplexity | `PERPLEXITYAI_API_KEY` | OpenAI-compat | No |
+| DeepInfra | `DEEPINFRA_API_TOKEN` | OpenAI-compat | No |
+| Gemini | `GEMINI_API_KEY` | OpenAI-compat | No |
+| Cohere | `COHERE_API_KEY` | OpenAI-compat | No |
+| Ollama | — | OpenAI-compat | No |
 
 ## Status
 

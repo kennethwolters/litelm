@@ -150,7 +150,7 @@ def _handle_error_response(response):
         raise APIStatusError(message=msg, response=response, body=msg)
 
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Synchronous Cloudflare Workers AI completion."""
     import httpx
 
@@ -158,11 +158,12 @@ def completion(model_name, messages, *, stream=False, api_key=None, base_url=Non
     url = _build_url(account_id, model_name)
     body, do_stream = _build_request_body(messages, stream=stream, **kwargs)
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    http_timeout = timeout if timeout is not None else 120
 
     if do_stream:
-        return _stream_sync(url, headers, body, model_name)
+        return _stream_sync(url, headers, body, model_name, http_timeout)
 
-    with httpx.Client(timeout=120) as client:
+    with httpx.Client(timeout=http_timeout) as client:
         resp = client.post(url, json=body, headers=headers)
 
     if resp.status_code != 200:
@@ -171,12 +172,12 @@ def completion(model_name, messages, *, stream=False, api_key=None, base_url=Non
     return _parse_response(resp.json(), model_name)
 
 
-def _stream_sync(url, headers, body, model_name):
+def _stream_sync(url, headers, body, model_name, http_timeout=120):
     """Synchronous streaming generator for Cloudflare."""
     import httpx
 
     chunk_id = f"chatcmpl-cf-{int(time.time())}"
-    with httpx.Client(timeout=120) as client:
+    with httpx.Client(timeout=http_timeout) as client:
         with client.stream("POST", url, json=body, headers=headers) as resp:
             if resp.status_code != 200:
                 resp.read()
@@ -187,7 +188,7 @@ def _stream_sync(url, headers, body, model_name):
                     yield chunk
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Async Cloudflare Workers AI completion."""
     import httpx
 
@@ -195,11 +196,12 @@ async def acompletion(model_name, messages, *, stream=False, api_key=None, base_
     url = _build_url(account_id, model_name)
     body, do_stream = _build_request_body(messages, stream=stream, **kwargs)
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    http_timeout = timeout if timeout is not None else 120
 
     if do_stream:
-        return _stream_async(url, headers, body, model_name)
+        return _stream_async(url, headers, body, model_name, http_timeout)
 
-    async with httpx.AsyncClient(timeout=120) as client:
+    async with httpx.AsyncClient(timeout=http_timeout) as client:
         resp = await client.post(url, json=body, headers=headers)
 
     if resp.status_code != 200:
@@ -208,12 +210,12 @@ async def acompletion(model_name, messages, *, stream=False, api_key=None, base_
     return _parse_response(resp.json(), model_name)
 
 
-async def _stream_async(url, headers, body, model_name):
+async def _stream_async(url, headers, body, model_name, http_timeout=120):
     """Async streaming generator for Cloudflare."""
     import httpx
 
     chunk_id = f"chatcmpl-cf-{int(time.time())}"
-    async with httpx.AsyncClient(timeout=120) as client:
+    async with httpx.AsyncClient(timeout=http_timeout) as client:
         async with client.stream("POST", url, json=body, headers=headers) as resp:
             if resp.status_code != 200:
                 await resp.aread()

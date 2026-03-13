@@ -71,3 +71,9 @@ class ContextWindowExceededError(BadRequestError):
         # Accept and ignore extra positional args (llm_provider, model) for litellm compat
         kwargs.pop("request", None)
         super().__init__(message=message, **kwargs)
+
+
+def is_context_window_error(msg: str) -> bool:
+    """Check if an error message indicates a context window / token limit error."""
+    low = msg.lower()
+    return any(kw in low for kw in ("context", "token", "length", "too long"))

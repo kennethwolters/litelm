@@ -2,7 +2,7 @@
 
 from litelm._client_cache import get_async_client, get_sync_client
 from litelm._dispatch import get_handler
-from litelm._exceptions import BadRequestError, ContextWindowExceededError
+from litelm._exceptions import BadRequestError, ContextWindowExceededError, is_context_window_error
 from litelm._providers import parse_model
 from litelm._types import (
     ChatCompletion,
@@ -52,8 +52,7 @@ def _prepare_call(model, kwargs):
 
 def _wrap_context_window_error(e):
     """Convert BadRequestError to ContextWindowExceededError if about context length."""
-    msg = str(e).lower()
-    if "context" in msg or "token" in msg or "length" in msg or "too long" in msg:
+    if is_context_window_error(str(e)):
         raise ContextWindowExceededError(
             message=str(e),
             response=getattr(e, "response", None),
@@ -79,7 +78,8 @@ def completion(model, messages=None, *, timeout=None, stream=False,
     handler = get_handler(provider)
     if handler:
         return handler.completion(model_name, messages, stream=stream,
-                                  api_key=api_key, base_url=base_url, **kwargs)
+                                  api_key=api_key, base_url=base_url,
+                                  timeout=timeout, **kwargs)
 
     client = get_sync_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
 
@@ -113,7 +113,8 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False,
     handler = get_handler(provider)
     if handler:
         return await handler.acompletion(model_name, messages, stream=stream,
-                                         api_key=api_key, base_url=base_url, **kwargs)
+                                         api_key=api_key, base_url=base_url,
+                                         timeout=timeout, **kwargs)
 
     client = get_async_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
 

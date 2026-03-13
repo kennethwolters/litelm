@@ -15,6 +15,7 @@ from litelm._exceptions import (
     LitelmError,
     RateLimitError,
     Timeout,
+    is_context_window_error,
 )
 from litelm._types import ModelResponse, ModelResponseStream
 
@@ -99,8 +100,7 @@ def _map_error(e):
     msg = str(e)
 
     if isinstance(e, openai.BadRequestError):
-        lower = msg.lower()
-        if "context" in lower or "token" in lower or "length" in lower or "too long" in lower:
+        if is_context_window_error(msg):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
@@ -130,20 +130,19 @@ def _map_error(e):
     raise LitelmError(message=msg) from e
 
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Synchronous Bedrock chat completion via OpenAI-compat endpoint."""
     openai = _require_openai()
     region = kwargs.pop("region", None)
     base_url = base_url or _get_bedrock_url(region)
     client = _get_openai_client(base_url, region, async_client=False)
 
+    sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
+    if timeout is not None:
+        sdk_kwargs["timeout"] = timeout
+
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            stream=stream,
-            **kwargs,
-        )
+        response = client.chat.completions.create(**sdk_kwargs)
     except openai.APIError as e:
         _map_error(e)
 
@@ -152,20 +151,19 @@ def completion(model_name, messages, *, stream=False, api_key=None, base_url=Non
     return ModelResponse(response)
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Async Bedrock chat completion via OpenAI-compat endpoint."""
     openai = _require_openai()
     region = kwargs.pop("region", None)
     base_url = base_url or _get_bedrock_url(region)
     client = _get_openai_client(base_url, region, async_client=True)
 
+    sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
+    if timeout is not None:
+        sdk_kwargs["timeout"] = timeout
+
     try:
-        response = await client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            stream=stream,
-            **kwargs,
-        )
+        response = await client.chat.completions.create(**sdk_kwargs)
     except openai.APIError as e:
         _map_error(e)
 

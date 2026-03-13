@@ -286,6 +286,69 @@ class TestCloudflareTranslation:
 # Bedrock unit tests
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Mistral translation unit tests
+# ---------------------------------------------------------------------------
+
+class TestMistralTransforms:
+    def setup_method(self):
+        from litelm.providers import _mistral
+        self.mod = _mistral
+
+    def test_transform_messages_strips_name_from_user(self):
+        msgs = [{"role": "user", "content": "Hi", "name": "alice"}]
+        result = self.mod._transform_messages(msgs)
+        assert "name" not in result[0]
+        assert result[0]["content"] == "Hi"
+
+    def test_transform_messages_keeps_name_on_tool(self):
+        msgs = [{"role": "tool", "content": "result", "name": "get_weather", "tool_call_id": "tc1"}]
+        result = self.mod._transform_messages(msgs)
+        assert result[0]["name"] == "get_weather"
+
+    def test_transform_messages_strips_name_from_assistant(self):
+        msgs = [{"role": "assistant", "content": "Hello", "name": "bot"}]
+        result = self.mod._transform_messages(msgs)
+        assert "name" not in result[0]
+
+    def test_transform_messages_none_passthrough(self):
+        assert self.mod._transform_messages(None) is None
+        assert self.mod._transform_messages([]) == []
+
+    def test_fix_response_null_type(self):
+        """tool_call with type=None gets fixed to 'function'."""
+        resp = mock.MagicMock()
+        tc = mock.MagicMock()
+        tc.type = None
+        resp.choices = [mock.MagicMock()]
+        resp.choices[0].message.content = "hi"
+        resp.choices[0].message.tool_calls = [tc]
+        self.mod._fix_response(resp)
+        assert tc.type == "function"
+
+    def test_fix_response_empty_content(self):
+        """Empty string content gets converted to None."""
+        resp = mock.MagicMock()
+        resp.choices = [mock.MagicMock()]
+        resp.choices[0].message.content = ""
+        resp.choices[0].message.tool_calls = None
+        self.mod._fix_response(resp)
+        assert resp.choices[0].message.content is None
+
+    def test_fix_response_preserves_normal_content(self):
+        """Non-empty content is left alone."""
+        resp = mock.MagicMock()
+        resp.choices = [mock.MagicMock()]
+        resp.choices[0].message.content = "hello"
+        resp.choices[0].message.tool_calls = None
+        self.mod._fix_response(resp)
+        assert resp.choices[0].message.content == "hello"
+
+
+# ---------------------------------------------------------------------------
+# Bedrock unit tests
+# ---------------------------------------------------------------------------
+
 class TestBedrockHelpers:
     def setup_method(self):
         from litelm.providers import _bedrock

@@ -37,26 +37,28 @@ def _fix_response(response):
     return response
 
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Synchronous Mistral completion with message transforms."""
     messages = _transform_messages(messages)
     client = get_sync_client("mistral", base_url, api_key)
-    response = client.chat.completions.create(
-        model=model_name, messages=messages, stream=stream, **kwargs,
-    )
+    sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
+    if timeout is not None:
+        sdk_kwargs["timeout"] = timeout
+    response = client.chat.completions.create(**sdk_kwargs)
     if stream:
         return _wrap_stream_sync(response)
     _fix_response(response)
     return ModelResponse(response)
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, **kwargs):
+async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Async Mistral completion with message transforms."""
     messages = _transform_messages(messages)
     client = get_async_client("mistral", base_url, api_key)
-    response = await client.chat.completions.create(
-        model=model_name, messages=messages, stream=stream, **kwargs,
-    )
+    sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
+    if timeout is not None:
+        sdk_kwargs["timeout"] = timeout
+    response = await client.chat.completions.create(**sdk_kwargs)
     if stream:
         return _wrap_stream_async(response)
     _fix_response(response)
