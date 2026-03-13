@@ -1,10 +1,18 @@
 # litelm
 
-litellm is bloated. 86 MB of dependencies for what is mostly a router.
+[litellm](https://github.com/BerriAI/litellm) is bloated. 86 MB of dependencies for what is mostly a router.
 
 litelm strips it to core routing + formatting. ~2,000 lines. Two deps (`openai`, `httpx`).
 
-**Status: Full DSPy drop-in.** All 7 execution paths verified — Predict, CoT, typed Pydantic signatures, streaming, embeddings, ReAct tool use, multi-output. 6 providers proven live.
+## Strategy
+
+litellm has become infrastructure — dozens of frameworks depend on it. We validate litelm as a drop-in replacement one consumer at a time, starting with the most popular.
+
+**Current target: [DSPy](https://github.com/stanfordnlp/dspy)** — full drop-in verified. All 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output). 6 providers tested.
+
+**Next targets:** [LangChain](https://github.com/langchain-ai/langchain), [CrewAI](https://github.com/crewAIInc/crewAI), [AutoGen](https://github.com/microsoft/autogen) — litellm's most depended-on consumers. Each one we pass is proof the API surface is correct.
+
+The litellm test suite itself runs against litelm unmodified via `sys.modules` shimming — 206 tests passing and climbing.
 
 ---
 
@@ -18,7 +26,7 @@ response = litelm.embedding("openai/text-embedding-3-small", input=["hello world
 
 Every function has an async variant: `acompletion`, `aembedding`, `aresponses`, `atext_completion`.
 
-### DSPy Integration
+### Drop-in usage (DSPy example)
 
 ```python
 import sys, litelm
@@ -31,9 +39,7 @@ dspy.configure(lm=lm)
 dspy.Predict("question -> answer")(question="What is 2+2?")
 ```
 
-The `sys.modules` swap must happen **before** `import dspy`. DSPy only touches litellm's top-level namespace — no deep submodule imports — so the swap is clean.
-
-Verified paths: `Predict`, `ChainOfThought`, typed `Signature` (Pydantic), `streamify`, `Embedder`, `ReAct`, `n>1`, multi-provider (Anthropic/Groq), `ContextWindowExceededError` recovery.
+The `sys.modules` swap must happen **before** the consumer import.
 
 ---
 
@@ -82,11 +88,3 @@ uv run pytest tests/test_dspy_smoke.py -m live --timeout=60  # 10 DSPy integrati
 ```
 
 Live tests require API keys in `.env.test`. Skipped by default; run with `-m live`.
-
-## Credits
-
-Built by [@kennethwolters](https://github.com/kennethwolters) with [Claude Code](https://claude.ai/claude-code).
-
-## License
-
-MIT
