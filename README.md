@@ -55,7 +55,7 @@ The API mirrors litellm — same function names, same arguments, same response t
 
 ## Providers
 
-Routes to 16+ providers via `"provider/model-name"` syntax. Any OpenAI-compatible endpoint works via `api_base`.
+Routes to 19 providers via `"provider/model-name"` syntax. Any OpenAI-compatible endpoint works via `api_base`.
 
 | Provider | Env Var | Handler | Verified |
 |----------|---------|---------|:--------:|
@@ -76,6 +76,8 @@ Routes to 16+ providers via `"provider/model-name"` syntax. Any OpenAI-compatibl
 | Gemini | `GEMINI_API_KEY` | OpenAI-compat | No |
 | Cohere | `COHERE_API_KEY` | OpenAI-compat | No |
 | Ollama | — | OpenAI-compat | No |
+| vLLM | — | OpenAI-compat | No |
+| LM Studio | — | OpenAI-compat | No |
 
 ## Status
 
