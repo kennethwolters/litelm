@@ -27,6 +27,9 @@ CLAUDE.md
 helicone.log
 *.log
 
+# Ported litellm tests (synced via scripts/sync_litellm_tests.sh, not committed)
+tests/ported/
+
 # OS
 .DS_Store
 Thumbs.db
