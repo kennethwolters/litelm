@@ -3,6 +3,7 @@
 
 class _DefaultResponse:
     """Minimal response stub when no real response is provided."""
+
     __slots__ = ("status_code", "headers")
 
     def __init__(self, status_code=0):

@@ -1,6 +1,11 @@
 # litelm
 
-litellm's routing + translation in ~2,200 lines and 2 dependencies (`openai`, `httpx`).
+[![PyPI](https://img.shields.io/pypi/v/litelm)](https://pypi.org/project/litelm/)
+[![Python](https://img.shields.io/pypi/pyversions/litelm)](https://pypi.org/project/litelm/)
+[![Tests](https://github.com/kennethwolters/litelm/actions/workflows/test.yml/badge.svg)](https://github.com/kennethwolters/litelm/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+litellm's routing + translation in ~2,300 lines and 2 dependencies (`openai`, `httpx`).
 
 litellm routes LLM calls across providers and translates between message formats. That core is buried under 100k+ LOC of proxy servers, caching layers, cost tracking, and dozens of features most users never touch. litelm extracts just the call path — model routing, message translation, streaming, tool use, embeddings — and nothing else. No Router class, no proxy, no caching.
 
@@ -79,20 +84,83 @@ Routes to 19 providers via `"provider/model-name"` syntax. Any OpenAI-compatible
 | vLLM | — | OpenAI-compat | No |
 | LM Studio | — | OpenAI-compat | No |
 
+## API Keys
+
+Set the environment variable for your provider:
+
+```bash
+export OPENAI_API_KEY=sk-...
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Or pass directly:
+
+```python
+litelm.completion("openai/gpt-4o", messages=[...], api_key="sk-...")
+litelm.completion("openai/gpt-4o", messages=[...], api_base="http://localhost:8000/v1")
+```
+
+## Error Handling
+
+All provider errors are mapped to litelm's exception hierarchy:
+
+```python
+from litelm import ContextWindowExceededError, RateLimitError, AuthenticationError
+
+try:
+    response = litelm.completion("openai/gpt-4o", messages=messages)
+except ContextWindowExceededError:
+    # prompt too long — truncate and retry
+    pass
+except RateLimitError:
+    # back off
+    pass
+except AuthenticationError:
+    # bad API key
+    pass
+```
+
+## Tool Calling
+
+```python
+tools = [{"type": "function", "function": {
+    "name": "get_weather",
+    "parameters": {"type": "object", "properties": {"city": {"type": "string"}}},
+}}]
+
+response = litelm.completion(
+    "openai/gpt-4o", messages=[{"role": "user", "content": "Weather in Paris?"}],
+    tools=tools, tool_choice="required",
+)
+tool_call = response.choices[0].message.tool_calls[0]
+print(tool_call.function.name, tool_call.function.arguments)
+```
+
+## Custom / Local Providers
+
+Any OpenAI-compatible server works via `api_base`:
+
+```python
+# vLLM
+litelm.completion("openai/my-model", messages=[...], api_base="http://localhost:8000/v1")
+
+# Ollama
+litelm.completion("ollama/llama3", messages=[...], api_base="http://localhost:11434/v1")
+
+# LM Studio
+litelm.completion("openai/local-model", messages=[...], api_base="http://localhost:1234/v1")
+```
+
 ## Status
 
-**Alpha.** Proven against litellm's own test suite — 206 ported tests passing unmodified via `sys.modules` shimming. 92 own tests.
+**Alpha.** 129 own tests, 56 ported litellm tests passing unmodified via `sys.modules` shimming.
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
-
-## Roadmap
-
-Validating as a drop-in replacement one litellm consumer at a time — DSPy is done. More consumers, providers, and end-to-end verifications will follow.
 
 ## Tests
 
 ```bash
-uv run pytest tests/ -x --ignore=tests/ported        # 92 unit tests
+uv run pytest tests/ -x --ignore=tests/ported        # 129 unit tests
 uv run pytest tests/test_live.py -m live --timeout=30 # 37 live provider tests
 uv run pytest tests/test_dspy_smoke.py -m live --timeout=60  # 10 DSPy integration tests
 ```

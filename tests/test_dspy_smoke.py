@@ -1,4 +1,5 @@
 """DSPy integration smoke tests — proves litelm can replace litellm across all 7 DSPy execution paths."""
+
 import asyncio
 import sys
 
@@ -7,14 +8,14 @@ import litelm
 # Swap before DSPy import
 sys.modules["litellm"] = litelm
 
-import dspy
-import pytest
-from pydantic import BaseModel
-
+import dspy  # noqa: E402
+import pytest  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Path 0: Basic completion (Predict + CoT)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.live
 def test_dspy_predict():
@@ -43,6 +44,7 @@ def test_dspy_cot():
 # Path 1: Typed signatures / JSON adapter
 # ---------------------------------------------------------------------------
 
+
 class QAOutput(BaseModel):
     answer: str
     confidence: float
@@ -50,6 +52,7 @@ class QAOutput(BaseModel):
 
 class TypedQA(dspy.Signature):
     """Answer with structured output."""
+
     question: str = dspy.InputField()
     response: QAOutput = dspy.OutputField()
 
@@ -70,6 +73,7 @@ def test_dspy_typed_signature():
 # ---------------------------------------------------------------------------
 # Path 2: Streaming via dspy.streamify
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.live
 def test_dspy_streaming():
@@ -98,6 +102,7 @@ def test_dspy_streaming():
 # Path 3: Embeddings via dspy.Embedder
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.live
 def test_dspy_embeddings():
     """dspy.Embedder — exercises embedding(), data[i]['embedding'] access."""
@@ -111,6 +116,7 @@ def test_dspy_embeddings():
 # ---------------------------------------------------------------------------
 # Path 4: Tool use / ReAct
 # ---------------------------------------------------------------------------
+
 
 def get_weather(city: str) -> str:
     """Get the weather for a city."""
@@ -133,6 +139,7 @@ def test_dspy_tool_use():
 # Path 5: Multi-output (n>1)
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.live
 def test_dspy_multi_output():
     """Predict with n=3 — exercises completion(n=3), multi-choice response parsing."""
@@ -149,6 +156,7 @@ def test_dspy_multi_output():
 # ---------------------------------------------------------------------------
 # Path 6: Multi-provider (Anthropic, Groq)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.live
 def test_dspy_anthropic():
@@ -175,6 +183,7 @@ def test_dspy_groq():
 # ---------------------------------------------------------------------------
 # Path 7: Error recovery — ContextWindowExceededError
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.live
 def test_dspy_context_window_error():

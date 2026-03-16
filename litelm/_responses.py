@@ -6,8 +6,18 @@ from litelm._dispatch import get_handler
 from litelm._providers import parse_model
 
 
-def responses(model, *, input=None, previous_response_id=None, cache=None,
-              num_retries=0, retry_strategy=None, headers=None, shared_session=None, **kwargs):
+def responses(
+    model,
+    *,
+    input=None,
+    previous_response_id=None,
+    cache=None,
+    num_retries=0,
+    retry_strategy=None,
+    headers=None,
+    shared_session=None,
+    **kwargs,
+):
     """Synchronous responses API call."""
     kwargs.pop("caching", None)
     api_key = kwargs.pop("api_key", None)
@@ -23,8 +33,7 @@ def responses(model, *, input=None, previous_response_id=None, cache=None,
 
     handler = get_handler(provider)
     if handler and hasattr(handler, "responses"):
-        return handler.responses(model_name, api_key=resolved_api_key, base_url=base_url,
-                                 headers=headers, **kwargs)
+        return handler.responses(model_name, api_key=resolved_api_key, base_url=base_url, headers=headers, **kwargs)
 
     client = get_sync_client(provider, base_url, resolved_api_key, max_retries=num_retries, api_version=api_version)
     extra_headers = headers or None
@@ -34,8 +43,18 @@ def responses(model, *, input=None, previous_response_id=None, cache=None,
         _map_openai_error(e)
 
 
-async def aresponses(model, *, input=None, previous_response_id=None, cache=None,
-                     num_retries=0, retry_strategy=None, headers=None, shared_session=None, **kwargs):
+async def aresponses(
+    model,
+    *,
+    input=None,
+    previous_response_id=None,
+    cache=None,
+    num_retries=0,
+    retry_strategy=None,
+    headers=None,
+    shared_session=None,
+    **kwargs,
+):
     """Async responses API call."""
     kwargs.pop("caching", None)
     api_key = kwargs.pop("api_key", None)
@@ -51,8 +70,9 @@ async def aresponses(model, *, input=None, previous_response_id=None, cache=None
 
     handler = get_handler(provider)
     if handler and hasattr(handler, "aresponses"):
-        return await handler.aresponses(model_name, api_key=resolved_api_key, base_url=base_url,
-                                        headers=headers, **kwargs)
+        return await handler.aresponses(
+            model_name, api_key=resolved_api_key, base_url=base_url, headers=headers, **kwargs
+        )
 
     client = get_async_client(provider, base_url, resolved_api_key, max_retries=num_retries, api_version=api_version)
     extra_headers = headers or None

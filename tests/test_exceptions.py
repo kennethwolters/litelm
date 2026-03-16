@@ -1,14 +1,14 @@
 """Tests for exception types and compatibility."""
 
 from litelm._exceptions import (
+    APIConnectionError,
     AuthenticationError,
     BadRequestError,
     ContextWindowExceededError,
+    InternalServerError,
     LitelmError,
     RateLimitError,
     Timeout,
-    InternalServerError,
-    APIConnectionError,
 )
 
 

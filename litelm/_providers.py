@@ -7,7 +7,6 @@ PROVIDERS = {
     # --- OpenAI-native ---
     "openai": (None, "OPENAI_API_KEY"),
     "azure": (None, "AZURE_API_KEY"),  # special-cased in parse_model
-
     # --- Drop-in OpenAI-compatible ---
     "groq": ("https://api.groq.com/openai/v1", "GROQ_API_KEY"),
     "together_ai": ("https://api.together.xyz/v1", "TOGETHERAI_API_KEY"),
@@ -23,12 +22,10 @@ PROVIDERS = {
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/openai/", "GEMINI_API_KEY"),
     "google": ("https://generativelanguage.googleapis.com/v1beta/openai/", "GEMINI_API_KEY"),
     "cohere": ("https://api.cohere.ai/compatibility/v1", "COHERE_API_KEY"),
-
     # --- Native SDK (dispatch handles routing, registry provides api_key env) ---
     "anthropic": ("https://api.anthropic.com", "ANTHROPIC_API_KEY"),
     "bedrock": (None, None),  # auth via boto3
     "cloudflare": (None, "CLOUDFLARE_API_TOKEN"),
-
     # --- Self-hosted (default localhost, override with api_base) ---
     "ollama": ("http://localhost:11434/v1", "OLLAMA_API_KEY"),
     "vllm": ("http://localhost:8000/v1", "VLLM_API_KEY"),

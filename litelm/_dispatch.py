@@ -16,5 +16,6 @@ def get_handler(provider):
         return None
     if provider not in _loaded:
         import importlib
+
         _loaded[provider] = importlib.import_module(CUSTOM_HANDLERS[provider])
     return _loaded[provider]

@@ -6,25 +6,24 @@ from unittest import mock
 import openai
 import pytest
 
-from litelm._types import (
-    ChatCompletion,
-    ChatCompletionMessage,
-    Choice,
-    CompletionUsage,
-)
-from litelm._completion import completion, acompletion, _prepare_call, _map_openai_error
-from litelm._types import ModelResponse
+from litelm._completion import _map_openai_error, _prepare_call, acompletion, completion
 from litelm._exceptions import (
     AuthenticationError,
     BadRequestError,
     ContextWindowExceededError,
     InternalServerError,
-    LitelmError,
     NotFoundError,
     PermissionDeniedError,
     RateLimitError,
     Timeout,
     UnprocessableEntityError,
+)
+from litelm._types import (
+    ChatCompletion,
+    ChatCompletionMessage,
+    Choice,
+    CompletionUsage,
+    ModelResponse,
 )
 
 
@@ -94,6 +93,7 @@ def test_acompletion(mock_get_client):
 
 
 # --- Error wrapping tests ---
+
 
 def _make_openai_error(cls, msg="test error"):
     """Create an openai SDK error with minimal required args."""

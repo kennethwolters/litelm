@@ -1,11 +1,11 @@
 """Tests for the dispatch module and provider handler translation logic."""
 
-import json
 import os
-import pytest
 from unittest import mock
 
-from litelm._dispatch import get_handler, CUSTOM_HANDLERS, _loaded
+import pytest
+
+from litelm._dispatch import CUSTOM_HANDLERS, _loaded, get_handler
 
 
 def test_get_handler_returns_none_for_openai_compat():
@@ -40,9 +40,11 @@ def test_custom_handlers_registry():
 # Anthropic translation unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestAnthropicTranslation:
     def setup_method(self):
         from litelm.providers import _anthropic
+
         self.mod = _anthropic
 
     def test_extract_system_single(self):
@@ -81,20 +83,28 @@ class TestAnthropicTranslation:
         assert result == [{"type": "text", "text": "hello"}]
 
     def test_translate_content_vision_base64(self):
-        result = self.mod._translate_content([{
-            "type": "image_url",
-            "image_url": {"url": "data:image/png;base64,abc123"},
-        }])
+        result = self.mod._translate_content(
+            [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "data:image/png;base64,abc123"},
+                }
+            ]
+        )
         assert result[0]["type"] == "image"
         assert result[0]["source"]["type"] == "base64"
         assert result[0]["source"]["media_type"] == "image/png"
         assert result[0]["source"]["data"] == "abc123"
 
     def test_translate_content_vision_url(self):
-        result = self.mod._translate_content([{
-            "type": "image_url",
-            "image_url": {"url": "https://example.com/img.png"},
-        }])
+        result = self.mod._translate_content(
+            [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/img.png"},
+                }
+            ]
+        )
         assert result[0]["type"] == "image"
         assert result[0]["source"]["type"] == "url"
 
@@ -111,10 +121,16 @@ class TestAnthropicTranslation:
 
     def test_translate_messages_tool_call(self):
         msgs = [
-            {"role": "assistant", "content": None, "tool_calls": [{
-                "id": "tc1",
-                "function": {"name": "get_weather", "arguments": '{"city": "NYC"}'},
-            }]},
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "tc1",
+                        "function": {"name": "get_weather", "arguments": '{"city": "NYC"}'},
+                    }
+                ],
+            },
             {"role": "tool", "tool_call_id": "tc1", "content": "72°F"},
         ]
         result = self.mod._translate_messages(msgs)
@@ -134,14 +150,16 @@ class TestAnthropicTranslation:
         assert len(result[0]["content"]) == 2
 
     def test_translate_tools(self):
-        tools = [{
-            "type": "function",
-            "function": {
-                "name": "get_weather",
-                "description": "Get weather",
-                "parameters": {"type": "object", "properties": {"city": {"type": "string"}}},
-            },
-        }]
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get weather",
+                    "parameters": {"type": "object", "properties": {"city": {"type": "string"}}},
+                },
+            }
+        ]
         result = self.mod._translate_tools(tools)
         assert len(result) == 1
         assert result[0]["name"] == "get_weather"
@@ -175,8 +193,15 @@ class TestAnthropicTranslation:
     def test_build_request_kwargs_strips_openai_params(self):
         msgs = [{"role": "user", "content": "Hi"}]
         req = self.mod._build_request_kwargs(
-            "claude-sonnet-4-20250514", msgs, False, None, None,
-            frequency_penalty=0.5, presence_penalty=0.5, seed=42, n=1,
+            "claude-sonnet-4-20250514",
+            msgs,
+            False,
+            None,
+            None,
+            frequency_penalty=0.5,
+            presence_penalty=0.5,
+            seed=42,
+            n=1,
         )
         assert "frequency_penalty" not in req
         assert "presence_penalty" not in req
@@ -188,13 +213,16 @@ class TestAnthropicTranslation:
 # Anthropic error mapping
 # ---------------------------------------------------------------------------
 
+
 class TestAnthropicErrorMapping:
     def setup_method(self):
         from litelm.providers import _anthropic
+
         self.mod = _anthropic
 
     def test_context_window_prompt_too_long(self):
         from litelm._exceptions import ContextWindowExceededError
+
         sdk = self.mod._get_sdk()
         err = sdk.BadRequestError(
             message="prompt is too long",
@@ -206,6 +234,7 @@ class TestAnthropicErrorMapping:
 
     def test_context_window_max_tokens(self):
         from litelm._exceptions import ContextWindowExceededError
+
         sdk = self.mod._get_sdk()
         err = sdk.BadRequestError(
             message="max token limit exceeded",
@@ -217,6 +246,7 @@ class TestAnthropicErrorMapping:
 
     def test_bad_request_no_context_window(self):
         from litelm._exceptions import BadRequestError
+
         sdk = self.mod._get_sdk()
         err = sdk.BadRequestError(
             message="invalid model parameter",
@@ -231,9 +261,11 @@ class TestAnthropicErrorMapping:
 # Cloudflare translation unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestCloudflareTranslation:
     def setup_method(self):
         from litelm.providers import _cloudflare
+
         self.mod = _cloudflare
 
     def test_build_url(self):
@@ -290,9 +322,11 @@ class TestCloudflareTranslation:
 # Mistral translation unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestMistralTransforms:
     def setup_method(self):
         from litelm.providers import _mistral
+
         self.mod = _mistral
 
     def test_transform_messages_strips_name_from_user(self):
@@ -349,9 +383,11 @@ class TestMistralTransforms:
 # Bedrock unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestBedrockHelpers:
     def setup_method(self):
         from litelm.providers import _bedrock
+
         self.mod = _bedrock
 
     def test_get_bedrock_url_default_region(self):

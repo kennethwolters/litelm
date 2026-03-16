@@ -1,6 +1,13 @@
 name: Tests
 on: [push, pull_request]
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uvx ruff check litelm/ tests/ --exclude tests/ported
+      - run: uvx ruff format --check litelm/ tests/ --exclude tests/ported
   test:
     runs-on: ubuntu-latest
     strategy:

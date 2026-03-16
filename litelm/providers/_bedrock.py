@@ -7,9 +7,9 @@ import os
 import threading
 
 from litelm._exceptions import (
-    AuthenticationError,
     APIConnectionError,
     APIStatusError,
+    AuthenticationError,
     BadRequestError,
     ContextWindowExceededError,
     InternalServerError,
@@ -27,22 +27,20 @@ from litelm._types import ModelResponse, ModelResponseStream
 def _get_boto3():
     try:
         import boto3
+
         return boto3
     except ImportError:
-        raise ImportError(
-            "boto3 is required for bedrock/ models. "
-            "Install it with: pip install litelm[bedrock]"
-        )
+        raise ImportError("boto3 is required for bedrock/ models. Install it with: pip install litelm[bedrock]")
 
 
 def _require_openai():
     try:
         import openai
+
         return openai
     except ImportError:
         raise ImportError(
-            "The openai SDK is required for bedrock/ models. "
-            "Install it with: pip install litelm[bedrock]"
+            "The openai SDK is required for bedrock/ models. Install it with: pip install litelm[bedrock]"
         )
 
 
@@ -73,10 +71,10 @@ def _create_openai_client(base_url, region, async_client):
     """Create a new OpenAI client with Bedrock SigV4 auth."""
     openai = _require_openai()
     _get_boto3()
-    from botocore.auth import SigV4Auth
-    from botocore.awsrequest import AWSRequest
     import botocore.session
     import httpx
+    from botocore.auth import SigV4Auth
+    from botocore.awsrequest import AWSRequest
 
     session = botocore.session.get_session()
     credentials = session.get_credentials()
@@ -123,13 +121,9 @@ def _map_error(e):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
-        raise BadRequestError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise BadRequestError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, openai.RateLimitError):
-        raise RateLimitError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise RateLimitError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, openai.AuthenticationError):
         raise AuthenticationError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
@@ -143,9 +137,7 @@ def _map_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, openai.NotFoundError):
-        raise NotFoundError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise NotFoundError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, openai.PermissionDeniedError):
         raise PermissionDeniedError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
@@ -155,9 +147,7 @@ def _map_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, openai.APIStatusError):
-        raise APIStatusError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise APIStatusError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     raise LitelmError(message=msg) from e
 
 

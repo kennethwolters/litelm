@@ -2,7 +2,9 @@
 
 import json
 import os
+
 import pytest
+
 import litelm
 
 
@@ -58,10 +60,7 @@ def assert_stream_contract(chunks):
         assert hasattr(chunk, "choices")
 
     # at least one chunk should have text content
-    has_content = any(
-        chunk.choices and chunk.choices[0].delta.content
-        for chunk in chunks
-    )
+    has_content = any(chunk.choices and chunk.choices[0].delta.content for chunk in chunks)
     assert has_content, "no chunk contained text content"
 
 
@@ -137,6 +136,7 @@ def test_openrouter_basic_completion():
 # Streaming tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
 def test_openai_streaming():
@@ -148,10 +148,14 @@ def test_openai_streaming():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
 def test_openai_streaming_with_usage():
-    chunks = list(litelm.completion(
-        "openai/gpt-4o-mini", messages=MESSAGES, stream=True,
-        stream_options={"include_usage": True},
-    ))
+    chunks = list(
+        litelm.completion(
+            "openai/gpt-4o-mini",
+            messages=MESSAGES,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+    )
     assert_stream_contract(chunks)
     response = assert_stream_reassembly(chunks, require_usage=True)
     # total_tokens consistency: accumulation must not double-count
@@ -161,10 +165,14 @@ def test_openai_streaming_with_usage():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_streaming_with_usage():
-    chunks = list(litelm.completion(
-        "groq/llama-3.1-8b-instant", messages=MESSAGES, stream=True,
-        stream_options={"include_usage": True},
-    ))
+    chunks = list(
+        litelm.completion(
+            "groq/llama-3.1-8b-instant",
+            messages=MESSAGES,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+    )
     assert_stream_contract(chunks)
     response = assert_stream_reassembly(chunks, require_usage=True)
     assert response.usage.total_tokens == response.usage.prompt_tokens + response.usage.completion_tokens
@@ -173,10 +181,14 @@ def test_groq_streaming_with_usage():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("MISTRAL_API_KEY"), reason="no MISTRAL_API_KEY")
 def test_mistral_streaming_with_usage():
-    chunks = list(litelm.completion(
-        "mistral/mistral-small-latest", messages=MESSAGES, stream=True,
-        stream_options={"include_usage": True},
-    ))
+    chunks = list(
+        litelm.completion(
+            "mistral/mistral-small-latest",
+            messages=MESSAGES,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+    )
     assert_stream_contract(chunks)
     response = assert_stream_reassembly(chunks, require_usage=True)
     assert response.usage.total_tokens == response.usage.prompt_tokens + response.usage.completion_tokens
@@ -185,10 +197,14 @@ def test_mistral_streaming_with_usage():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("XAI_API_KEY"), reason="no XAI_API_KEY")
 def test_xai_streaming_with_usage():
-    chunks = list(litelm.completion(
-        "xai/grok-3-mini-fast", messages=MESSAGES, stream=True,
-        stream_options={"include_usage": True},
-    ))
+    chunks = list(
+        litelm.completion(
+            "xai/grok-3-mini-fast",
+            messages=MESSAGES,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+    )
     assert_stream_contract(chunks)
     response = assert_stream_reassembly(chunks, require_usage=True)
     # xAI reasoning models: total_tokens includes reasoning tokens not in prompt+completion
@@ -198,10 +214,14 @@ def test_xai_streaming_with_usage():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENROUTER_API_KEY"), reason="no OPENROUTER_API_KEY")
 def test_openrouter_streaming_with_usage():
-    chunks = list(litelm.completion(
-        "openrouter/meta-llama/llama-3.1-8b-instruct", messages=MESSAGES, stream=True,
-        stream_options={"include_usage": True},
-    ))
+    chunks = list(
+        litelm.completion(
+            "openrouter/meta-llama/llama-3.1-8b-instruct",
+            messages=MESSAGES,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+    )
     assert_stream_contract(chunks)
     response = assert_stream_reassembly(chunks, require_usage=True)
     assert response.usage.total_tokens == response.usage.prompt_tokens + response.usage.completion_tokens
@@ -252,6 +272,7 @@ def test_openrouter_streaming():
 # Chunk-level usage verification
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
 def test_openai_stream_chunks_no_usage_without_opt_in():
@@ -295,18 +316,20 @@ def test_anthropic_stream_chunks_split_usage():
 # ---------------------------------------------------------------------------
 
 TOOL_MESSAGES = [{"role": "user", "content": "What is the weather in Paris?"}]
-TOOLS = [{
-    "type": "function",
-    "function": {
-        "name": "get_weather",
-        "description": "Get current weather for a city",
-        "parameters": {
-            "type": "object",
-            "properties": {"city": {"type": "string", "description": "City name"}},
-            "required": ["city"],
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Get current weather for a city",
+            "parameters": {
+                "type": "object",
+                "properties": {"city": {"type": "string", "description": "City name"}},
+                "required": ["city"],
+            },
         },
-    },
-}]
+    }
+]
 
 
 def assert_tool_call_contract(response):
@@ -347,12 +370,15 @@ def assert_stream_tool_call_contract(chunks):
     return response
 
 
+_TOOL_KW = dict(messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required")
+
 # --- Non-streaming tool calls ---
+
 
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
 def test_openai_tool_call():
-    response = litelm.completion("openai/gpt-4o-mini", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required")
+    response = litelm.completion("openai/gpt-4o-mini", **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
@@ -360,7 +386,7 @@ def test_openai_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_tool_call():
-    response = litelm.completion("anthropic/claude-3-haiku-20240307", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required")
+    response = litelm.completion("anthropic/claude-3-haiku-20240307", **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
@@ -368,7 +394,7 @@ def test_anthropic_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_tool_call():
-    response = litelm.completion("groq/llama-3.3-70b-versatile", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required")
+    response = litelm.completion("groq/llama-3.3-70b-versatile", **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
@@ -376,7 +402,7 @@ def test_groq_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("MISTRAL_API_KEY"), reason="no MISTRAL_API_KEY")
 def test_mistral_tool_call():
-    response = litelm.completion("mistral/mistral-small-latest", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required")
+    response = litelm.completion("mistral/mistral-small-latest", **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
@@ -384,7 +410,7 @@ def test_mistral_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("XAI_API_KEY"), reason="no XAI_API_KEY")
 def test_xai_tool_call():
-    response = litelm.completion("xai/grok-3-mini-fast", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required")
+    response = litelm.completion("xai/grok-3-mini-fast", **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
@@ -392,17 +418,18 @@ def test_xai_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENROUTER_API_KEY"), reason="no OPENROUTER_API_KEY")
 def test_openrouter_tool_call():
-    response = litelm.completion("openrouter/openai/gpt-4o-mini", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required")
+    response = litelm.completion("openrouter/openai/gpt-4o-mini", **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
 
 # --- Streaming tool calls ---
 
+
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
 def test_openai_streaming_tool_call():
-    chunks = list(litelm.completion("openai/gpt-4o-mini", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required", stream=True))
+    chunks = list(litelm.completion("openai/gpt-4o-mini", **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -411,7 +438,7 @@ def test_openai_streaming_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_streaming_tool_call():
-    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required", stream=True))
+    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -420,7 +447,7 @@ def test_anthropic_streaming_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_streaming_tool_call():
-    chunks = list(litelm.completion("groq/llama-3.3-70b-versatile", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required", stream=True))
+    chunks = list(litelm.completion("groq/llama-3.3-70b-versatile", **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -429,7 +456,7 @@ def test_groq_streaming_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("MISTRAL_API_KEY"), reason="no MISTRAL_API_KEY")
 def test_mistral_streaming_tool_call():
-    chunks = list(litelm.completion("mistral/mistral-small-latest", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required", stream=True))
+    chunks = list(litelm.completion("mistral/mistral-small-latest", **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -438,7 +465,7 @@ def test_mistral_streaming_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("XAI_API_KEY"), reason="no XAI_API_KEY")
 def test_xai_streaming_tool_call():
-    chunks = list(litelm.completion("xai/grok-3-mini-fast", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required", stream=True))
+    chunks = list(litelm.completion("xai/grok-3-mini-fast", **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -447,7 +474,7 @@ def test_xai_streaming_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENROUTER_API_KEY"), reason="no OPENROUTER_API_KEY")
 def test_openrouter_streaming_tool_call():
-    chunks = list(litelm.completion("openrouter/openai/gpt-4o-mini", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required", stream=True))
+    chunks = list(litelm.completion("openrouter/openai/gpt-4o-mini", **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -455,11 +482,12 @@ def test_openrouter_streaming_tool_call():
 
 # --- Anthropic chunk-level tool call inspection ---
 
+
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_stream_tool_call_chunks():
     """Inspect Anthropic streaming tool call chunks: content_block_start has id+name, deltas have args."""
-    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", messages=TOOL_MESSAGES, tools=TOOLS, tool_choice="required", stream=True))
+    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", **_TOOL_KW, stream=True))
 
     tc_chunks = [(i, c) for i, c in enumerate(chunks) if c.choices and c.choices[0].delta.tool_calls]
     print(f"tool_call chunks: {len(tc_chunks)} at indices {[i for i, _ in tc_chunks]}")
@@ -478,6 +506,7 @@ def test_anthropic_stream_tool_call_chunks():
 # ---------------------------------------------------------------------------
 # Embedding tests
 # ---------------------------------------------------------------------------
+
 
 def assert_embedding_contract(response):
     """Verify the exact shape DSPy reads from embedding responses."""
@@ -510,6 +539,7 @@ def test_mistral_embedding():
 # ContextWindowExceededError tests
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
 def test_openai_context_window_error():
@@ -532,7 +562,7 @@ def test_anthropic_context_window_error():
     and DSPy only catches this exception to retry with shorter prompts.
     """
     try:
-        response = litelm.completion(
+        litelm.completion(
             "anthropic/claude-3-haiku-20240307",
             messages=MESSAGES,
             max_tokens=20_000,
@@ -546,6 +576,7 @@ def test_anthropic_context_window_error():
 # ---------------------------------------------------------------------------
 # Text completion tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")

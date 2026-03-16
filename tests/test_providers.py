@@ -8,20 +8,36 @@ from litelm._providers import PROVIDERS, parse_model
 
 def test_known_providers_exist():
     expected = [
-        "openai", "azure", "openrouter", "groq", "together_ai", "together",
-        "fireworks_ai", "fireworks", "mistral", "deepseek", "perplexity",
-        "xai", "deepinfra", "gemini", "google", "cohere",
-        "anthropic", "bedrock", "cloudflare",
-        "ollama", "vllm", "lm_studio", "lmstudio",
+        "openai",
+        "azure",
+        "openrouter",
+        "groq",
+        "together_ai",
+        "together",
+        "fireworks_ai",
+        "fireworks",
+        "mistral",
+        "deepseek",
+        "perplexity",
+        "xai",
+        "deepinfra",
+        "gemini",
+        "google",
+        "cohere",
+        "anthropic",
+        "bedrock",
+        "cloudflare",
+        "ollama",
+        "vllm",
+        "lm_studio",
+        "lmstudio",
     ]
     for p in expected:
         assert p in PROVIDERS, f"Missing provider: {p}"
 
 
 def test_parse_openai_prefixed():
-    provider, model, base_url, api_key, api_version = parse_model(
-        "openai/gpt-4o", api_key="sk-test"
-    )
+    provider, model, base_url, api_key, api_version = parse_model("openai/gpt-4o", api_key="sk-test")
     assert provider == "openai"
     assert model == "gpt-4o"
     assert base_url is None  # OpenAI uses default
@@ -45,10 +61,13 @@ def test_parse_groq():
 
 
 def test_parse_azure():
-    with mock.patch.dict(os.environ, {
-        "AZURE_API_BASE": "https://my-resource.openai.azure.com",
-        "AZURE_API_KEY": "az-key",
-    }):
+    with mock.patch.dict(
+        os.environ,
+        {
+            "AZURE_API_BASE": "https://my-resource.openai.azure.com",
+            "AZURE_API_KEY": "az-key",
+        },
+    ):
         provider, model, base_url, api_key, api_version = parse_model("azure/gpt-4o")
     assert provider == "azure"
     assert model == "gpt-4o"

@@ -4,12 +4,12 @@ from litelm._types import (
     ChatCompletionMessage,
     ChoiceDelta,
     Choices,
+    Delta,
     Message,
     ModelResponse,
     ModelResponseStream,
     StreamingChoices,
     Usage,
-    Delta,
     _to_dict,
 )
 
@@ -77,7 +77,7 @@ def test_streaming_choices_defaults():
 
 
 def test_chat_completion_message_has_slots():
-    assert hasattr(ChatCompletionMessage, '__slots__')
+    assert hasattr(ChatCompletionMessage, "__slots__")
     msg = ChatCompletionMessage(content="hi", reasoning_content="think")
     assert msg.reasoning_content == "think"
 
@@ -88,7 +88,7 @@ def test_chat_completion_message_reasoning_defaults_none():
 
 
 def test_choice_delta_has_slots():
-    assert hasattr(ChoiceDelta, '__slots__')
+    assert hasattr(ChoiceDelta, "__slots__")
     d = ChoiceDelta(content="hi", reasoning_content="think")
     assert d.reasoning_content == "think"
 
@@ -113,9 +113,11 @@ def test_model_response_model_dump():
 
 
 def test_chat_completion_model_dump():
-    from litelm._types import ChatCompletion, Choice, ChatCompletionMessage, CompletionUsage
+    from litelm._types import ChatCompletion, ChatCompletionMessage, Choice, CompletionUsage
+
     c = ChatCompletion(
-        id="test", model="gpt-4o",
+        id="test",
+        model="gpt-4o",
         choices=[Choice(index=0, message=ChatCompletionMessage(content="hi"), finish_reason="stop")],
         usage=CompletionUsage(prompt_tokens=1, completion_tokens=2, total_tokens=3),
     )
@@ -126,10 +128,12 @@ def test_chat_completion_model_dump():
 
 
 def test_model_response_coerces_dict_choices():
-    r = ModelResponse(choices=[
-        {"message": {"content": "a", "role": "assistant"}, "finish_reason": "stop", "index": 0},
-        {"message": {"content": "b"}, "index": 1},
-    ])
+    r = ModelResponse(
+        choices=[
+            {"message": {"content": "a", "role": "assistant"}, "finish_reason": "stop", "index": 0},
+            {"message": {"content": "b"}, "index": 1},
+        ]
+    )
     assert r.choices[0].message.content == "a"
     assert r.choices[1].message.content == "b"
     assert r.choices[1].finish_reason == "stop"  # default

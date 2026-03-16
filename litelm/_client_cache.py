@@ -11,12 +11,10 @@ def _require_openai():
     """Import openai SDK or raise a clear error."""
     try:
         import openai
+
         return openai
     except ImportError:
-        raise ImportError(
-            "The openai SDK is required for this provider. "
-            "Install it with: pip install litelm[openai]"
-        )
+        raise ImportError("The openai SDK is required for this provider. Install it with: pip install litelm[openai]")
 
 
 def get_sync_client(provider, base_url, api_key, max_retries=0, api_version=None):

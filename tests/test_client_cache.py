@@ -1,14 +1,9 @@
 """Tests for the client cache module."""
 
-import asyncio
-import threading
-from unittest import mock
-
 import pytest
 
 from litelm._client_cache import (
     _async_clients,
-    _lock,
     _sync_clients,
     close_async_clients,
     get_async_client,
@@ -76,6 +71,7 @@ def test_async_client_cache_hit():
 def test_azure_sync_client():
     """Azure provider creates AzureOpenAI client."""
     import openai
+
     client = get_sync_client("azure", "https://my.azure.com", "sk-az", api_version="2024-02-01")
     assert isinstance(client, openai.AzureOpenAI)
 
@@ -83,6 +79,7 @@ def test_azure_sync_client():
 def test_azure_async_client():
     """Azure provider creates AsyncAzureOpenAI client."""
     import openai
+
     client = get_async_client("azure", "https://my.azure.com", "sk-az", api_version="2024-02-01")
     assert isinstance(client, openai.AsyncAzureOpenAI)
 

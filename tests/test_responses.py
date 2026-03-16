@@ -3,7 +3,7 @@
 import asyncio
 from unittest import mock
 
-from litelm._responses import responses, aresponses
+from litelm._responses import aresponses, responses
 
 
 @mock.patch("litelm._responses.get_sync_client")
@@ -36,7 +36,8 @@ def test_responses_num_retries(mock_get_client):
 
     responses("openai/gpt-4o", input="hi", num_retries=5, api_key="sk-test")
     mock_get_client.assert_called_once()
-    assert mock_get_client.call_args.kwargs.get("max_retries") == 5 or mock_get_client.call_args[1].get("max_retries") == 5
+    ca = mock_get_client.call_args
+    assert ca.kwargs.get("max_retries") == 5 or ca[1].get("max_retries") == 5
 
 
 @mock.patch("litelm._responses.get_handler")

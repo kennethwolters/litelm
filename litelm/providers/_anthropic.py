@@ -9,9 +9,9 @@ import os
 import time
 
 from litelm._exceptions import (
-    AuthenticationError,
     APIConnectionError,
     APIStatusError,
+    AuthenticationError,
     BadRequestError,
     ContextWindowExceededError,
     InternalServerError,
@@ -24,14 +24,14 @@ from litelm._exceptions import (
 )
 from litelm._types import (
     ChatCompletion,
+    ChatCompletionChunk,
     ChatCompletionMessage,
     ChatCompletionMessageToolCall,
-    ChatCompletionChunk,
     Choice,
-    ChunkChoice,
     ChoiceDelta,
     ChoiceDeltaToolCall,
     ChoiceDeltaToolCallFunction,
+    ChunkChoice,
     CompletionUsage,
     Function,
     ModelResponse,
@@ -46,11 +46,11 @@ def _get_sdk():
     if _SDK is None:
         try:
             import anthropic
+
             _SDK = anthropic
         except ImportError:
             raise ImportError(
-                "The anthropic SDK is required for anthropic/ models. "
-                "Install it with: pip install litelm[anthropic]"
+                "The anthropic SDK is required for anthropic/ models. Install it with: pip install litelm[anthropic]"
             )
     return _SDK
 
@@ -58,6 +58,7 @@ def _get_sdk():
 # ---------------------------------------------------------------------------
 # Request translation: OpenAI → Anthropic
 # ---------------------------------------------------------------------------
+
 
 def _extract_system(messages):
     """Separate system messages from the conversation."""
@@ -99,19 +100,23 @@ def _translate_content(content):
                 if url.startswith("data:"):
                     media_type, _, b64_data = url.partition(";base64,")
                     media_type = media_type.replace("data:", "")
-                    blocks.append({
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": media_type,
-                            "data": b64_data,
-                        },
-                    })
+                    blocks.append(
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": b64_data,
+                            },
+                        }
+                    )
                 else:
-                    blocks.append({
-                        "type": "image",
-                        "source": {"type": "url", "url": url},
-                    })
+                    blocks.append(
+                        {
+                            "type": "image",
+                            "source": {"type": "url", "url": url},
+                        }
+                    )
             else:
                 blocks.append(part)
     return blocks
@@ -134,24 +139,30 @@ def _translate_messages(messages):
                         args = json.loads(args_str)
                     except (json.JSONDecodeError, TypeError):
                         args = {"raw": args_str}
-                    blocks.append({
-                        "type": "tool_use",
-                        "id": tc.get("id", ""),
-                        "name": fn.get("name", ""),
-                        "input": args,
-                    })
+                    blocks.append(
+                        {
+                            "type": "tool_use",
+                            "id": tc.get("id", ""),
+                            "name": fn.get("name", ""),
+                            "input": args,
+                        }
+                    )
             result.append({"role": "assistant", "content": blocks or [{"type": "text", "text": ""}]})
         elif role == "tool":
             tool_call_id = msg.get("tool_call_id", "")
             content = msg.get("content", "")
-            result.append({
-                "role": "user",
-                "content": [{
-                    "type": "tool_result",
-                    "tool_use_id": tool_call_id,
-                    "content": content if isinstance(content, str) else json.dumps(content),
-                }],
-            })
+            result.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": tool_call_id,
+                            "content": content if isinstance(content, str) else json.dumps(content),
+                        }
+                    ],
+                }
+            )
         elif role == "user":
             blocks = _translate_content(msg.get("content"))
             result.append({"role": "user", "content": blocks})
@@ -184,11 +195,13 @@ def _translate_tools(tools):
     for tool in tools:
         if tool.get("type") == "function":
             fn = tool["function"]
-            anthropic_tools.append({
-                "name": fn["name"],
-                "description": fn.get("description", ""),
-                "input_schema": fn.get("parameters", {"type": "object", "properties": {}}),
-            })
+            anthropic_tools.append(
+                {
+                    "name": fn["name"],
+                    "description": fn.get("description", ""),
+                    "input_schema": fn.get("parameters", {"type": "object", "properties": {}}),
+                }
+            )
     return anthropic_tools or None
 
 
@@ -260,8 +273,16 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
     if thinking:
         req["thinking"] = thinking
 
-    for drop in ("frequency_penalty", "presence_penalty", "seed", "logprobs",
-                 "top_logprobs", "n", "extra_headers", "response_format"):
+    for drop in (
+        "frequency_penalty",
+        "presence_penalty",
+        "seed",
+        "logprobs",
+        "top_logprobs",
+        "n",
+        "extra_headers",
+        "response_format",
+    ):
         kwargs.pop(drop, None)
 
     extra_headers = kwargs.pop("extra_headers", None)
@@ -287,6 +308,7 @@ def _get_client(api_key, base_url, async_client=False):
 # Response translation: Anthropic → OpenAI
 # ---------------------------------------------------------------------------
 
+
 def _build_model_response(response):
     """Convert an Anthropic Message to a ModelResponse (OpenAI ChatCompletion format)."""
     content_text = ""
@@ -297,14 +319,16 @@ def _build_model_response(response):
         if block.type == "text":
             content_text += block.text
         elif block.type == "tool_use":
-            tool_calls.append(ChatCompletionMessageToolCall(
-                id=block.id,
-                type="function",
-                function=Function(
-                    name=block.name,
-                    arguments=json.dumps(block.input) if isinstance(block.input, dict) else str(block.input),
-                ),
-            ))
+            tool_calls.append(
+                ChatCompletionMessageToolCall(
+                    id=block.id,
+                    type="function",
+                    function=Function(
+                        name=block.name,
+                        arguments=json.dumps(block.input) if isinstance(block.input, dict) else str(block.input),
+                    ),
+                )
+            )
         elif block.type == "thinking":
             reasoning_content += block.thinking
 
@@ -378,7 +402,12 @@ def _build_stream_chunk(event, model, chunk_id):
                 )
             ]
     elif event_type == "message_delta":
-        stop_reason_map = {"end_turn": "stop", "stop_sequence": "stop", "max_tokens": "length", "tool_use": "tool_calls"}
+        stop_reason_map = {
+            "end_turn": "stop",
+            "stop_sequence": "stop",
+            "max_tokens": "length",
+            "tool_use": "tool_calls",
+        }
         finish_reason = stop_reason_map.get(event.delta.stop_reason, "stop")
         if hasattr(event, "usage") and event.usage:
             usage = CompletionUsage(
@@ -417,6 +446,7 @@ def _build_stream_chunk(event, model, chunk_id):
 # Error mapping
 # ---------------------------------------------------------------------------
 
+
 def _map_error(e):
     """Map anthropic SDK exceptions to litelm exception types."""
     sdk = _get_sdk()
@@ -427,17 +457,13 @@ def _map_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, sdk.RateLimitError):
-        raise RateLimitError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise RateLimitError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, sdk.BadRequestError):
         if is_context_window_error(msg):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
-        raise BadRequestError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise BadRequestError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, sdk.APITimeoutError):
         raise Timeout(request=getattr(e, "request", None)) from e
     elif isinstance(e, sdk.APIConnectionError):
@@ -447,9 +473,7 @@ def _map_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, sdk.NotFoundError):
-        raise NotFoundError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise NotFoundError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, sdk.PermissionDeniedError):
         raise PermissionDeniedError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
@@ -459,15 +483,14 @@ def _map_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, sdk.APIStatusError):
-        raise APIStatusError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise APIStatusError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     raise e
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
     """Synchronous Anthropic chat completion."""

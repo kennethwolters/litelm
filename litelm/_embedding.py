@@ -8,6 +8,7 @@ from litelm._providers import parse_model
 
 class _EmbeddingItem:
     """Wraps SDK Embedding to support both attribute and dict access (DSPy uses data[i]["embedding"])."""
+
     __slots__ = ("_item",)
 
     def __init__(self, item):
@@ -24,6 +25,7 @@ class _EmbeddingItem:
 
 class EmbeddingResponse:
     """Wraps SDK CreateEmbeddingResponse with dict-access on data items."""
+
     __slots__ = ("_response", "data")
 
     def __init__(self, response):
@@ -37,8 +39,7 @@ class EmbeddingResponse:
         return getattr(self._response, name)
 
 
-def embedding(model, input, *, timeout=None, caching=False,
-              shared_session: "ClientSession | None" = None, **kwargs):
+def embedding(model, input, *, timeout=None, caching=False, shared_session=None, **kwargs):
     """Synchronous embedding call."""
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
@@ -63,8 +64,7 @@ def embedding(model, input, *, timeout=None, caching=False,
         _map_openai_error(e)
 
 
-async def aembedding(model, input, *, timeout=None, caching=False,
-                     shared_session: "ClientSession | None" = None, **kwargs):
+async def aembedding(model, input, *, timeout=None, caching=False, shared_session=None, **kwargs):
     """Async embedding call."""
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)

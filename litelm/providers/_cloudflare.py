@@ -9,8 +9,8 @@ import os
 import time
 
 from litelm._exceptions import (
-    AuthenticationError,
     APIStatusError,
+    AuthenticationError,
     BadRequestError,
     InternalServerError,
     NotFoundError,
@@ -20,11 +20,11 @@ from litelm._exceptions import (
 )
 from litelm._types import (
     ChatCompletion,
-    ChatCompletionMessage,
     ChatCompletionChunk,
+    ChatCompletionMessage,
     Choice,
-    ChunkChoice,
     ChoiceDelta,
+    ChunkChoice,
     CompletionUsage,
     ModelResponse,
     ModelResponseStream,
@@ -68,9 +68,19 @@ def _build_request_body(messages, **kwargs):
         body["stream"] = True
 
     # Drop unsupported params
-    for drop in ("tools", "tool_choice", "response_format", "frequency_penalty",
-                 "presence_penalty", "seed", "logprobs", "top_logprobs", "n",
-                 "stop", "extra_headers"):
+    for drop in (
+        "tools",
+        "tool_choice",
+        "response_format",
+        "frequency_penalty",
+        "presence_penalty",
+        "seed",
+        "logprobs",
+        "top_logprobs",
+        "n",
+        "stop",
+        "extra_headers",
+    ):
         kwargs.pop(drop, None)
 
     return body, stream

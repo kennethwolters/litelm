@@ -5,7 +5,6 @@ __version__ = "0.3.0"
 from litelm._client_cache import close_async_clients as close_litelm_async_clients
 from litelm._completion import acompletion, completion, mock_completion, stream_chunk_builder
 from litelm._embedding import aembedding, embedding
-from litelm._text_completion import atext_completion, text_completion
 from litelm._exceptions import (
     LITELLM_EXCEPTION_TYPES,
     APIConnectionError,
@@ -24,6 +23,7 @@ from litelm._exceptions import (
     UnprocessableEntityError,
 )
 from litelm._responses import aresponses, responses
+from litelm._text_completion import atext_completion, text_completion
 from litelm._types import (
     ChatCompletionMessageToolCall,
     Choices,
@@ -92,7 +92,6 @@ def get_supported_openai_params(model=None, custom_llm_provider=None, **kwargs):
     ]
 
 
-
 # DSPy compatibility — sets these at startup
 telemetry = False
 cache = None
@@ -103,6 +102,7 @@ add_function_to_prompt = False
 def get_llm_provider(model, custom_llm_provider=None, api_base=None, api_key=None):
     """Resolve provider from model string. Returns (model, provider, api_key, api_base)."""
     from litelm._providers import parse_model
+
     kwargs = {}
     if api_base:
         kwargs["api_base"] = api_base
@@ -115,7 +115,9 @@ def get_llm_provider(model, custom_llm_provider=None, api_base=None, api_key=Non
 def get_secret(secret_name, **kwargs):
     """Retrieve secret from env var."""
     import os
+
     return os.environ.get(secret_name)
+
 
 __all__ = [
     "acompletion",
@@ -127,15 +129,21 @@ __all__ = [
     "AuthenticationError",
     "BadGatewayError",
     "BadRequestError",
+    "ChatCompletionMessageToolCall",
+    "Choices",
     "close_litelm_async_clients",
     "ContentPolicyViolationError",
     "completion",
     "ContextWindowExceededError",
+    "Delta",
     "embedding",
+    "Function",
     "get_llm_provider",
     "get_secret",
     "get_supported_openai_params",
     "InternalServerError",
+    "LITELLM_EXCEPTION_TYPES",
+    "Message",
     "mock_completion",
     "ModelResponse",
     "ModelResponseStream",
@@ -143,7 +151,9 @@ __all__ = [
     "PermissionDeniedError",
     "RateLimitError",
     "ServiceUnavailableError",
+    "StreamingChoices",
     "UnprocessableEntityError",
+    "Usage",
     "responses",
     "stream_chunk_builder",
     "supports_function_calling",

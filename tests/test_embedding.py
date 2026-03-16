@@ -3,7 +3,7 @@
 import asyncio
 from unittest import mock
 
-from litelm._embedding import embedding, aembedding
+from litelm._embedding import aembedding, embedding
 
 
 @mock.patch("litelm._embedding.get_sync_client")

@@ -1,6 +1,7 @@
 """Tests for Bedrock error mapping — openai exceptions → litelm exceptions."""
 
 from unittest import mock
+
 import pytest
 
 from litelm._exceptions import (
@@ -31,6 +32,7 @@ def _make_openai_error(cls_name, message="test error"):
 class TestBedrockErrorMapping:
     def setup_method(self):
         from litelm.providers import _bedrock
+
         self.mod = _bedrock
 
     def test_bad_request_maps(self):

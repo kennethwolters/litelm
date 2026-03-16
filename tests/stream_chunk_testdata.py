@@ -3,20 +3,28 @@
 Streaming chunks from Claude 3.5 Sonnet: text content + tool call (sql_query).
 """
 
+from litelm import ModelResponseStream
 from litelm._types import (
+    ChatCompletionChunk,
     ChoiceDelta,
     ChoiceDeltaToolCall,
     ChoiceDeltaToolCallFunction,
     ChunkChoice,
-    ChatCompletionChunk,
 )
-from litelm import ModelResponseStream
+
+_DEFAULT_ID = "chatcmpl-634a6ad3-483a-44a1-8cdd-3befbeb4ac2f"
 
 
-def _chunk(content="", role=None, tool_calls=None, finish_reason=None, id="chatcmpl-634a6ad3-483a-44a1-8cdd-3befbeb4ac2f", created=1722656356):
+def _chunk(content="", role=None, tool_calls=None, finish_reason=None, id=_DEFAULT_ID, created=1722656356):
     delta = ChoiceDelta(content=content, role=role, tool_calls=tool_calls)
     choice = ChunkChoice(index=0, delta=delta, finish_reason=finish_reason)
-    raw = ChatCompletionChunk(id=id, choices=[choice], created=created, model="claude-3-5-sonnet-20240620", object="chat.completion.chunk")
+    raw = ChatCompletionChunk(
+        id=id,
+        choices=[choice],
+        created=created,
+        model="claude-3-5-sonnet-20240620",
+        object="chat.completion.chunk",
+    )
     return ModelResponseStream(raw)
 
 

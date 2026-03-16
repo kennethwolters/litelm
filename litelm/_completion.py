@@ -3,9 +3,9 @@
 from litelm._client_cache import get_async_client, get_sync_client
 from litelm._dispatch import get_handler
 from litelm._exceptions import (
-    AuthenticationError,
     APIConnectionError,
     APIStatusError,
+    AuthenticationError,
     BadRequestError,
     ContextWindowExceededError,
     InternalServerError,
@@ -37,6 +37,7 @@ _openai_errors: tuple = ()
 _bad_request_errors = [BadRequestError]
 try:
     import openai as _openai
+
     _bad_request_errors.append(_openai.BadRequestError)
     _openai_errors = (_openai.APIError,)
 except ImportError:
@@ -58,13 +59,9 @@ def _map_openai_error(e):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
-        raise BadRequestError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise BadRequestError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, openai.RateLimitError):
-        raise RateLimitError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise RateLimitError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, openai.AuthenticationError):
         raise AuthenticationError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
@@ -78,9 +75,7 @@ def _map_openai_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, openai.NotFoundError):
-        raise NotFoundError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise NotFoundError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, openai.PermissionDeniedError):
         raise PermissionDeniedError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
@@ -90,10 +85,9 @@ def _map_openai_error(e):
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, openai.APIStatusError):
-        raise APIStatusError(
-            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
-        ) from e
+        raise APIStatusError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     raise LitelmError(message=msg) from e
+
 
 # kwargs that are litellm-specific and must be stripped before passing to OpenAI SDK
 _LITELLM_ONLY_KWARGS = {"cache", "num_retries", "retry_strategy", "caching"}
@@ -135,8 +129,7 @@ def _wrap_context_window_error(e):
     raise e
 
 
-def completion(model, messages=None, *, timeout=None, stream=False,
-               shared_session: "ClientSession | None" = None, **kwargs):
+def completion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
     """Synchronous chat completion."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
@@ -146,21 +139,30 @@ def completion(model, messages=None, *, timeout=None, stream=False,
         content = str(mock) if mock is not True else "This is a mock request"
         if stream:
             return _mock_stream_sync(content, model_name)
-        return ModelResponse(ChatCompletion(
-            id="mock",
-            choices=[Choice(index=i, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop") for i in range(n)],
-            created=0, model=model_name, object="chat.completion",
-            usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
-        ))
+        return ModelResponse(
+            ChatCompletion(
+                id="mock",
+                choices=[
+                    Choice(
+                        index=i, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop"
+                    )
+                    for i in range(n)
+                ],
+                created=0,
+                model=model_name,
+                object="chat.completion",
+                usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+            )
+        )
 
     if n > 1:
         kwargs["n"] = n
 
     handler = get_handler(provider)
     if handler:
-        return handler.completion(model_name, messages, stream=stream,
-                                  api_key=api_key, base_url=base_url,
-                                  timeout=timeout, **kwargs)
+        return handler.completion(
+            model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
+        )
 
     client = get_sync_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
 
@@ -179,8 +181,7 @@ def completion(model, messages=None, *, timeout=None, stream=False,
     return ModelResponse(response)
 
 
-async def acompletion(model, messages=None, *, timeout=None, stream=False,
-                      shared_session: "ClientSession | None" = None, **kwargs):
+async def acompletion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
     """Async chat completion."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
@@ -190,21 +191,30 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False,
         content = str(mock) if mock is not True else "This is a mock request"
         if stream:
             return _mock_stream_async(content, model_name)
-        return ModelResponse(ChatCompletion(
-            id="mock",
-            choices=[Choice(index=i, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop") for i in range(n)],
-            created=0, model=model_name, object="chat.completion",
-            usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
-        ))
+        return ModelResponse(
+            ChatCompletion(
+                id="mock",
+                choices=[
+                    Choice(
+                        index=i, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop"
+                    )
+                    for i in range(n)
+                ],
+                created=0,
+                model=model_name,
+                object="chat.completion",
+                usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
+            )
+        )
 
     if n > 1:
         kwargs["n"] = n
 
     handler = get_handler(provider)
     if handler:
-        return await handler.acompletion(model_name, messages, stream=stream,
-                                         api_key=api_key, base_url=base_url,
-                                         timeout=timeout, **kwargs)
+        return await handler.acompletion(
+            model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
+        )
 
     client = get_async_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
 
@@ -230,22 +240,38 @@ def mock_completion(model, messages, n=1, stream=False, **kwargs):
 
 def _mock_stream_sync(content, model):
     """Yield mock streaming chunks."""
-    yield ModelResponseStream(ChatCompletionChunk(
-        id="mock", model=model, choices=[ChunkChoice(delta=ChoiceDelta(role="assistant", content=content))],
-    ))
-    yield ModelResponseStream(ChatCompletionChunk(
-        id="mock", model=model, choices=[ChunkChoice(finish_reason="stop")],
-    ))
+    yield ModelResponseStream(
+        ChatCompletionChunk(
+            id="mock",
+            model=model,
+            choices=[ChunkChoice(delta=ChoiceDelta(role="assistant", content=content))],
+        )
+    )
+    yield ModelResponseStream(
+        ChatCompletionChunk(
+            id="mock",
+            model=model,
+            choices=[ChunkChoice(finish_reason="stop")],
+        )
+    )
 
 
 async def _mock_stream_async(content, model):
     """Yield mock streaming chunks (async)."""
-    yield ModelResponseStream(ChatCompletionChunk(
-        id="mock", model=model, choices=[ChunkChoice(delta=ChoiceDelta(role="assistant", content=content))],
-    ))
-    yield ModelResponseStream(ChatCompletionChunk(
-        id="mock", model=model, choices=[ChunkChoice(finish_reason="stop")],
-    ))
+    yield ModelResponseStream(
+        ChatCompletionChunk(
+            id="mock",
+            model=model,
+            choices=[ChunkChoice(delta=ChoiceDelta(role="assistant", content=content))],
+        )
+    )
+    yield ModelResponseStream(
+        ChatCompletionChunk(
+            id="mock",
+            model=model,
+            choices=[ChunkChoice(finish_reason="stop")],
+        )
+    )
 
 
 def _wrap_stream_sync(stream):
@@ -263,13 +289,15 @@ async def _wrap_stream_async(stream):
 def stream_chunk_builder(chunks):
     """Build a ModelResponse from a list of ModelResponseStream chunks."""
     if not chunks:
-        return ModelResponse(ChatCompletion(
-            id="empty",
-            choices=[],
-            created=0,
-            model="",
-            object="chat.completion",
-        ))
+        return ModelResponse(
+            ChatCompletion(
+                id="empty",
+                choices=[],
+                created=0,
+                model="",
+                object="chat.completion",
+            )
+        )
 
     # Gather content, tool calls, and usage from chunks
     content_parts = []
@@ -350,7 +378,9 @@ def stream_chunk_builder(chunks):
     images = [v for _, v in sorted(images_by_index.items())] or None
 
     message = ChatCompletionMessage(
-        role=role, content=content, tool_calls=tool_calls,
+        role=role,
+        content=content,
+        tool_calls=tool_calls,
         reasoning_content="".join(reasoning_content_parts) if reasoning_content_parts else None,
         images=images,
     )
