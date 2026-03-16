@@ -2,7 +2,7 @@
 
 import copy
 
-from litelm._text_completion import text_completion, TextCompletionResponse
+from litelm._text_completion import text_completion
 
 
 def test_text_completion_response_deepcopy_usage_assignment():
