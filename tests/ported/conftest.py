@@ -114,6 +114,13 @@ _EXCLUDE_DIRS = [
     # Internal litellm utils (not our code)
     "litellm_core_utils",
     "litellm_utils_tests",
+    # Upstream restructure (2026-03-16) — nested under test_litellm/
+    "integrations",            # opik, datadog, arize, cloudzero, SlackAlerting
+    "interactions",            # Google Interactions API
+    "anthropic_interface",     # litellm.anthropic_interface deep module
+    "google_genai",            # Google GenAI specific
+    "a2a_protocol",            # a2a protocol
+    "experimental_mcp_client", # MCP client
 ]
 
 # Also exclude root-level proxy/config test files
@@ -148,8 +155,14 @@ _EXCLUDE_FILES = [
     "test_gpt5_azure_temperature_support.py",
 ]
 
-import os as _os
-_here = _os.path.dirname(__file__)
+_EXCLUDE_DIRS_SET = frozenset(_EXCLUDE_DIRS)
+_EXCLUDE_FILES_SET = frozenset(_EXCLUDE_FILES)
 
-collect_ignore_glob = [_os.path.join(_here, d, "**") for d in _EXCLUDE_DIRS]
-collect_ignore = [_os.path.join(_here, f) for f in _EXCLUDE_FILES]
+def pytest_ignore_collect(collection_path, config):
+    """Skip dirs/files by basename at any nesting depth."""
+    name = collection_path.name
+    if name in _EXCLUDE_FILES_SET:
+        return True
+    if collection_path.is_dir() and name in _EXCLUDE_DIRS_SET:
+        return True
+    return None

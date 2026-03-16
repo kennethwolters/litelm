@@ -27,6 +27,7 @@ def _to_dict(obj):
 # Tool call types
 # ---------------------------------------------------------------------------
 
+
 class Function:
     __slots__ = ("name", "arguments")
 
@@ -88,6 +89,7 @@ def _coerce_delta_tool_call(d):
 # Usage
 # ---------------------------------------------------------------------------
 
+
 class CompletionUsage:
     __slots__ = ("prompt_tokens", "completion_tokens", "total_tokens")
 
@@ -106,6 +108,7 @@ class CompletionUsage:
 # Non-streaming types
 # ---------------------------------------------------------------------------
 
+
 class ChatCompletionMessage:
     __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images")
 
@@ -113,10 +116,7 @@ class ChatCompletionMessage:
         self.role = role
         self.content = content
         if tool_calls is not None:
-            self.tool_calls = [
-                ChatCompletionMessageToolCall(**tc) if isinstance(tc, dict) else tc
-                for tc in tool_calls
-            ]
+            self.tool_calls = [ChatCompletionMessageToolCall(**tc) if isinstance(tc, dict) else tc for tc in tool_calls]
         else:
             self.tool_calls = tool_calls
         self.reasoning_content = reasoning_content
@@ -161,6 +161,7 @@ class ChatCompletion:
 # Streaming types
 # ---------------------------------------------------------------------------
 
+
 class ChoiceDelta:
     __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images")
 
@@ -168,14 +169,14 @@ class ChoiceDelta:
         self.role = role
         self.content = content
         if tool_calls is not None:
-            self.tool_calls = [
-                _coerce_delta_tool_call(tc) if isinstance(tc, dict) else tc
-                for tc in tool_calls
-            ]
+            self.tool_calls = [_coerce_delta_tool_call(tc) if isinstance(tc, dict) else tc for tc in tool_calls]
         else:
             self.tool_calls = tool_calls
         self.reasoning_content = reasoning_content
         self.images = images
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 class ChunkChoice:
@@ -185,6 +186,9 @@ class ChunkChoice:
         self.index = index
         self.delta = ChoiceDelta(**delta) if isinstance(delta, dict) else (delta or ChoiceDelta())
         self.finish_reason = finish_reason
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 class ChatCompletionChunk:
@@ -209,6 +213,7 @@ class ChatCompletionChunk:
 # Coercion helper
 # ---------------------------------------------------------------------------
 
+
 def _coerce_choice(choice):
     """Coerce a dict to a Choice object, filling in defaults for missing fields."""
     if isinstance(choice, Choice):
@@ -232,6 +237,7 @@ def _coerce_choice(choice):
 # ---------------------------------------------------------------------------
 # Wrapper types with dict-like access
 # ---------------------------------------------------------------------------
+
 
 class ModelResponse:
     """Wraps ChatCompletion with dict-like access and DSPy-expected attrs."""
@@ -311,6 +317,7 @@ class ModelResponseStream:
 # ---------------------------------------------------------------------------
 # Compatibility constructors matching litellm's API
 # ---------------------------------------------------------------------------
+
 
 class Message(ChatCompletionMessage):
     """ChatCompletionMessage with role defaulting to 'assistant'."""

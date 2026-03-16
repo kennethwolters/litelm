@@ -178,7 +178,139 @@ def relevance(bucket: str, testname: str, classname: str) -> str:
     return "high"
 
 
+def parse_xml_to_buckets(xml_path: str) -> dict[str, str]:
+    """Parse JUnit XML into {test_id: bucket} dict."""
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
+    results = {}
+    for suite in root.iter("testsuite"):
+        for tc in suite.iter("testcase"):
+            name = tc.get("name", "unknown")
+            classname = tc.get("classname", "")
+            test_id = f"{classname}::{name}"
+            bucket, _ = classify(tc)
+            results[test_id] = bucket
+    return results
+
+
+def diff_baselines(old_xml: str, new_xml: str, out_dir: str | None = None):
+    """Compare two baseline XMLs and print/write diff report."""
+    old = parse_xml_to_buckets(old_xml)
+    new = parse_xml_to_buckets(new_xml)
+    all_ids = sorted(set(old) | set(new))
+
+    categories = Counter()
+    regressions = []
+    improvements = []
+    new_passes = []
+
+    for tid in all_ids:
+        ob = old.get(tid)
+        nb = new.get(tid)
+        if ob is None:
+            cat = "NEW_PASS" if nb == "passed" else "NEW_TEST"
+            if nb == "passed":
+                new_passes.append(tid)
+        elif nb is None:
+            cat = "REMOVED"
+        elif ob == nb:
+            cat = "STABLE_PASS" if ob == "passed" else "STABLE_FAIL"
+        elif ob == "passed" and nb != "passed":
+            cat = "REGRESSION"
+            regressions.append((tid, ob, nb))
+        elif ob != "passed" and nb == "passed":
+            cat = "IMPROVEMENT"
+            improvements.append((tid, ob, nb))
+        else:
+            cat = "BUCKET_CHANGE"
+        categories[cat] += 1
+
+    # Print report
+    print("=" * 60)
+    print("BASELINE DIFF REPORT")
+    print("=" * 60)
+    print(f"\nOld: {old_xml} ({len(old)} tests)")
+    print(f"New: {new_xml} ({len(new)} tests)")
+    print()
+    for cat in ["STABLE_PASS", "STABLE_FAIL", "IMPROVEMENT", "REGRESSION",
+                "NEW_PASS", "NEW_FAIL", "NEW_TEST", "REMOVED", "BUCKET_CHANGE"]:
+        if categories[cat]:
+            print(f"  {cat:<20} {categories[cat]:>6}")
+
+    if regressions:
+        print(f"\n--- REGRESSIONS ({len(regressions)}) ---")
+        for tid, ob, nb in regressions:
+            print(f"  {tid}")
+            print(f"    was: {ob} → now: {nb}")
+
+    if improvements:
+        print(f"\n--- IMPROVEMENTS ({len(improvements)}) ---")
+        for tid, ob, nb in improvements:
+            print(f"  {tid}")
+            print(f"    was: {ob} → now: {nb}")
+
+    if new_passes:
+        print(f"\n--- NEW PASSES ({len(new_passes)}) ---")
+        for tid in new_passes[:50]:
+            print(f"  {tid}")
+        if len(new_passes) > 50:
+            print(f"  ... and {len(new_passes) - 50} more")
+
+    # Write TSV
+    if out_dir:
+        tsv_path = Path(out_dir) / "diff_report.tsv"
+        txt_path = Path(out_dir) / "diff_report.txt"
+    else:
+        tsv_path = Path(new_xml).parent / "diff_report.tsv"
+        txt_path = Path(new_xml).parent / "diff_report.txt"
+
+    with open(tsv_path, "w") as f:
+        f.write("test_id\told_bucket\tnew_bucket\tcategory\n")
+        for tid in all_ids:
+            ob = old.get(tid, "")
+            nb = new.get(tid, "")
+            cat = "STABLE" if ob == nb else "CHANGED"
+            if ob == "" :
+                cat = "NEW"
+            elif nb == "":
+                cat = "REMOVED"
+            elif ob == "passed" and nb != "passed":
+                cat = "REGRESSION"
+            elif ob != "passed" and nb == "passed":
+                cat = "IMPROVEMENT"
+            f.write(f"{tid}\t{ob}\t{nb}\t{cat}\n")
+    print(f"\nTSV written to {tsv_path}")
+
+    # Capture report to txt
+    import io, contextlib
+    # Already printed above, just write summary to file
+    with open(txt_path, "w") as f:
+        f.write(f"Old: {old_xml} ({len(old)} tests)\n")
+        f.write(f"New: {new_xml} ({len(new)} tests)\n\n")
+        for cat in ["STABLE_PASS", "STABLE_FAIL", "IMPROVEMENT", "REGRESSION",
+                    "NEW_PASS", "NEW_FAIL", "NEW_TEST", "REMOVED", "BUCKET_CHANGE"]:
+            if categories[cat]:
+                f.write(f"  {cat:<20} {categories[cat]:>6}\n")
+        if regressions:
+            f.write(f"\nREGRESSIONS ({len(regressions)}):\n")
+            for tid, ob, nb in regressions:
+                f.write(f"  {tid}: {ob} → {nb}\n")
+        if improvements:
+            f.write(f"\nIMPROVEMENTS ({len(improvements)}):\n")
+            for tid, ob, nb in improvements:
+                f.write(f"  {tid}: {ob} → {nb}\n")
+    print(f"Report written to {txt_path}")
+
+
 def main():
+    # --diff mode
+    if len(sys.argv) >= 4 and sys.argv[1] == "--diff":
+        out_dir = None
+        if len(sys.argv) >= 5 and sys.argv[4:]:
+            out_dir = sys.argv[4]
+        diff_baselines(sys.argv[2], sys.argv[3], out_dir)
+        return
+
     xml_path = sys.argv[1] if len(sys.argv) > 1 else "/tmp/litelm_results.xml"
     tree = ET.parse(xml_path)
     root = tree.getroot()
