@@ -13,12 +13,13 @@ from litelm._completion import (
 class TextCompletionResponse:
     """Wraps OpenAI Completion response with DSPy-expected attrs."""
 
-    __slots__ = ("_completion", "cache_hit", "_hidden_params")
+    __slots__ = ("_completion", "cache_hit", "_hidden_params", "usage")
 
     def __init__(self, completion, cache_hit=False):
         self._completion = completion
         self.cache_hit = cache_hit
         self._hidden_params = {}
+        self.usage = getattr(completion, "usage", None)
 
     def __getattr__(self, name):
         if name.startswith("__") and name.endswith("__"):
