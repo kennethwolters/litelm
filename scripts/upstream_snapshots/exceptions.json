@@ -1,0 +1,172 @@
+{
+  "classes": {
+    "APIConnectionError": {
+      "bases": [
+        "openai.APIConnectionError"
+      ],
+      "fields": []
+    },
+    "APIError": {
+      "bases": [
+        "openai.APIError"
+      ],
+      "fields": []
+    },
+    "APIResponseValidationError": {
+      "bases": [
+        "openai.APIResponseValidationError"
+      ],
+      "fields": []
+    },
+    "AuthenticationError": {
+      "bases": [
+        "openai.AuthenticationError"
+      ],
+      "fields": []
+    },
+    "BadGatewayError": {
+      "bases": [
+        "openai.APIStatusError"
+      ],
+      "fields": []
+    },
+    "BadRequestError": {
+      "bases": [
+        "openai.BadRequestError"
+      ],
+      "fields": []
+    },
+    "BlockedPiiEntityError": {
+      "bases": [
+        "Exception"
+      ],
+      "fields": []
+    },
+    "BudgetExceededError": {
+      "bases": [
+        "Exception"
+      ],
+      "fields": []
+    },
+    "ContentPolicyViolationError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    },
+    "ContextWindowExceededError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    },
+    "GuardrailInterventionNormalStringError": {
+      "bases": [
+        "Exception"
+      ],
+      "fields": []
+    },
+    "GuardrailRaisedException": {
+      "bases": [
+        "Exception"
+      ],
+      "fields": []
+    },
+    "ImageFetchError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    },
+    "InternalServerError": {
+      "bases": [
+        "openai.InternalServerError"
+      ],
+      "fields": []
+    },
+    "InvalidRequestError": {
+      "bases": [
+        "openai.BadRequestError"
+      ],
+      "fields": []
+    },
+    "JSONSchemaValidationError": {
+      "bases": [
+        "APIResponseValidationError"
+      ],
+      "fields": []
+    },
+    "LiteLLMUnknownProvider": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    },
+    "MidStreamFallbackError": {
+      "bases": [
+        "ServiceUnavailableError"
+      ],
+      "fields": []
+    },
+    "MockException": {
+      "bases": [
+        "openai.APIError"
+      ],
+      "fields": []
+    },
+    "NotFoundError": {
+      "bases": [
+        "openai.NotFoundError"
+      ],
+      "fields": []
+    },
+    "OpenAIError": {
+      "bases": [
+        "openai.OpenAIError"
+      ],
+      "fields": []
+    },
+    "PermissionDeniedError": {
+      "bases": [
+        "openai.PermissionDeniedError"
+      ],
+      "fields": []
+    },
+    "RateLimitError": {
+      "bases": [
+        "openai.RateLimitError"
+      ],
+      "fields": []
+    },
+    "RejectedRequestError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    },
+    "ServiceUnavailableError": {
+      "bases": [
+        "openai.APIStatusError"
+      ],
+      "fields": []
+    },
+    "Timeout": {
+      "bases": [
+        "openai.APITimeoutError"
+      ],
+      "fields": []
+    },
+    "UnprocessableEntityError": {
+      "bases": [
+        "openai.UnprocessableEntityError"
+      ],
+      "fields": []
+    },
+    "UnsupportedParamsError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    }
+  }
+}

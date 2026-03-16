@@ -1,0 +1,1213 @@
+{
+  "classes": {
+    "AdapterCompletionStreamWrapper": {
+      "bases": [],
+      "fields": []
+    },
+    "AgenticLoopParams": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "custom_llm_provider",
+        "model"
+      ]
+    },
+    "BudgetConfig": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "budget_duration",
+        "max_budget",
+        "rpm_limit",
+        "tpm_limit"
+      ]
+    },
+    "CacheCreationTokenDetails": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "ephemeral_1h_input_tokens",
+        "ephemeral_5m_input_tokens"
+      ]
+    },
+    "CachingDetails": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "cache_duration_ms",
+        "cache_hit"
+      ]
+    },
+    "CallTypes": {
+      "bases": [
+        "str",
+        "Enum"
+      ],
+      "fields": []
+    },
+    "CallbacksByType": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "failure",
+        "success",
+        "success_and_failure"
+      ]
+    },
+    "ChatCompletionAudioResponse": {
+      "bases": [
+        "ChatCompletionAudio"
+      ],
+      "fields": []
+    },
+    "ChatCompletionDeltaToolCall": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "function",
+        "id",
+        "index",
+        "type"
+      ]
+    },
+    "ChatCompletionMessageToolCall": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": []
+    },
+    "ChatCompletionTokenLogprob": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "bytes",
+        "logprob",
+        "token",
+        "top_logprobs"
+      ]
+    },
+    "ChoiceLogprobs": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "content"
+      ]
+    },
+    "Choices": {
+      "bases": [
+        "SafeAttributeModel",
+        "OpenAIObject"
+      ],
+      "fields": [
+        "finish_reason",
+        "index",
+        "logprobs",
+        "message",
+        "provider_specific_fields"
+      ]
+    },
+    "CompletionTokensDetailsWrapper": {
+      "bases": [
+        "CompletionTokensDetails"
+      ],
+      "fields": [
+        "image_tokens",
+        "text_tokens",
+        "video_tokens"
+      ]
+    },
+    "CostBreakdown": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "additional_costs",
+        "discount_amount",
+        "discount_percent",
+        "input_cost",
+        "margin_fixed_amount",
+        "margin_percent",
+        "margin_total_amount",
+        "original_cost",
+        "output_cost",
+        "tool_usage_cost",
+        "total_cost"
+      ]
+    },
+    "CostPerToken": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "input_cost_per_token",
+        "output_cost_per_token"
+      ]
+    },
+    "CreateCredentialItem": {
+      "bases": [
+        "CredentialBase"
+      ],
+      "fields": [
+        "credential_values",
+        "model_id"
+      ]
+    },
+    "CredentialBase": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "credential_info",
+        "credential_name"
+      ]
+    },
+    "CredentialItem": {
+      "bases": [
+        "CredentialBase"
+      ],
+      "fields": [
+        "credential_values"
+      ]
+    },
+    "CustomHuggingfaceTokenizer": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "auth_token",
+        "identifier",
+        "revision"
+      ]
+    },
+    "CustomPricingLiteLLMParams": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "cache_creation_input_audio_token_cost",
+        "cache_creation_input_token_cost",
+        "cache_creation_input_token_cost_above_1hr",
+        "cache_creation_input_token_cost_above_200k_tokens",
+        "cache_read_input_audio_token_cost",
+        "cache_read_input_token_cost",
+        "cache_read_input_token_cost_above_200k_tokens",
+        "cache_read_input_token_cost_flex",
+        "cache_read_input_token_cost_priority",
+        "citation_cost_per_token",
+        "input_cost_per_audio_per_second",
+        "input_cost_per_audio_per_second_above_128k_tokens",
+        "input_cost_per_audio_token",
+        "input_cost_per_character",
+        "input_cost_per_character_above_128k_tokens",
+        "input_cost_per_image",
+        "input_cost_per_image_above_128k_tokens",
+        "input_cost_per_pixel",
+        "input_cost_per_query",
+        "input_cost_per_second",
+        "input_cost_per_token",
+        "input_cost_per_token_above_128k_tokens",
+        "input_cost_per_token_above_200k_tokens",
+        "input_cost_per_token_batches",
+        "input_cost_per_token_cache_hit",
+        "input_cost_per_token_flex",
+        "input_cost_per_token_priority",
+        "input_cost_per_video_per_second",
+        "input_cost_per_video_per_second_above_128k_tokens",
+        "input_cost_per_video_per_second_above_15s_interval",
+        "input_cost_per_video_per_second_above_8s_interval",
+        "output_cost_per_audio_per_second",
+        "output_cost_per_audio_token",
+        "output_cost_per_character",
+        "output_cost_per_character_above_128k_tokens",
+        "output_cost_per_image",
+        "output_cost_per_image_token",
+        "output_cost_per_pixel",
+        "output_cost_per_reasoning_token",
+        "output_cost_per_second",
+        "output_cost_per_token",
+        "output_cost_per_token_above_128k_tokens",
+        "output_cost_per_token_above_200k_tokens",
+        "output_cost_per_token_batches",
+        "output_cost_per_token_flex",
+        "output_cost_per_token_priority",
+        "output_cost_per_video_per_second",
+        "search_context_cost_per_query",
+        "tiered_pricing"
+      ]
+    },
+    "CustomStreamingDecoder": {
+      "bases": [],
+      "fields": []
+    },
+    "Delta": {
+      "bases": [
+        "SafeAttributeModel",
+        "OpenAIObject"
+      ],
+      "fields": [
+        "provider_specific_fields",
+        "reasoning_content",
+        "thinking_blocks"
+      ]
+    },
+    "DynamicPromptManagementParamLiteral": {
+      "bases": [
+        "str",
+        "Enum"
+      ],
+      "fields": []
+    },
+    "Embedding": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "embedding",
+        "index",
+        "object"
+      ]
+    },
+    "EmbeddingResponse": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "_hidden_params",
+        "_response_headers",
+        "_response_ms",
+        "data",
+        "model",
+        "object",
+        "usage"
+      ]
+    },
+    "ExtractedFileData": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "content",
+        "content_type",
+        "filename",
+        "headers"
+      ]
+    },
+    "Function": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "arguments",
+        "name"
+      ]
+    },
+    "FunctionCall": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "arguments",
+        "name"
+      ]
+    },
+    "GenericGuardrailAPIInputs": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "images",
+        "model",
+        "structured_messages",
+        "texts",
+        "tool_calls",
+        "tools"
+      ]
+    },
+    "GenericImageParsingChunk": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "data",
+        "media_type",
+        "type"
+      ]
+    },
+    "GenericStreamingChunk": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "finish_reason",
+        "index",
+        "is_finished",
+        "provider_specific_fields",
+        "text",
+        "tool_use",
+        "usage"
+      ]
+    },
+    "GuardrailMode": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "default",
+        "tags"
+      ]
+    },
+    "GuardrailTracingDetail": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "alert_recipients",
+        "classification",
+        "confidence_score",
+        "detection_method",
+        "guardrail_id",
+        "match_details",
+        "patterns_checked",
+        "policy_template",
+        "risk_score"
+      ]
+    },
+    "HttpHandlerRequestFields": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "content",
+        "data",
+        "files",
+        "params"
+      ]
+    },
+    "ImageObject": {
+      "bases": [
+        "OpenAIImage"
+      ],
+      "fields": [
+        "b64_json",
+        "provider_specific_fields",
+        "revised_prompt",
+        "url"
+      ]
+    },
+    "ImageResponse": {
+      "bases": [
+        "OpenAIImageResponse",
+        "BaseLiteLLMOpenAIResponseObject"
+      ],
+      "fields": [
+        "_hidden_params",
+        "usage"
+      ]
+    },
+    "ImageUsage": {
+      "bases": [
+        "BaseLiteLLMOpenAIResponseObject"
+      ],
+      "fields": [
+        "input_tokens",
+        "input_tokens_details",
+        "output_tokens",
+        "total_tokens"
+      ]
+    },
+    "ImageUsageInputTokensDetails": {
+      "bases": [
+        "BaseLiteLLMOpenAIResponseObject"
+      ],
+      "fields": [
+        "image_tokens",
+        "text_tokens"
+      ]
+    },
+    "KeyGenerationConfig": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "required_params"
+      ]
+    },
+    "LITELLM_IMAGE_VARIATION_PROVIDERS": {
+      "bases": [
+        "Enum"
+      ],
+      "fields": []
+    },
+    "LiteLLMBatch": {
+      "bases": [
+        "Batch"
+      ],
+      "fields": [
+        "_hidden_params",
+        "usage"
+      ]
+    },
+    "LiteLLMCommonStrings": {
+      "bases": [
+        "Enum"
+      ],
+      "fields": []
+    },
+    "LiteLLMFineTuningJob": {
+      "bases": [
+        "FineTuningJob"
+      ],
+      "fields": [
+        "_hidden_params",
+        "seed"
+      ]
+    },
+    "LiteLLMLoggingBaseClass": {
+      "bases": [],
+      "fields": []
+    },
+    "LiteLLMRealtimeStreamLoggingObject": {
+      "bases": [
+        "LiteLLMPydanticObjectBase"
+      ],
+      "fields": [
+        "_hidden_params",
+        "results",
+        "usage"
+      ]
+    },
+    "LlmProviders": {
+      "bases": [
+        "str",
+        "Enum"
+      ],
+      "fields": []
+    },
+    "LoggedLiteLLMParams": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "acompletion",
+        "api_base",
+        "cooldown_time",
+        "custom_llm_provider",
+        "force_timeout",
+        "input_cost_per_second",
+        "input_cost_per_token",
+        "litellm_call_id",
+        "metadata",
+        "model_alias_map",
+        "model_info",
+        "no_log",
+        "output_cost_per_second",
+        "output_cost_per_token",
+        "preset_cache_key",
+        "proxy_server_request"
+      ]
+    },
+    "Logprobs": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "text_offset",
+        "token_logprobs",
+        "tokens",
+        "top_logprobs"
+      ]
+    },
+    "Message": {
+      "bases": [
+        "SafeAttributeModel",
+        "OpenAIObject"
+      ],
+      "fields": [
+        "annotations",
+        "audio",
+        "content",
+        "function_call",
+        "images",
+        "provider_specific_fields",
+        "reasoning_content",
+        "role",
+        "thinking_blocks",
+        "tool_calls"
+      ]
+    },
+    "ModelInfo": {
+      "bases": [
+        "ModelInfoBase"
+      ],
+      "fields": [
+        "supported_openai_params"
+      ]
+    },
+    "ModelInfoBase": {
+      "bases": [
+        "ProviderSpecificModelInfo"
+      ],
+      "fields": [
+        "annotation_cost_per_page",
+        "cache_creation_input_token_cost",
+        "cache_creation_input_token_cost_above_1hr",
+        "cache_creation_input_token_cost_above_200k_tokens",
+        "cache_read_input_token_cost",
+        "cache_read_input_token_cost_above_200k_tokens",
+        "cache_read_input_token_cost_above_272k_tokens",
+        "cache_read_input_token_cost_flex",
+        "cache_read_input_token_cost_priority",
+        "citation_cost_per_token",
+        "input_cost_per_audio_per_second",
+        "input_cost_per_audio_token",
+        "input_cost_per_character",
+        "input_cost_per_character_above_128k_tokens",
+        "input_cost_per_image",
+        "input_cost_per_image_token",
+        "input_cost_per_query",
+        "input_cost_per_second",
+        "input_cost_per_token",
+        "input_cost_per_token_above_128k_tokens",
+        "input_cost_per_token_above_200k_tokens",
+        "input_cost_per_token_above_272k_tokens",
+        "input_cost_per_token_batches",
+        "input_cost_per_token_flex",
+        "input_cost_per_token_priority",
+        "input_cost_per_video_per_second",
+        "key",
+        "litellm_provider",
+        "max_input_tokens",
+        "max_output_tokens",
+        "max_tokens",
+        "mode",
+        "ocr_cost_per_page",
+        "output_cost_per_audio_per_second",
+        "output_cost_per_audio_token",
+        "output_cost_per_character",
+        "output_cost_per_character_above_128k_tokens",
+        "output_cost_per_image",
+        "output_cost_per_image_token",
+        "output_cost_per_reasoning_token",
+        "output_cost_per_second",
+        "output_cost_per_token",
+        "output_cost_per_token_above_128k_tokens",
+        "output_cost_per_token_above_200k_tokens",
+        "output_cost_per_token_above_272k_tokens",
+        "output_cost_per_token_batches",
+        "output_cost_per_token_flex",
+        "output_cost_per_token_priority",
+        "output_cost_per_video_per_second",
+        "output_vector_size",
+        "provider_specific_entry",
+        "rpm",
+        "search_context_cost_per_query",
+        "tiered_pricing",
+        "tpm",
+        "uses_embed_content"
+      ]
+    },
+    "ModelResponse": {
+      "bases": [
+        "ModelResponseBase"
+      ],
+      "fields": [
+        "choices"
+      ]
+    },
+    "ModelResponseBase": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "_hidden_params",
+        "_response_headers",
+        "created",
+        "id",
+        "model",
+        "object",
+        "system_fingerprint"
+      ]
+    },
+    "ModelResponseStream": {
+      "bases": [
+        "ModelResponseBase"
+      ],
+      "fields": [
+        "choices",
+        "provider_specific_fields"
+      ]
+    },
+    "PassthroughCallTypes": {
+      "bases": [
+        "Enum"
+      ],
+      "fields": []
+    },
+    "PersonalUIKeyGenerationConfig": {
+      "bases": [
+        "KeyGenerationConfig"
+      ],
+      "fields": [
+        "allowed_user_roles"
+      ]
+    },
+    "PriorityReservationDict": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "type",
+        "value"
+      ]
+    },
+    "PriorityReservationSettings": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "default_priority",
+        "saturation_check_cache_ttl",
+        "saturation_threshold"
+      ]
+    },
+    "PromptTokensDetailsWrapper": {
+      "bases": [
+        "SafeAttributeModel",
+        "PromptTokensDetails"
+      ],
+      "fields": [
+        "cache_creation_token_details",
+        "cache_creation_tokens",
+        "character_count",
+        "image_count",
+        "image_tokens",
+        "text_tokens",
+        "video_length_seconds",
+        "video_tokens",
+        "web_search_requests"
+      ]
+    },
+    "ProviderField": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "field_description",
+        "field_name",
+        "field_type",
+        "field_value"
+      ]
+    },
+    "ProviderSpecificHeader": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "custom_llm_provider",
+        "extra_headers"
+      ]
+    },
+    "ProviderSpecificModelInfo": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "supports_assistant_prefill",
+        "supports_audio_input",
+        "supports_audio_output",
+        "supports_computer_use",
+        "supports_embedding_image_input",
+        "supports_function_calling",
+        "supports_native_streaming",
+        "supports_none_reasoning_effort",
+        "supports_parallel_function_calling",
+        "supports_pdf_input",
+        "supports_prompt_caching",
+        "supports_reasoning",
+        "supports_response_schema",
+        "supports_system_messages",
+        "supports_tool_choice",
+        "supports_url_context",
+        "supports_vision",
+        "supports_web_search",
+        "supports_xhigh_reasoning_effort"
+      ]
+    },
+    "RawRequestTypedDict": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "error",
+        "raw_request_api_base",
+        "raw_request_body",
+        "raw_request_headers"
+      ]
+    },
+    "ResponseFormatChunk": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "response_schema",
+        "type"
+      ]
+    },
+    "SafeAttributeModel": {
+      "bases": [],
+      "fields": []
+    },
+    "SearchContextCostPerQuery": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "search_context_size_high",
+        "search_context_size_low",
+        "search_context_size_medium"
+      ]
+    },
+    "SearchProviders": {
+      "bases": [
+        "str",
+        "Enum"
+      ],
+      "fields": []
+    },
+    "SelectTokenizerResponse": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "tokenizer",
+        "type"
+      ]
+    },
+    "ServerToolUse": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "tool_search_requests",
+        "web_search_requests"
+      ]
+    },
+    "ServiceTier": {
+      "bases": [
+        "Enum"
+      ],
+      "fields": []
+    },
+    "SpecialEnums": {
+      "bases": [
+        "Enum"
+      ],
+      "fields": []
+    },
+    "StandardBuiltInToolsParams": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "file_search",
+        "web_search_options"
+      ]
+    },
+    "StandardCallbackDynamicParams": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "arize_api_key",
+        "arize_space_id",
+        "arize_space_key",
+        "gcs_bucket_name",
+        "gcs_path_service_account",
+        "humanloop_api_key",
+        "langfuse_host",
+        "langfuse_prompt_version",
+        "langfuse_public_key",
+        "langfuse_secret",
+        "langfuse_secret_key",
+        "langsmith_api_key",
+        "langsmith_base_url",
+        "langsmith_project",
+        "langsmith_sampling_rate",
+        "langsmith_tenant_id",
+        "litellm_disabled_callbacks",
+        "posthog_api_key",
+        "posthog_api_url",
+        "turn_off_message_logging",
+        "wandb_api_key",
+        "weave_project_id"
+      ]
+    },
+    "StandardKeyGenerationConfig": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "personal_key_generation",
+        "team_key_generation"
+      ]
+    },
+    "StandardLoggingAdditionalHeaders": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "x_ratelimit_limit_requests",
+        "x_ratelimit_limit_tokens",
+        "x_ratelimit_remaining_requests",
+        "x_ratelimit_remaining_tokens"
+      ]
+    },
+    "StandardLoggingGuardrailInformation": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "alert_recipients",
+        "classification",
+        "confidence_score",
+        "detection_method",
+        "duration",
+        "end_time",
+        "guardrail_id",
+        "guardrail_mode",
+        "guardrail_name",
+        "guardrail_provider",
+        "guardrail_request",
+        "guardrail_response",
+        "guardrail_status",
+        "masked_entity_count",
+        "match_details",
+        "patterns_checked",
+        "policy_template",
+        "risk_score",
+        "start_time"
+      ]
+    },
+    "StandardLoggingHiddenParams": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "additional_headers",
+        "api_base",
+        "batch_models",
+        "cache_key",
+        "litellm_model_name",
+        "litellm_overhead_time_ms",
+        "model_id",
+        "response_cost",
+        "usage_object"
+      ]
+    },
+    "StandardLoggingMCPToolCall": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "arguments",
+        "mcp_server_cost_info",
+        "mcp_server_logo_url",
+        "mcp_server_name",
+        "name",
+        "namespaced_tool_name",
+        "result"
+      ]
+    },
+    "StandardLoggingMetadata": {
+      "bases": [
+        "StandardLoggingUserAPIKeyMetadata"
+      ],
+      "fields": [
+        "applied_guardrails",
+        "cold_storage_object_key",
+        "mcp_tool_call_metadata",
+        "prompt_management_metadata",
+        "requester_custom_headers",
+        "requester_ip_address",
+        "requester_metadata",
+        "spend_logs_metadata",
+        "team_alias",
+        "team_id",
+        "usage_object",
+        "user_agent",
+        "vector_store_request_metadata"
+      ]
+    },
+    "StandardLoggingModelCostFailureDebugInformation": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "base_model",
+        "cache_hit",
+        "call_type",
+        "custom_llm_provider",
+        "custom_pricing",
+        "error_str",
+        "model",
+        "traceback_str"
+      ]
+    },
+    "StandardLoggingModelInformation": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "model_map_key",
+        "model_map_value"
+      ]
+    },
+    "StandardLoggingPayload": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "api_base",
+        "cache_hit",
+        "cache_key",
+        "call_type",
+        "completionStartTime",
+        "completion_tokens",
+        "cost_breakdown",
+        "custom_llm_provider",
+        "endTime",
+        "end_user",
+        "error_information",
+        "error_str",
+        "guardrail_information",
+        "hidden_params",
+        "id",
+        "messages",
+        "metadata",
+        "model",
+        "model_group",
+        "model_id",
+        "model_map_information",
+        "model_parameters",
+        "prompt_tokens",
+        "request_tags",
+        "requester_ip_address",
+        "response",
+        "response_cost",
+        "response_cost_failure_debug_info",
+        "response_time",
+        "saved_cache_cost",
+        "standard_built_in_tools_params",
+        "startTime",
+        "status",
+        "status_fields",
+        "stream",
+        "total_tokens",
+        "trace_id",
+        "user_agent"
+      ]
+    },
+    "StandardLoggingPayloadErrorInformation": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "error_class",
+        "error_code",
+        "error_message",
+        "llm_provider",
+        "traceback"
+      ]
+    },
+    "StandardLoggingPayloadStatusFields": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "guardrail_status",
+        "llm_api_status"
+      ]
+    },
+    "StandardLoggingPromptManagementMetadata": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "prompt_id",
+        "prompt_integration",
+        "prompt_variables"
+      ]
+    },
+    "StandardLoggingUserAPIKeyMetadata": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "user_api_key_alias",
+        "user_api_key_auth_metadata",
+        "user_api_key_budget_reset_at",
+        "user_api_key_end_user_id",
+        "user_api_key_hash",
+        "user_api_key_max_budget",
+        "user_api_key_org_id",
+        "user_api_key_project_id",
+        "user_api_key_request_route",
+        "user_api_key_spend",
+        "user_api_key_team_alias",
+        "user_api_key_team_id",
+        "user_api_key_user_email",
+        "user_api_key_user_id"
+      ]
+    },
+    "StandardLoggingVectorStoreRequest": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "custom_llm_provider",
+        "end_time",
+        "query",
+        "start_time",
+        "vector_store_id",
+        "vector_store_search_response"
+      ]
+    },
+    "StandardPassThroughResponseObject": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "response"
+      ]
+    },
+    "StreamingChatCompletionChunk": {
+      "bases": [
+        "OpenAIChatCompletionChunk"
+      ],
+      "fields": []
+    },
+    "StreamingChoices": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": []
+    },
+    "TeamUIKeyGenerationConfig": {
+      "bases": [
+        "KeyGenerationConfig"
+      ],
+      "fields": [
+        "allowed_team_member_roles"
+      ]
+    },
+    "TextChoices": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": []
+    },
+    "TextCompletionResponse": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "_hidden_params",
+        "_response_ms",
+        "choices",
+        "created",
+        "id",
+        "model",
+        "object",
+        "usage"
+      ]
+    },
+    "TokenCountResponse": {
+      "bases": [
+        "LiteLLMPydanticObjectBase"
+      ],
+      "fields": [
+        "error",
+        "error_message",
+        "model_used",
+        "original_response",
+        "request_model",
+        "status_code",
+        "tokenizer_type",
+        "total_tokens"
+      ]
+    },
+    "TopLogprob": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "bytes",
+        "logprob",
+        "token"
+      ]
+    },
+    "TranscriptionResponse": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": [
+        "_hidden_params",
+        "_response_headers",
+        "text",
+        "usage"
+      ]
+    },
+    "TranscriptionUsageDurationObject": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "seconds",
+        "type"
+      ]
+    },
+    "TranscriptionUsageInputTokenDetailsObject": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "audio_tokens",
+        "text_tokens"
+      ]
+    },
+    "TranscriptionUsageTokensObject": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "input_token_details",
+        "input_tokens",
+        "output_tokens",
+        "total_tokens",
+        "type"
+      ]
+    },
+    "Usage": {
+      "bases": [
+        "SafeAttributeModel",
+        "CompletionUsage"
+      ],
+      "fields": [
+        "_cache_creation_input_tokens",
+        "_cache_read_input_tokens",
+        "completion_tokens_details",
+        "cost",
+        "prompt_tokens_details",
+        "server_tool_use"
+      ]
+    }
+  }
+}
