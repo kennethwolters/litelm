@@ -42,6 +42,7 @@ def embedding(model, input, *, timeout=None, caching=False,
     """Synchronous embedding call."""
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
+    kwargs.pop("account_id", None)
     api_key = kwargs.pop("api_key", None)
     api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
     provider, model_name, base_url, resolved_api_key, api_version = parse_model(
@@ -67,6 +68,7 @@ async def aembedding(model, input, *, timeout=None, caching=False,
     """Async embedding call."""
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
+    kwargs.pop("account_id", None)
     api_key = kwargs.pop("api_key", None)
     api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
     provider, model_name, base_url, resolved_api_key, api_version = parse_model(

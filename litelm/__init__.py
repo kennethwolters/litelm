@@ -7,6 +7,7 @@ from litelm._completion import acompletion, completion, stream_chunk_builder
 from litelm._embedding import aembedding, embedding
 from litelm._text_completion import atext_completion, text_completion
 from litelm._exceptions import (
+    LITELLM_EXCEPTION_TYPES,
     APIConnectionError,
     APIStatusError,
     AuthenticationError,

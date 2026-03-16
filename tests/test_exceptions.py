@@ -27,12 +27,12 @@ def test_exception_attributes():
     assert e.message == "rate limited"
     assert e.response == "resp"
     assert e.body == "body"
-    assert str(e) == "rate limited"
+    assert str(e) == "RateLimitError: rate limited"
 
 
 def test_context_window_error_basic():
     e = ContextWindowExceededError("too long")
-    assert str(e) == "too long"
+    assert str(e) == "ContextWindowExceededError: too long"
 
 
 def test_context_window_error_default_message():
@@ -43,4 +43,4 @@ def test_context_window_error_default_message():
 def test_context_window_error_extra_kwargs():
     # Should accept and ignore litellm-style kwargs without raising
     e = ContextWindowExceededError("msg", response=object(), body={"error": "x"})
-    assert str(e) == "msg"
+    assert str(e) == "ContextWindowExceededError: msg"

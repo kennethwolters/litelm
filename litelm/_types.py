@@ -107,9 +107,9 @@ class CompletionUsage:
 # ---------------------------------------------------------------------------
 
 class ChatCompletionMessage:
-    __slots__ = ("role", "content", "tool_calls", "reasoning_content")
+    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images")
 
-    def __init__(self, role="assistant", content=None, tool_calls=None, reasoning_content=None, **kwargs):
+    def __init__(self, role="assistant", content=None, tool_calls=None, reasoning_content=None, images=None, **kwargs):
         self.role = role
         self.content = content
         if tool_calls is not None:
@@ -120,6 +120,10 @@ class ChatCompletionMessage:
         else:
             self.tool_calls = tool_calls
         self.reasoning_content = reasoning_content
+        self.images = images
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 class Choice:
@@ -130,6 +134,9 @@ class Choice:
         self.message = ChatCompletionMessage(**message) if isinstance(message, dict) else message
         self.finish_reason = finish_reason
         self.logprobs = logprobs
+
+    def __getitem__(self, key):
+        return getattr(self, key)
 
 
 class ChatCompletion:
@@ -155,9 +162,9 @@ class ChatCompletion:
 # ---------------------------------------------------------------------------
 
 class ChoiceDelta:
-    __slots__ = ("role", "content", "tool_calls", "reasoning_content")
+    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images")
 
-    def __init__(self, role=None, content=None, tool_calls=None, reasoning_content=None, **kwargs):
+    def __init__(self, role=None, content=None, tool_calls=None, reasoning_content=None, images=None, **kwargs):
         self.role = role
         self.content = content
         if tool_calls is not None:
@@ -168,6 +175,7 @@ class ChoiceDelta:
         else:
             self.tool_calls = tool_calls
         self.reasoning_content = reasoning_content
+        self.images = images
 
 
 class ChunkChoice:

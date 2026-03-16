@@ -87,6 +87,7 @@ def _prepare_call(model, kwargs):
     kwargs.pop("retry_strategy", None)
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
+    kwargs.pop("custom_llm_provider", None)
 
     api_key = kwargs.pop("api_key", None)
     api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
@@ -217,6 +218,7 @@ def stream_chunk_builder(chunks):
     model = ""
     chunk_id = ""
     tool_calls_by_index = {}
+    images_by_index = {}
     usage = None
     finish_reason = None
     reasoning_content_parts = []
@@ -254,6 +256,9 @@ def stream_chunk_builder(chunks):
                 rc = getattr(delta, "reasoning_content", None)
                 if rc:
                     reasoning_content_parts.append(rc)
+                if getattr(delta, "images", None):
+                    for img in delta.images:
+                        images_by_index[img["index"]] = img
                 if delta.tool_calls:
                     for tc in delta.tool_calls:
                         idx = tc.index
@@ -283,9 +288,12 @@ def stream_chunk_builder(chunks):
             for _, tc in sorted(tool_calls_by_index.items())
         ]
 
+    images = [v for _, v in sorted(images_by_index.items())] or None
+
     message = ChatCompletionMessage(
         role=role, content=content, tool_calls=tool_calls,
         reasoning_content="".join(reasoning_content_parts) if reasoning_content_parts else None,
+        images=images,
     )
 
     if usage is None:
