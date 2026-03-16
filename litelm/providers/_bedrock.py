@@ -14,8 +14,11 @@ from litelm._exceptions import (
     ContextWindowExceededError,
     InternalServerError,
     LitelmError,
+    NotFoundError,
+    PermissionDeniedError,
     RateLimitError,
     Timeout,
+    UnprocessableEntityError,
     is_context_window_error,
 )
 from litelm._types import ModelResponse, ModelResponseStream
@@ -137,6 +140,18 @@ def _map_error(e):
         raise APIConnectionError(request=getattr(e, "request", None)) from e
     elif isinstance(e, openai.InternalServerError):
         raise InternalServerError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.NotFoundError):
+        raise NotFoundError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.PermissionDeniedError):
+        raise PermissionDeniedError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.UnprocessableEntityError):
+        raise UnprocessableEntityError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, openai.APIStatusError):

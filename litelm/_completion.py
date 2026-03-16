@@ -10,16 +10,22 @@ from litelm._exceptions import (
     ContextWindowExceededError,
     InternalServerError,
     LitelmError,
+    NotFoundError,
+    PermissionDeniedError,
     RateLimitError,
     Timeout,
+    UnprocessableEntityError,
     is_context_window_error,
 )
 from litelm._providers import parse_model
 from litelm._types import (
     ChatCompletion,
+    ChatCompletionChunk,
     ChatCompletionMessage,
     ChatCompletionMessageToolCall,
     Choice,
+    ChoiceDelta,
+    ChunkChoice,
     CompletionUsage,
     Function,
     ModelResponse,
@@ -71,6 +77,18 @@ def _map_openai_error(e):
         raise InternalServerError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
+    elif isinstance(e, openai.NotFoundError):
+        raise NotFoundError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.PermissionDeniedError):
+        raise PermissionDeniedError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, openai.UnprocessableEntityError):
+        raise UnprocessableEntityError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
     elif isinstance(e, openai.APIStatusError):
         raise APIStatusError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
@@ -88,6 +106,8 @@ def _prepare_call(model, kwargs):
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
     kwargs.pop("custom_llm_provider", None)
+    kwargs.pop("fallbacks", None)
+    kwargs.pop("mock_timeout", None)
 
     api_key = kwargs.pop("api_key", None)
     api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
@@ -119,15 +139,22 @@ def completion(model, messages=None, *, timeout=None, stream=False,
                shared_session: "ClientSession | None" = None, **kwargs):
     """Synchronous chat completion."""
     mock = kwargs.pop("mock_response", None)
+    n = kwargs.pop("n", None) or 1
     provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
 
     if mock is not None:
-        content = str(mock) if mock is not True else "mock"
+        content = str(mock) if mock is not True else "This is a mock request"
+        if stream:
+            return _mock_stream_sync(content, model_name)
         return ModelResponse(ChatCompletion(
-            id="mock", choices=[Choice(index=0, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop")],
+            id="mock",
+            choices=[Choice(index=i, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop") for i in range(n)],
             created=0, model=model_name, object="chat.completion",
             usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         ))
+
+    if n > 1:
+        kwargs["n"] = n
 
     handler = get_handler(provider)
     if handler:
@@ -156,15 +183,22 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False,
                       shared_session: "ClientSession | None" = None, **kwargs):
     """Async chat completion."""
     mock = kwargs.pop("mock_response", None)
+    n = kwargs.pop("n", None) or 1
     provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
 
     if mock is not None:
-        content = str(mock) if mock is not True else "mock"
+        content = str(mock) if mock is not True else "This is a mock request"
+        if stream:
+            return _mock_stream_async(content, model_name)
         return ModelResponse(ChatCompletion(
-            id="mock", choices=[Choice(index=0, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop")],
+            id="mock",
+            choices=[Choice(index=i, message=ChatCompletionMessage(role="assistant", content=content), finish_reason="stop") for i in range(n)],
             created=0, model=model_name, object="chat.completion",
             usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
         ))
+
+    if n > 1:
+        kwargs["n"] = n
 
     handler = get_handler(provider)
     if handler:
@@ -187,6 +221,31 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False,
     if stream:
         return _wrap_stream_async(response)
     return ModelResponse(response)
+
+
+def mock_completion(model, messages, n=1, stream=False, **kwargs):
+    """Create a mock completion response."""
+    return completion(model, messages, stream=stream, mock_response=True, n=n, **kwargs)
+
+
+def _mock_stream_sync(content, model):
+    """Yield mock streaming chunks."""
+    yield ModelResponseStream(ChatCompletionChunk(
+        id="mock", model=model, choices=[ChunkChoice(delta=ChoiceDelta(role="assistant", content=content))],
+    ))
+    yield ModelResponseStream(ChatCompletionChunk(
+        id="mock", model=model, choices=[ChunkChoice(finish_reason="stop")],
+    ))
+
+
+async def _mock_stream_async(content, model):
+    """Yield mock streaming chunks (async)."""
+    yield ModelResponseStream(ChatCompletionChunk(
+        id="mock", model=model, choices=[ChunkChoice(delta=ChoiceDelta(role="assistant", content=content))],
+    ))
+    yield ModelResponseStream(ChatCompletionChunk(
+        id="mock", model=model, choices=[ChunkChoice(finish_reason="stop")],
+    ))
 
 
 def _wrap_stream_sync(stream):

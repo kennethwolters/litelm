@@ -13,7 +13,10 @@ from litelm._exceptions import (
     APIStatusError,
     BadRequestError,
     InternalServerError,
+    NotFoundError,
+    PermissionDeniedError,
     RateLimitError,
+    UnprocessableEntityError,
 )
 from litelm._types import (
     ChatCompletion,
@@ -144,6 +147,12 @@ def _handle_error_response(response):
         raise RateLimitError(message=msg, response=response, body=msg)
     elif status == 400:
         raise BadRequestError(message=msg, response=response, body=msg)
+    elif status == 403:
+        raise PermissionDeniedError(message=msg, response=response, body=msg)
+    elif status == 404:
+        raise NotFoundError(message=msg, response=response, body=msg)
+    elif status == 422:
+        raise UnprocessableEntityError(message=msg, response=response, body=msg)
     elif status >= 500:
         raise InternalServerError(message=msg, response=response, body=msg)
     else:

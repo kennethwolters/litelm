@@ -20,8 +20,11 @@ from litelm._exceptions import (
     ContextWindowExceededError,
     InternalServerError,
     LitelmError,
+    NotFoundError,
+    PermissionDeniedError,
     RateLimitError,
     Timeout,
+    UnprocessableEntityError,
 )
 
 
@@ -140,3 +143,18 @@ def test_completion_wraps_rate_limit(mock_get_client):
 
     with pytest.raises(RateLimitError):
         completion("openai/gpt-4o", messages=[{"role": "user", "content": "hi"}], api_key="sk-test")
+
+
+def test_map_openai_error_not_found():
+    with pytest.raises(NotFoundError):
+        _map_openai_error(_make_openai_error(openai.NotFoundError, "model not found"))
+
+
+def test_map_openai_error_permission_denied():
+    with pytest.raises(PermissionDeniedError):
+        _map_openai_error(_make_openai_error(openai.PermissionDeniedError, "forbidden"))
+
+
+def test_map_openai_error_unprocessable():
+    with pytest.raises(UnprocessableEntityError):
+        _map_openai_error(_make_openai_error(openai.UnprocessableEntityError, "invalid"))

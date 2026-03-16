@@ -15,8 +15,11 @@ from litelm._exceptions import (
     BadRequestError,
     ContextWindowExceededError,
     InternalServerError,
+    NotFoundError,
+    PermissionDeniedError,
     RateLimitError,
     Timeout,
+    UnprocessableEntityError,
     is_context_window_error,
 )
 from litelm._types import (
@@ -441,6 +444,18 @@ def _map_error(e):
         raise APIConnectionError(request=getattr(e, "request", None)) from e
     elif isinstance(e, sdk.InternalServerError):
         raise InternalServerError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, sdk.NotFoundError):
+        raise NotFoundError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, sdk.PermissionDeniedError):
+        raise PermissionDeniedError(
+            message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
+        ) from e
+    elif isinstance(e, sdk.UnprocessableEntityError):
+        raise UnprocessableEntityError(
             message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
         ) from e
     elif isinstance(e, sdk.APIStatusError):

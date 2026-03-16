@@ -3,7 +3,7 @@
 __version__ = "0.2.0"
 
 from litelm._client_cache import close_async_clients as close_litelm_async_clients
-from litelm._completion import acompletion, completion, stream_chunk_builder
+from litelm._completion import acompletion, completion, mock_completion, stream_chunk_builder
 from litelm._embedding import aembedding, embedding
 from litelm._text_completion import atext_completion, text_completion
 from litelm._exceptions import (
@@ -100,6 +100,18 @@ suppress_debug_info = False
 add_function_to_prompt = False
 
 
+def get_llm_provider(model, custom_llm_provider=None, api_base=None, api_key=None):
+    """Resolve provider from model string. Returns (model, provider, api_key, api_base)."""
+    from litelm._providers import parse_model
+    kwargs = {}
+    if api_base:
+        kwargs["api_base"] = api_base
+    if api_key:
+        kwargs["api_key"] = api_key
+    provider, model_name, base_url, key, _ = parse_model(model, **kwargs)
+    return model_name, custom_llm_provider or provider, key, base_url
+
+
 def get_secret(secret_name, **kwargs):
     """Retrieve secret from env var."""
     import os
@@ -120,9 +132,11 @@ __all__ = [
     "completion",
     "ContextWindowExceededError",
     "embedding",
+    "get_llm_provider",
     "get_secret",
     "get_supported_openai_params",
     "InternalServerError",
+    "mock_completion",
     "ModelResponse",
     "ModelResponseStream",
     "NotFoundError",
