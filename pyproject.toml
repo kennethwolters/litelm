@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "litelm"
-version = "0.2.0"
+version = "0.3.0"
 description = "Lightweight litellm replacement — thin OpenAI-SDK routing layer for multi-provider LLM calls"
 readme = "README.md"
 license = "MIT"
