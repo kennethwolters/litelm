@@ -175,13 +175,61 @@ class TestAnthropicTranslation:
         result = self.mod._translate_tool_choice({"function": {"name": "foo"}})
         assert result == {"type": "tool", "name": "foo"}
 
+    # -- _get_max_tokens tests --
+
+    def test_get_max_tokens_opus_4(self):
+        assert self.mod._get_max_tokens("claude-opus-4-20250514") == 32768
+
+    def test_get_max_tokens_sonnet_4(self):
+        assert self.mod._get_max_tokens("claude-sonnet-4-20250514") == 16384
+
+    def test_get_max_tokens_3_7_sonnet(self):
+        assert self.mod._get_max_tokens("claude-3-7-sonnet-20250219") == 16384
+
+    def test_get_max_tokens_3_5_sonnet(self):
+        assert self.mod._get_max_tokens("claude-3-5-sonnet-20241022") == 8192
+
+    def test_get_max_tokens_3_5_haiku(self):
+        assert self.mod._get_max_tokens("claude-3-5-haiku-20241022") == 8192
+
+    def test_get_max_tokens_3_opus(self):
+        assert self.mod._get_max_tokens("claude-3-opus-20240229") == 4096
+
+    def test_get_max_tokens_3_haiku(self):
+        assert self.mod._get_max_tokens("claude-3-haiku-20240307") == 4096
+
+    def test_get_max_tokens_unknown(self):
+        assert self.mod._get_max_tokens("claude-99-mega") == 4096
+
+    # -- _build_request_kwargs tests --
+
     def test_build_request_kwargs_basic(self):
         msgs = [{"role": "user", "content": "Hi"}]
         req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None)
         assert req["model"] == "claude-sonnet-4-20250514"
-        assert req["max_tokens"] == 4096
+        assert req["max_tokens"] == 16384
         assert req["stream"] is False
         assert len(req["messages"]) == 1
+
+    def test_build_request_kwargs_opus4_default(self):
+        msgs = [{"role": "user", "content": "Hi"}]
+        req = self.mod._build_request_kwargs("claude-opus-4-20250514", msgs, False, None, None)
+        assert req["max_tokens"] == 32768
+
+    def test_build_request_kwargs_haiku3_default(self):
+        msgs = [{"role": "user", "content": "Hi"}]
+        req = self.mod._build_request_kwargs("claude-3-haiku-20240307", msgs, False, None, None)
+        assert req["max_tokens"] == 4096
+
+    def test_build_request_kwargs_user_max_tokens_override(self):
+        msgs = [{"role": "user", "content": "Hi"}]
+        req = self.mod._build_request_kwargs("claude-opus-4-20250514", msgs, False, None, None, max_tokens=1024)
+        assert req["max_tokens"] == 1024
+
+    def test_build_request_kwargs_max_completion_tokens_override(self):
+        msgs = [{"role": "user", "content": "Hi"}]
+        req = self.mod._build_request_kwargs("claude-opus-4-20250514", msgs, False, None, None, max_completion_tokens=2048)
+        assert req["max_tokens"] == 2048
 
     def test_build_request_kwargs_with_tools(self):
         msgs = [{"role": "user", "content": "Hi"}]
@@ -189,6 +237,92 @@ class TestAnthropicTranslation:
         req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, tools=tools)
         assert "tools" in req
         assert req["tools"][0]["name"] == "f"
+
+    def test_build_model_response_with_thinking_blocks(self):
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.id = "msg_123"
+        mock_response.model = "claude-sonnet-4-20250514"
+        mock_response.stop_reason = "end_turn"
+        mock_response.usage.input_tokens = 10
+        mock_response.usage.output_tokens = 50
+        mock_response.usage.cache_creation_input_tokens = None
+        mock_response.usage.cache_read_input_tokens = None
+
+        thinking_block = MagicMock()
+        thinking_block.type = "thinking"
+        thinking_block.thinking = "Let me reason..."
+        thinking_block.signature = "sig_abc"
+
+        text_block = MagicMock()
+        text_block.type = "text"
+        text_block.text = "Answer is 42."
+
+        mock_response.content = [thinking_block, text_block]
+
+        result = self.mod._build_model_response(mock_response)
+        msg = result.choices[0].message
+        assert msg.content == "Answer is 42."
+        assert msg.reasoning_content == "Let me reason..."
+        assert msg.thinking_blocks == [
+            {"type": "thinking", "thinking": "Let me reason...", "signature": "sig_abc"},
+        ]
+
+    def test_build_model_response_cache_tokens(self):
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.id = "msg_123"
+        mock_response.model = "claude-sonnet-4-20250514"
+        mock_response.stop_reason = "end_turn"
+        mock_response.usage.input_tokens = 100
+        mock_response.usage.output_tokens = 50
+        mock_response.usage.cache_creation_input_tokens = 80
+        mock_response.usage.cache_read_input_tokens = 20
+        mock_response.content = [MagicMock(type="text", text="Hello")]
+
+        result = self.mod._build_model_response(mock_response)
+        assert result.usage.prompt_tokens_details == {
+            "cached_tokens": 20,
+            "cache_creation_tokens": 80,
+        }
+
+    def test_build_stream_chunk_thinking_block_start(self):
+        from unittest.mock import MagicMock
+
+        event = MagicMock()
+        event.type = "content_block_start"
+        event.index = 0
+        event.content_block.type = "thinking"
+        chunk = self.mod._build_stream_chunk(event, "claude-sonnet-4", "c1")
+        assert chunk is not None
+        assert chunk.choices[0].delta.role == "assistant"
+
+    def test_build_stream_chunk_thinking_delta_emits_thinking_blocks(self):
+        from unittest.mock import MagicMock
+
+        event = MagicMock()
+        event.type = "content_block_delta"
+        event.index = 0
+        event.delta.type = "thinking_delta"
+        event.delta.thinking = "step 1"
+        chunk = self.mod._build_stream_chunk(event, "claude-sonnet-4", "c1")
+        delta = chunk.choices[0].delta
+        assert delta.reasoning_content == "step 1"
+        assert delta.thinking_blocks == [{"type": "thinking", "thinking": "step 1"}]
+
+    def test_build_stream_chunk_signature_delta(self):
+        from unittest.mock import MagicMock
+
+        event = MagicMock()
+        event.type = "content_block_delta"
+        event.index = 0
+        event.delta.type = "signature_delta"
+        event.delta.signature = "sig_final"
+        chunk = self.mod._build_stream_chunk(event, "claude-sonnet-4", "c1")
+        delta = chunk.choices[0].delta
+        assert delta.thinking_blocks == [{"type": "thinking", "signature": "sig_final"}]
 
     def test_build_request_kwargs_strips_openai_params(self):
         msgs = [{"role": "user", "content": "Hi"}]
@@ -207,6 +341,73 @@ class TestAnthropicTranslation:
         assert "presence_penalty" not in req
         assert "seed" not in req
         assert "n" not in req
+
+
+# ---------------------------------------------------------------------------
+# cache_control passthrough
+# ---------------------------------------------------------------------------
+
+    def test_translate_content_text_preserves_cache_control(self):
+        result = self.mod._translate_content(
+            [{"type": "text", "text": "cached", "cache_control": {"type": "ephemeral"}}]
+        )
+        assert result == [{"type": "text", "text": "cached", "cache_control": {"type": "ephemeral"}}]
+
+    def test_translate_content_text_no_cache_control_unchanged(self):
+        result = self.mod._translate_content([{"type": "text", "text": "hello"}])
+        assert result == [{"type": "text", "text": "hello"}]
+
+    def test_translate_content_image_url_preserves_cache_control(self):
+        result = self.mod._translate_content([{
+            "type": "image_url",
+            "image_url": {"url": "https://example.com/img.png"},
+            "cache_control": {"type": "ephemeral"},
+        }])
+        assert result[0]["type"] == "image"
+        assert result[0]["cache_control"] == {"type": "ephemeral"}
+
+    def test_translate_content_image_base64_preserves_cache_control(self):
+        result = self.mod._translate_content([{
+            "type": "image_url",
+            "image_url": {"url": "data:image/png;base64,abc123"},
+            "cache_control": {"type": "ephemeral"},
+        }])
+        assert result[0]["source"]["type"] == "base64"
+        assert result[0]["cache_control"] == {"type": "ephemeral"}
+
+    def test_translate_tools_preserves_cache_control(self):
+        tools = [{
+            "type": "function",
+            "cache_control": {"type": "ephemeral"},
+            "function": {
+                "name": "get_weather",
+                "description": "Get weather",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        }]
+        result = self.mod._translate_tools(tools)
+        assert result[0]["cache_control"] == {"type": "ephemeral"}
+        assert result[0]["name"] == "get_weather"
+
+    def test_extract_system_list_preserves_cache_control(self):
+        msgs = [
+            {"role": "system", "content": [{"type": "text", "text": "rules", "cache_control": {"type": "ephemeral"}}]},
+            {"role": "user", "content": "Hi"},
+        ]
+        system, conv = self.mod._extract_system(msgs)
+        assert system[0]["cache_control"] == {"type": "ephemeral"}
+
+    def test_build_request_kwargs_cache_control_end_to_end(self):
+        msgs = [
+            {"role": "system", "content": [{"type": "text", "text": "sys", "cache_control": {"type": "ephemeral"}}]},
+            {"role": "user", "content": [{"type": "text", "text": "hi", "cache_control": {"type": "ephemeral"}}]},
+        ]
+        tools = [{"type": "function", "cache_control": {"type": "ephemeral"},
+                  "function": {"name": "f", "parameters": {}}}]
+        req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, tools=tools)
+        assert req["system"][0]["cache_control"] == {"type": "ephemeral"}
+        assert req["messages"][0]["content"][0]["cache_control"] == {"type": "ephemeral"}
+        assert req["tools"][0]["cache_control"] == {"type": "ephemeral"}
 
 
 # ---------------------------------------------------------------------------

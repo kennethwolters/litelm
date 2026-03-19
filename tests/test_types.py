@@ -2,7 +2,9 @@
 
 from litelm._types import (
     ChatCompletionMessage,
+    ChatCompletionMessageToolCall,
     ChoiceDelta,
+    ChoiceDeltaToolCall,
     Choices,
     Delta,
     Message,
@@ -137,3 +139,92 @@ def test_model_response_coerces_dict_choices():
     assert r.choices[0].message.content == "a"
     assert r.choices[1].message.content == "b"
     assert r.choices[1].finish_reason == "stop"  # default
+
+
+def test_tool_call_auto_generates_id():
+    tc = ChatCompletionMessageToolCall(function={"name": "f", "arguments": "{}"})
+    assert tc.id.startswith("call_")
+    assert len(tc.id) == 29  # "call_" (5) + 24 hex chars
+
+
+def test_tool_call_preserves_explicit_id():
+    tc = ChatCompletionMessageToolCall(id="custom_123", function={"name": "f", "arguments": "{}"})
+    assert tc.id == "custom_123"
+
+
+def test_delta_tool_call_id_defaults_to_none():
+    """Delta tool calls are partial — id stays None until set by a stream chunk."""
+    dtc = ChoiceDeltaToolCall()
+    assert dtc.id is None
+
+
+# ---------------------------------------------------------------------------
+# thinking_blocks on ChatCompletionMessage / ChoiceDelta
+# ---------------------------------------------------------------------------
+
+
+def test_chat_completion_message_thinking_blocks():
+    blocks = [{"type": "thinking", "thinking": "Let me think...", "signature": "sig123"}]
+    msg = ChatCompletionMessage(content="hi", thinking_blocks=blocks)
+    assert msg.thinking_blocks == blocks
+
+
+def test_chat_completion_message_thinking_blocks_defaults_none():
+    msg = ChatCompletionMessage(content="hi")
+    assert msg.thinking_blocks is None
+
+
+def test_choice_delta_thinking_blocks():
+    blocks = [{"type": "thinking", "thinking": "step 1", "signature": "s1"}]
+    d = ChoiceDelta(content="hi", thinking_blocks=blocks)
+    assert d.thinking_blocks == blocks
+
+
+def test_choice_delta_thinking_blocks_defaults_none():
+    d = ChoiceDelta(content="hi")
+    assert d.thinking_blocks is None
+
+
+# ---------------------------------------------------------------------------
+# completion_tokens_details / prompt_tokens_details on CompletionUsage
+# ---------------------------------------------------------------------------
+
+
+def test_usage_completion_tokens_details():
+    from litelm._types import CompletionUsage
+
+    u = CompletionUsage(
+        prompt_tokens=10, completion_tokens=20, total_tokens=30,
+        completion_tokens_details={"reasoning_tokens": 15},
+    )
+    assert u.completion_tokens_details == {"reasoning_tokens": 15}
+
+
+def test_usage_prompt_tokens_details():
+    from litelm._types import CompletionUsage
+
+    u = CompletionUsage(
+        prompt_tokens=10, completion_tokens=20, total_tokens=30,
+        prompt_tokens_details={"cached_tokens": 5},
+    )
+    assert u.prompt_tokens_details == {"cached_tokens": 5}
+
+
+def test_usage_token_details_default_none():
+    from litelm._types import CompletionUsage
+
+    u = CompletionUsage(prompt_tokens=10, completion_tokens=20, total_tokens=30)
+    assert u.completion_tokens_details is None
+    assert u.prompt_tokens_details is None
+
+
+def test_usage_dict_includes_token_details():
+    from litelm._types import CompletionUsage
+
+    u = CompletionUsage(
+        prompt_tokens=10, completion_tokens=20, total_tokens=30,
+        completion_tokens_details={"reasoning_tokens": 15},
+    )
+    d = dict(u)
+    assert d["completion_tokens_details"] == {"reasoning_tokens": 15}
+    assert d["prompt_tokens_details"] is None

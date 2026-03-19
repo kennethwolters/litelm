@@ -5,6 +5,7 @@ can construct mock responses with the same API as litellm.
 """
 
 import json
+import uuid
 
 
 def _to_dict(obj):
@@ -42,8 +43,8 @@ class Function:
 class ChatCompletionMessageToolCall:
     __slots__ = ("id", "type", "function")
 
-    def __init__(self, id="", type="function", function=None):
-        self.id = id
+    def __init__(self, id=None, type="function", function=None):
+        self.id = id if id is not None else f"call_{uuid.uuid4().hex[:24]}"
         self.type = type
         self.function = Function(**function) if isinstance(function, dict) else function
 
@@ -91,12 +92,14 @@ def _coerce_delta_tool_call(d):
 
 
 class CompletionUsage:
-    __slots__ = ("prompt_tokens", "completion_tokens", "total_tokens")
+    __slots__ = ("prompt_tokens", "completion_tokens", "total_tokens", "completion_tokens_details", "prompt_tokens_details")
 
-    def __init__(self, prompt_tokens=0, completion_tokens=0, total_tokens=0, **kwargs):
+    def __init__(self, prompt_tokens=0, completion_tokens=0, total_tokens=0, completion_tokens_details=None, prompt_tokens_details=None, **kwargs):
         self.prompt_tokens = prompt_tokens
         self.completion_tokens = completion_tokens
         self.total_tokens = total_tokens
+        self.completion_tokens_details = completion_tokens_details
+        self.prompt_tokens_details = prompt_tokens_details
 
     def __iter__(self):
         """Support dict(usage) — DSPy access pattern."""
@@ -110,9 +113,9 @@ class CompletionUsage:
 
 
 class ChatCompletionMessage:
-    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images")
+    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images", "thinking_blocks")
 
-    def __init__(self, role="assistant", content=None, tool_calls=None, reasoning_content=None, images=None, **kwargs):
+    def __init__(self, role="assistant", content=None, tool_calls=None, reasoning_content=None, images=None, thinking_blocks=None, **kwargs):
         self.role = role
         self.content = content
         if tool_calls is not None:
@@ -121,6 +124,7 @@ class ChatCompletionMessage:
             self.tool_calls = tool_calls
         self.reasoning_content = reasoning_content
         self.images = images
+        self.thinking_blocks = thinking_blocks
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -163,9 +167,9 @@ class ChatCompletion:
 
 
 class ChoiceDelta:
-    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images")
+    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images", "thinking_blocks")
 
-    def __init__(self, role=None, content=None, tool_calls=None, reasoning_content=None, images=None, **kwargs):
+    def __init__(self, role=None, content=None, tool_calls=None, reasoning_content=None, images=None, thinking_blocks=None, **kwargs):
         self.role = role
         self.content = content
         if tool_calls is not None:
@@ -174,6 +178,7 @@ class ChoiceDelta:
             self.tool_calls = tool_calls
         self.reasoning_content = reasoning_content
         self.images = images
+        self.thinking_blocks = thinking_blocks
 
     def __getitem__(self, key):
         return getattr(self, key)

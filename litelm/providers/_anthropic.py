@@ -93,30 +93,32 @@ def _translate_content(content):
         elif isinstance(part, dict):
             ptype = part.get("type", "text")
             if ptype == "text":
-                blocks.append({"type": "text", "text": part.get("text", "")})
+                block = {"type": "text", "text": part.get("text", "")}
+                if "cache_control" in part:
+                    block["cache_control"] = part["cache_control"]
+                blocks.append(block)
             elif ptype == "image_url":
                 url_data = part.get("image_url", {})
                 url = url_data.get("url", "") if isinstance(url_data, dict) else url_data
                 if url.startswith("data:"):
                     media_type, _, b64_data = url.partition(";base64,")
                     media_type = media_type.replace("data:", "")
-                    blocks.append(
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": media_type,
-                                "data": b64_data,
-                            },
-                        }
-                    )
+                    block = {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": media_type,
+                            "data": b64_data,
+                        },
+                    }
                 else:
-                    blocks.append(
-                        {
-                            "type": "image",
-                            "source": {"type": "url", "url": url},
-                        }
-                    )
+                    block = {
+                        "type": "image",
+                        "source": {"type": "url", "url": url},
+                    }
+                if "cache_control" in part:
+                    block["cache_control"] = part["cache_control"]
+                blocks.append(block)
             else:
                 blocks.append(part)
     return blocks
@@ -195,13 +197,14 @@ def _translate_tools(tools):
     for tool in tools:
         if tool.get("type") == "function":
             fn = tool["function"]
-            anthropic_tools.append(
-                {
-                    "name": fn["name"],
-                    "description": fn.get("description", ""),
-                    "input_schema": fn.get("parameters", {"type": "object", "properties": {}}),
-                }
-            )
+            tool_def = {
+                "name": fn["name"],
+                "description": fn.get("description", ""),
+                "input_schema": fn.get("parameters", {"type": "object", "properties": {}}),
+            }
+            if "cache_control" in tool:
+                tool_def["cache_control"] = tool["cache_control"]
+            anthropic_tools.append(tool_def)
     return anthropic_tools or None
 
 
@@ -224,6 +227,28 @@ def _translate_tool_choice(tool_choice):
     return None
 
 
+_MAX_OUTPUT_TOKENS = {
+    "claude-opus-4": 32768,
+    "claude-4-opus": 32768,
+    "claude-sonnet-4": 16384,
+    "claude-4-sonnet": 16384,
+    "claude-3-7-sonnet": 16384,
+    "claude-3-5-sonnet": 8192,
+    "claude-3-5-haiku": 8192,
+    "claude-3-opus": 4096,
+    "claude-3-sonnet": 4096,
+    "claude-3-haiku": 4096,
+}
+_DEFAULT_MAX_TOKENS = 4096
+
+
+def _get_max_tokens(model_name):
+    for prefix, tokens in _MAX_OUTPUT_TOKENS.items():
+        if model_name.startswith(prefix):
+            return tokens
+    return _DEFAULT_MAX_TOKENS
+
+
 def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwargs):
     """Build kwargs dict for the Anthropic SDK create call."""
     system, conversation = _extract_system(messages)
@@ -238,7 +263,7 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
     if system:
         req["system"] = system
 
-    max_tokens = kwargs.pop("max_tokens", None) or kwargs.pop("max_completion_tokens", None) or 4096
+    max_tokens = kwargs.pop("max_tokens", None) or kwargs.pop("max_completion_tokens", None) or _get_max_tokens(model_name)
     req["max_tokens"] = max_tokens
 
     for key in ("temperature", "top_p", "stop"):
@@ -314,6 +339,7 @@ def _build_model_response(response):
     content_text = ""
     tool_calls = []
     reasoning_content = ""
+    thinking_blocks = []
 
     for block in response.content:
         if block.type == "text":
@@ -331,12 +357,18 @@ def _build_model_response(response):
             )
         elif block.type == "thinking":
             reasoning_content += block.thinking
+            thinking_blocks.append({
+                "type": "thinking",
+                "thinking": block.thinking,
+                "signature": getattr(block, "signature", ""),
+            })
 
     message = ChatCompletionMessage(
         role="assistant",
         content=content_text or None,
         tool_calls=tool_calls or None,
         reasoning_content=reasoning_content or None,
+        thinking_blocks=thinking_blocks or None,
     )
 
     stop_reason_map = {
@@ -352,6 +384,17 @@ def _build_model_response(response):
         completion_tokens=response.usage.output_tokens,
         total_tokens=response.usage.input_tokens + response.usage.output_tokens,
     )
+
+    # Populate prompt_tokens_details from Anthropic cache tokens
+    cache_creation = getattr(response.usage, "cache_creation_input_tokens", None)
+    cache_read = getattr(response.usage, "cache_read_input_tokens", None)
+    if cache_creation is not None or cache_read is not None:
+        details = {}
+        if cache_read is not None:
+            details["cached_tokens"] = cache_read
+        if cache_creation is not None:
+            details["cache_creation_tokens"] = cache_creation
+        usage.prompt_tokens_details = details
 
     completion = ChatCompletion(
         id=response.id,
@@ -377,6 +420,8 @@ def _build_stream_chunk(event, model, chunk_id):
         if block.type == "text":
             delta_kwargs["content"] = ""
             delta_kwargs["role"] = "assistant"
+        elif block.type == "thinking":
+            delta_kwargs["role"] = "assistant"
         elif block.type == "tool_use":
             delta_kwargs["tool_calls"] = [
                 ChoiceDeltaToolCall(
@@ -392,6 +437,9 @@ def _build_stream_chunk(event, model, chunk_id):
             delta_kwargs["content"] = delta.text
         elif delta.type == "thinking_delta":
             delta_kwargs["reasoning_content"] = delta.thinking
+            delta_kwargs["thinking_blocks"] = [{"type": "thinking", "thinking": delta.thinking}]
+        elif delta.type == "signature_delta":
+            delta_kwargs["thinking_blocks"] = [{"type": "thinking", "signature": delta.signature}]
         elif delta.type == "input_json_delta":
             delta_kwargs["tool_calls"] = [
                 ChoiceDeltaToolCall(

@@ -309,6 +309,9 @@ def stream_chunk_builder(chunks):
     usage = None
     finish_reason = None
     reasoning_content_parts = []
+    thinking_blocks = []
+    current_thinking_parts = []
+    current_thinking_signature = None
 
     for c in chunks:
         chunk = c._chunk if hasattr(c, "_chunk") else c
@@ -321,6 +324,8 @@ def stream_chunk_builder(chunks):
                     prompt_tokens=chunk.usage.prompt_tokens,
                     completion_tokens=chunk.usage.completion_tokens,
                     total_tokens=chunk.usage.total_tokens,
+                    completion_tokens_details=getattr(chunk.usage, "completion_tokens_details", None),
+                    prompt_tokens_details=getattr(chunk.usage, "prompt_tokens_details", None),
                 )
             else:
                 # Accumulate: take max of each field (Anthropic splits across chunks)
@@ -329,6 +334,13 @@ def stream_chunk_builder(chunks):
                 # Preserve API's total if it includes hidden categories (e.g. reasoning tokens)
                 computed = usage.prompt_tokens + usage.completion_tokens
                 usage.total_tokens = max(usage.total_tokens, chunk.usage.total_tokens, computed)
+                # Take latest non-None token details
+                ctd = getattr(chunk.usage, "completion_tokens_details", None)
+                if ctd is not None:
+                    usage.completion_tokens_details = ctd
+                ptd = getattr(chunk.usage, "prompt_tokens_details", None)
+                if ptd is not None:
+                    usage.prompt_tokens_details = ptd
 
         if chunk.choices:
             choice = chunk.choices[0]
@@ -343,6 +355,22 @@ def stream_chunk_builder(chunks):
                 rc = getattr(delta, "reasoning_content", None)
                 if rc:
                     reasoning_content_parts.append(rc)
+                # Collect thinking_blocks if present
+                tb = getattr(delta, "thinking_blocks", None)
+                if tb:
+                    for block in tb:
+                        if block.get("thinking"):
+                            current_thinking_parts.append(block["thinking"])
+                        if block.get("signature"):
+                            current_thinking_signature = block["signature"]
+                            # Flush: signature terminates a thinking block
+                            thinking_blocks.append({
+                                "type": "thinking",
+                                "thinking": "".join(current_thinking_parts),
+                                "signature": current_thinking_signature,
+                            })
+                            current_thinking_parts = []
+                            current_thinking_signature = None
                 if getattr(delta, "images", None):
                     for img in delta.images:
                         images_by_index[img["index"]] = img
@@ -351,7 +379,7 @@ def stream_chunk_builder(chunks):
                         idx = tc.index
                         if idx not in tool_calls_by_index:
                             tool_calls_by_index[idx] = {
-                                "id": tc.id or "",
+                                "id": tc.id or f"call_{__import__('uuid').uuid4().hex[:24]}",
                                 "type": "function",
                                 "function": {"name": tc.function.name or "", "arguments": ""},
                             }
@@ -362,6 +390,13 @@ def stream_chunk_builder(chunks):
                                 tool_calls_by_index[idx]["function"]["name"] = tc.function.name
                         if tc.function.arguments:
                             tool_calls_by_index[idx]["function"]["arguments"] += tc.function.arguments
+
+    # Flush any remaining thinking block (no signature received)
+    if current_thinking_parts:
+        block = {"type": "thinking", "thinking": "".join(current_thinking_parts)}
+        if current_thinking_signature:
+            block["signature"] = current_thinking_signature
+        thinking_blocks.append(block)
 
     content = "".join(content_parts) or None
     tool_calls = None
@@ -383,6 +418,7 @@ def stream_chunk_builder(chunks):
         tool_calls=tool_calls,
         reasoning_content="".join(reasoning_content_parts) if reasoning_content_parts else None,
         images=images,
+        thinking_blocks=thinking_blocks or None,
     )
 
     if usage is None:

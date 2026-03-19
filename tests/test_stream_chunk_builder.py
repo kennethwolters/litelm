@@ -301,3 +301,41 @@ def test_stream_chunk_builder_multiple_tool_calls():
     assert tc1.id == "call_Qq8yDeRx7v276abRcLrYORdW"
 
     assert response.choices[0].finish_reason == "tool_calls"
+
+
+def test_stream_chunk_builder_thinking_blocks():
+    chunks = [
+        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"role": "assistant", "thinking_blocks": [{"type": "thinking", "thinking": "step 1"}]}}]),
+        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"thinking_blocks": [{"type": "thinking", "thinking": "step 2"}]}}]),
+        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"thinking_blocks": [{"type": "thinking", "signature": "sig_abc"}]}}]),
+        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"content": "Answer."}}]),
+        ModelResponseStream(id="c1", model="m", choices=[{"finish_reason": "stop", "delta": {}}]),
+    ]
+    response = stream_chunk_builder(chunks)
+    msg = response.choices[0].message
+    assert msg.content == "Answer."
+    assert msg.thinking_blocks is not None
+    assert len(msg.thinking_blocks) == 1
+    assert msg.thinking_blocks[0]["type"] == "thinking"
+    assert msg.thinking_blocks[0]["thinking"] == "step 1step 2"
+    assert msg.thinking_blocks[0]["signature"] == "sig_abc"
+
+
+def test_stream_chunk_builder_token_details():
+    from litelm._types import CompletionUsage
+
+    chunks = [
+        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"role": "assistant", "content": "hi"}}]),
+        ModelResponseStream(
+            id="c1", model="m",
+            choices=[{"finish_reason": "stop", "delta": {}}],
+            usage=CompletionUsage(
+                prompt_tokens=10, completion_tokens=20, total_tokens=30,
+                completion_tokens_details={"reasoning_tokens": 5},
+                prompt_tokens_details={"cached_tokens": 3},
+            ),
+        ),
+    ]
+    response = stream_chunk_builder(chunks)
+    assert response.usage.completion_tokens_details == {"reasoning_tokens": 5}
+    assert response.usage.prompt_tokens_details == {"cached_tokens": 3}
