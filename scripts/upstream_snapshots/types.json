@@ -812,6 +812,22 @@
       ],
       "fields": []
     },
+    "StandardAuditLogPayload": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "action",
+        "before_value",
+        "changed_by",
+        "changed_by_api_key",
+        "id",
+        "object_id",
+        "table_name",
+        "updated_at",
+        "updated_values"
+      ]
+    },
     "StandardBuiltInToolsParams": {
       "bases": [
         "TypedDict"
