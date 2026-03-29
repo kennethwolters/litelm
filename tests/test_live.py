@@ -4,6 +4,7 @@ import json
 import os
 
 import pytest
+from pydantic import BaseModel
 
 import litelm
 
@@ -597,8 +598,6 @@ def test_openai_text_completion():
 
 
 # --- Pydantic response_format ---
-
-from pydantic import BaseModel
 
 
 class StructuredAnswer(BaseModel):

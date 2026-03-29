@@ -146,6 +146,7 @@ def _normalize_response_format(response_format):
     if isinstance(response_format, type):
         try:
             from pydantic import BaseModel
+
             if issubclass(response_format, BaseModel):
                 schema = response_format.model_json_schema()
                 _add_additional_properties_false(schema)
@@ -412,11 +413,13 @@ def stream_chunk_builder(chunks):
                         if block.get("signature"):
                             current_thinking_signature = block["signature"]
                             # Flush: signature terminates a thinking block
-                            thinking_blocks.append({
-                                "type": "thinking",
-                                "thinking": "".join(current_thinking_parts),
-                                "signature": current_thinking_signature,
-                            })
+                            thinking_blocks.append(
+                                {
+                                    "type": "thinking",
+                                    "thinking": "".join(current_thinking_parts),
+                                    "signature": current_thinking_signature,
+                                }
+                            )
                             current_thinking_parts = []
                             current_thinking_signature = None
                 if getattr(delta, "images", None):

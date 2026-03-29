@@ -196,10 +196,18 @@ def _translate_messages(messages):
     return merged
 
 
-_UNSUPPORTED_SCHEMA_FIELDS = frozenset({
-    "maxItems", "minItems", "minimum", "maximum",
-    "exclusiveMinimum", "exclusiveMaximum", "minLength", "maxLength",
-})
+_UNSUPPORTED_SCHEMA_FIELDS = frozenset(
+    {
+        "maxItems",
+        "minItems",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "minLength",
+        "maxLength",
+    }
+)
 
 
 def _filter_schema(schema):
@@ -337,7 +345,9 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
     if system:
         req["system"] = system
 
-    max_tokens = kwargs.pop("max_tokens", None) or kwargs.pop("max_completion_tokens", None) or _get_max_tokens(model_name)
+    max_tokens = (
+        kwargs.pop("max_tokens", None) or kwargs.pop("max_completion_tokens", None) or _get_max_tokens(model_name)
+    )
     req["max_tokens"] = max_tokens
 
     for key in ("temperature", "top_p", "stop"):
@@ -440,11 +450,13 @@ def _build_model_response(response):
             )
         elif block.type == "thinking":
             reasoning_content += block.thinking
-            thinking_blocks.append({
-                "type": "thinking",
-                "thinking": block.thinking,
-                "signature": getattr(block, "signature", ""),
-            })
+            thinking_blocks.append(
+                {
+                    "type": "thinking",
+                    "thinking": block.thinking,
+                    "signature": getattr(block, "signature", ""),
+                }
+            )
 
     message = ChatCompletionMessage(
         role="assistant",

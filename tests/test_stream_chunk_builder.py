@@ -303,13 +303,36 @@ def test_stream_chunk_builder_multiple_tool_calls():
     assert response.choices[0].finish_reason == "tool_calls"
 
 
+def _thinking_chunk(delta):
+    return ModelResponseStream(id="c1", model="m", choices=[{"delta": delta}])
+
+
 def test_stream_chunk_builder_thinking_blocks():
     chunks = [
-        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"role": "assistant", "thinking_blocks": [{"type": "thinking", "thinking": "step 1"}]}}]),
-        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"thinking_blocks": [{"type": "thinking", "thinking": "step 2"}]}}]),
-        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"thinking_blocks": [{"type": "thinking", "signature": "sig_abc"}]}}]),
-        ModelResponseStream(id="c1", model="m", choices=[{"delta": {"content": "Answer."}}]),
-        ModelResponseStream(id="c1", model="m", choices=[{"finish_reason": "stop", "delta": {}}]),
+        _thinking_chunk(
+            {
+                "role": "assistant",
+                "thinking_blocks": [
+                    {"type": "thinking", "thinking": "step 1"},
+                ],
+            }
+        ),
+        _thinking_chunk(
+            {
+                "thinking_blocks": [
+                    {"type": "thinking", "thinking": "step 2"},
+                ]
+            }
+        ),
+        _thinking_chunk(
+            {
+                "thinking_blocks": [
+                    {"type": "thinking", "signature": "sig_abc"},
+                ]
+            }
+        ),
+        _thinking_chunk({"content": "Answer."}),
+        _thinking_chunk({"finish_reason": "stop"}),
     ]
     response = stream_chunk_builder(chunks)
     msg = response.choices[0].message
@@ -327,10 +350,13 @@ def test_stream_chunk_builder_token_details():
     chunks = [
         ModelResponseStream(id="c1", model="m", choices=[{"delta": {"role": "assistant", "content": "hi"}}]),
         ModelResponseStream(
-            id="c1", model="m",
+            id="c1",
+            model="m",
             choices=[{"finish_reason": "stop", "delta": {}}],
             usage=CompletionUsage(
-                prompt_tokens=10, completion_tokens=20, total_tokens=30,
+                prompt_tokens=10,
+                completion_tokens=20,
+                total_tokens=30,
                 completion_tokens_details={"reasoning_tokens": 5},
                 prompt_tokens_details={"cached_tokens": 3},
             ),

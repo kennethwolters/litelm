@@ -194,7 +194,9 @@ def test_usage_completion_tokens_details():
     from litelm._types import CompletionUsage
 
     u = CompletionUsage(
-        prompt_tokens=10, completion_tokens=20, total_tokens=30,
+        prompt_tokens=10,
+        completion_tokens=20,
+        total_tokens=30,
         completion_tokens_details={"reasoning_tokens": 15},
     )
     assert u.completion_tokens_details == {"reasoning_tokens": 15}
@@ -204,7 +206,9 @@ def test_usage_prompt_tokens_details():
     from litelm._types import CompletionUsage
 
     u = CompletionUsage(
-        prompt_tokens=10, completion_tokens=20, total_tokens=30,
+        prompt_tokens=10,
+        completion_tokens=20,
+        total_tokens=30,
         prompt_tokens_details={"cached_tokens": 5},
     )
     assert u.prompt_tokens_details == {"cached_tokens": 5}
@@ -222,7 +226,9 @@ def test_usage_dict_includes_token_details():
     from litelm._types import CompletionUsage
 
     u = CompletionUsage(
-        prompt_tokens=10, completion_tokens=20, total_tokens=30,
+        prompt_tokens=10,
+        completion_tokens=20,
+        total_tokens=30,
         completion_tokens_details={"reasoning_tokens": 15},
     )
     d = dict(u)

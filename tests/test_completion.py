@@ -6,7 +6,7 @@ from unittest import mock
 import openai
 import pytest
 
-from litelm._completion import _map_openai_error, _prepare_call, acompletion, completion
+from litelm._completion import _map_openai_error, _normalize_response_format, _prepare_call, acompletion, completion
 from litelm._exceptions import (
     AuthenticationError,
     BadRequestError,
@@ -161,8 +161,6 @@ def test_map_openai_error_unprocessable():
 
 
 # --- response_format normalization ---
-
-from litelm._completion import _normalize_response_format
 
 
 def test_normalize_response_format_none():

@@ -228,7 +228,14 @@ class TestAnthropicTranslation:
 
     def test_build_request_kwargs_max_completion_tokens_override(self):
         msgs = [{"role": "user", "content": "Hi"}]
-        req = self.mod._build_request_kwargs("claude-opus-4-20250514", msgs, False, None, None, max_completion_tokens=2048)
+        req = self.mod._build_request_kwargs(
+            "claude-opus-4-20250514",
+            msgs,
+            False,
+            None,
+            None,
+            max_completion_tokens=2048,
+        )
         assert req["max_tokens"] == 2048
 
     def test_build_request_kwargs_with_tools(self):
@@ -342,10 +349,9 @@ class TestAnthropicTranslation:
         assert "seed" not in req
         assert "n" not in req
 
-
-# ---------------------------------------------------------------------------
-# cache_control passthrough
-# ---------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------
+    # cache_control passthrough
+    # ---------------------------------------------------------------------------
 
     def test_translate_content_text_preserves_cache_control(self):
         result = self.mod._translate_content(
@@ -358,33 +364,43 @@ class TestAnthropicTranslation:
         assert result == [{"type": "text", "text": "hello"}]
 
     def test_translate_content_image_url_preserves_cache_control(self):
-        result = self.mod._translate_content([{
-            "type": "image_url",
-            "image_url": {"url": "https://example.com/img.png"},
-            "cache_control": {"type": "ephemeral"},
-        }])
+        result = self.mod._translate_content(
+            [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "https://example.com/img.png"},
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ]
+        )
         assert result[0]["type"] == "image"
         assert result[0]["cache_control"] == {"type": "ephemeral"}
 
     def test_translate_content_image_base64_preserves_cache_control(self):
-        result = self.mod._translate_content([{
-            "type": "image_url",
-            "image_url": {"url": "data:image/png;base64,abc123"},
-            "cache_control": {"type": "ephemeral"},
-        }])
+        result = self.mod._translate_content(
+            [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": "data:image/png;base64,abc123"},
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ]
+        )
         assert result[0]["source"]["type"] == "base64"
         assert result[0]["cache_control"] == {"type": "ephemeral"}
 
     def test_translate_tools_preserves_cache_control(self):
-        tools = [{
-            "type": "function",
-            "cache_control": {"type": "ephemeral"},
-            "function": {
-                "name": "get_weather",
-                "description": "Get weather",
-                "parameters": {"type": "object", "properties": {}},
-            },
-        }]
+        tools = [
+            {
+                "type": "function",
+                "cache_control": {"type": "ephemeral"},
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get weather",
+                    "parameters": {"type": "object", "properties": {}},
+                },
+            }
+        ]
         result = self.mod._translate_tools(tools)
         assert result[0]["cache_control"] == {"type": "ephemeral"}
         assert result[0]["name"] == "get_weather"
@@ -402,8 +418,9 @@ class TestAnthropicTranslation:
             {"role": "system", "content": [{"type": "text", "text": "sys", "cache_control": {"type": "ephemeral"}}]},
             {"role": "user", "content": [{"type": "text", "text": "hi", "cache_control": {"type": "ephemeral"}}]},
         ]
-        tools = [{"type": "function", "cache_control": {"type": "ephemeral"},
-                  "function": {"name": "f", "parameters": {}}}]
+        tools = [
+            {"type": "function", "cache_control": {"type": "ephemeral"}, "function": {"name": "f", "parameters": {}}}
+        ]
         req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, tools=tools)
         assert req["system"][0]["cache_control"] == {"type": "ephemeral"}
         assert req["messages"][0]["content"][0]["cache_control"] == {"type": "ephemeral"}
@@ -439,14 +456,28 @@ class TestAnthropicTranslation:
 
     def test_build_request_kwargs_reasoning_effort(self):
         msgs = [{"role": "user", "content": "hi"}]
-        req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, reasoning_effort="medium")
+        req = self.mod._build_request_kwargs(
+            "claude-sonnet-4-20250514",
+            msgs,
+            False,
+            None,
+            None,
+            reasoning_effort="medium",
+        )
         assert req["thinking"] == {"type": "enabled", "budget_tokens": 2048}
         assert "reasoning_effort" not in req
 
     def test_build_request_kwargs_explicit_thinking_overrides_reasoning_effort(self):
         msgs = [{"role": "user", "content": "hi"}]
-        req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None,
-            thinking={"type": "enabled", "budget_tokens": 10000}, reasoning_effort="low")
+        req = self.mod._build_request_kwargs(
+            "claude-sonnet-4-20250514",
+            msgs,
+            False,
+            None,
+            None,
+            thinking={"type": "enabled", "budget_tokens": 10000},
+            reasoning_effort="low",
+        )
         assert req["thinking"]["budget_tokens"] == 10000
 
     # -- Gap #6: empty text block filtering --
@@ -467,18 +498,18 @@ class TestAnthropicTranslation:
         assert system is None
 
     def test_translate_content_filters_empty_text(self):
-        result = self.mod._translate_content([
-            {"type": "text", "text": ""},
-            {"type": "text", "text": "hello"},
-        ])
+        result = self.mod._translate_content(
+            [
+                {"type": "text", "text": ""},
+                {"type": "text", "text": "hello"},
+            ]
+        )
         assert result == [{"type": "text", "text": "hello"}]
 
     # -- Gap #7: JSON schema filtering --
 
     def test_filter_schema_strips_unsupported(self):
-        schema = {"type": "object", "properties": {
-            "count": {"type": "integer", "minimum": 1, "maximum": 100}
-        }}
+        schema = {"type": "object", "properties": {"count": {"type": "integer", "minimum": 1, "maximum": 100}}}
         result = self.mod._filter_schema(schema)
         assert "minimum" not in result["properties"]["count"]
         assert "maximum" not in result["properties"]["count"]
@@ -500,11 +531,18 @@ class TestAnthropicTranslation:
         assert "minimum" not in result["anyOf"][0]
 
     def test_translate_tools_filters_schema(self):
-        tools = [{"type": "function", "function": {
-            "name": "f", "parameters": {"type": "object", "properties": {
-                "n": {"type": "integer", "minimum": 0, "maximum": 10}
-            }}
-        }}]
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "f",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"n": {"type": "integer", "minimum": 0, "maximum": 10}},
+                    },
+                },
+            }
+        ]
         result = self.mod._translate_tools(tools)
         assert "minimum" not in result[0]["input_schema"]["properties"]["n"]
 

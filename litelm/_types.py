@@ -92,9 +92,23 @@ def _coerce_delta_tool_call(d):
 
 
 class CompletionUsage:
-    __slots__ = ("prompt_tokens", "completion_tokens", "total_tokens", "completion_tokens_details", "prompt_tokens_details")
+    __slots__ = (
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "completion_tokens_details",
+        "prompt_tokens_details",
+    )
 
-    def __init__(self, prompt_tokens=0, completion_tokens=0, total_tokens=0, completion_tokens_details=None, prompt_tokens_details=None, **kwargs):
+    def __init__(
+        self,
+        prompt_tokens=0,
+        completion_tokens=0,
+        total_tokens=0,
+        completion_tokens_details=None,
+        prompt_tokens_details=None,
+        **kwargs,
+    ):
         self.prompt_tokens = prompt_tokens
         self.completion_tokens = completion_tokens
         self.total_tokens = total_tokens
@@ -115,7 +129,16 @@ class CompletionUsage:
 class ChatCompletionMessage:
     __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images", "thinking_blocks")
 
-    def __init__(self, role="assistant", content=None, tool_calls=None, reasoning_content=None, images=None, thinking_blocks=None, **kwargs):
+    def __init__(
+        self,
+        role="assistant",
+        content=None,
+        tool_calls=None,
+        reasoning_content=None,
+        images=None,
+        thinking_blocks=None,
+        **kwargs,
+    ):
         self.role = role
         self.content = content
         if tool_calls is not None:
@@ -169,7 +192,16 @@ class ChatCompletion:
 class ChoiceDelta:
     __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images", "thinking_blocks")
 
-    def __init__(self, role=None, content=None, tool_calls=None, reasoning_content=None, images=None, thinking_blocks=None, **kwargs):
+    def __init__(
+        self,
+        role=None,
+        content=None,
+        tool_calls=None,
+        reasoning_content=None,
+        images=None,
+        thinking_blocks=None,
+        **kwargs,
+    ):
         self.role = role
         self.content = content
         if tool_calls is not None:
