@@ -1,6 +1,6 @@
 """litelm — thin OpenAI-SDK wrapper replacing litellm in DSPy."""
 
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 
 from litelm._client_cache import close_async_clients as close_litelm_async_clients
 from litelm._completion import acompletion, completion, mock_completion, stream_chunk_builder
