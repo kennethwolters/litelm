@@ -627,7 +627,7 @@ def test_openai_pydantic_response_format():
 
 def _azure_env():
     """Extract Azure base endpoint and api_version from AZURE_OPENAI_URL."""
-    from urllib.parse import urlparse, parse_qs
+    from urllib.parse import parse_qs, urlparse
 
     raw = os.environ.get("AZURE_OPENAI_URL", "")
     parsed = urlparse(raw)

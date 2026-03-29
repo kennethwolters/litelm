@@ -114,34 +114,41 @@ async def test_close_async_clients():
     assert len(_async_clients) == 0
 
 
+def _fake_token():
+    return "fake-token"
+
+
 def test_azure_ad_token_provider_forwarded():
     """azure_ad_token_provider is passed to AzureOpenAI constructor."""
-    provider_fn = lambda: "fake-token"
-    client = get_sync_client("azure", "https://my.azure.com", None, azure_ad_token_provider=provider_fn)
-    assert client._azure_ad_token_provider is provider_fn
+    client = get_sync_client("azure", "https://my.azure.com", None, azure_ad_token_provider=_fake_token)
+    assert client._azure_ad_token_provider is _fake_token
 
 
 def test_azure_ad_token_provider_forwarded_async():
     """azure_ad_token_provider is passed to AsyncAzureOpenAI constructor."""
-    provider_fn = lambda: "fake-token"
-    client = get_async_client("azure", "https://my.azure.com", None, azure_ad_token_provider=provider_fn)
-    assert client._azure_ad_token_provider is provider_fn
+    client = get_async_client("azure", "https://my.azure.com", None, azure_ad_token_provider=_fake_token)
+    assert client._azure_ad_token_provider is _fake_token
+
+
+def _token_a():
+    return "token-a"
+
+
+def _token_b():
+    return "token-b"
 
 
 def test_azure_different_token_providers_not_cached():
     """Different azure_ad_token_provider functions produce different clients."""
-    fn1 = lambda: "token-a"
-    fn2 = lambda: "token-b"
-    c1 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=fn1)
-    c2 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=fn2)
+    c1 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_token_a)
+    c2 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_token_b)
     assert c1 is not c2
 
 
 def test_azure_same_token_provider_cached():
     """Same azure_ad_token_provider function reuses cached client."""
-    fn = lambda: "token"
-    c1 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=fn)
-    c2 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=fn)
+    c1 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_fake_token)
+    c2 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_fake_token)
     assert c1 is c2
 
 

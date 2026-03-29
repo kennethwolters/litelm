@@ -232,20 +232,22 @@ def test_completion_normalizes_pydantic_response_format(mock_get_client):
 # --- azure_ad_token_provider passthrough ---
 
 
+def _fake_token_provider():
+    return "fake-token"
+
+
 def test_prepare_call_pops_azure_ad_token_provider():
     """azure_ad_token_provider is extracted from kwargs, not left for create()."""
-    provider_fn = lambda: "fake-token"
-    kwargs = {"temperature": 0.5, "azure_ad_token_provider": provider_fn, "api_key": "sk-test"}
+    kwargs = {"temperature": 0.5, "azure_ad_token_provider": _fake_token_provider, "api_key": "sk-test"}
     result = _prepare_call("azure/gpt-4o", kwargs)
     provider, model, base_url, api_key, api_version, num_retries, atp, cleaned = result
     assert "azure_ad_token_provider" not in cleaned
-    assert atp is provider_fn
+    assert atp is _fake_token_provider
 
 
 @mock.patch("litelm._completion.get_sync_client")
 def test_completion_forwards_azure_ad_token_provider_to_client(mock_get_client):
     """azure_ad_token_provider reaches get_sync_client, not create()."""
-    provider_fn = lambda: "fake-token"
     mock_client = mock.MagicMock()
     mock_client.chat.completions.create.return_value = _mock_completion()
     mock_get_client.return_value = mock_client
@@ -255,12 +257,12 @@ def test_completion_forwards_azure_ad_token_provider_to_client(mock_get_client):
         messages=[{"role": "user", "content": "hi"}],
         api_key="sk-test",
         api_base="https://my.azure.com",
-        azure_ad_token_provider=provider_fn,
+        azure_ad_token_provider=_fake_token_provider,
     )
 
     # Should be forwarded to get_sync_client
     get_client_kwargs = mock_get_client.call_args[1]
-    assert get_client_kwargs.get("azure_ad_token_provider") is provider_fn
+    assert get_client_kwargs.get("azure_ad_token_provider") is _fake_token_provider
 
     # Should NOT leak into create()
     create_kwargs = mock_client.chat.completions.create.call_args[1]
