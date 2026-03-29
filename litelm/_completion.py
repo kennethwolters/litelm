@@ -106,6 +106,7 @@ def _prepare_call(model, kwargs):
     api_key = kwargs.pop("api_key", None)
     api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
     api_version = kwargs.pop("api_version", None)
+    azure_ad_token_provider = kwargs.pop("azure_ad_token_provider", None)
     headers = kwargs.pop("headers", None)
 
     provider, model_name, base_url, resolved_api_key, resolved_api_version = parse_model(
@@ -115,7 +116,16 @@ def _prepare_call(model, kwargs):
     if headers:
         kwargs["extra_headers"] = headers
 
-    return provider, model_name, base_url, resolved_api_key, resolved_api_version or api_version, num_retries, kwargs
+    return (
+        provider,
+        model_name,
+        base_url,
+        resolved_api_key,
+        resolved_api_version or api_version,
+        num_retries,
+        azure_ad_token_provider,
+        kwargs,
+    )
 
 
 def _add_additional_properties_false(schema):
@@ -178,7 +188,9 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
     """Synchronous chat completion."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
-    provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
+    (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
+        _prepare_call(model, kwargs)
+    )
     if "response_format" in kwargs:
         kwargs["response_format"] = _normalize_response_format(kwargs["response_format"])
 
@@ -211,7 +223,14 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
             model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
         )
 
-    client = get_sync_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
+    client = get_sync_client(
+        provider,
+        base_url,
+        api_key,
+        max_retries=num_retries,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,
+    )
 
     try:
         sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
@@ -232,7 +251,9 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
     """Async chat completion."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
-    provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
+    (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
+        _prepare_call(model, kwargs)
+    )
     if "response_format" in kwargs:
         kwargs["response_format"] = _normalize_response_format(kwargs["response_format"])
 
@@ -265,7 +286,14 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
             model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
         )
 
-    client = get_async_client(provider, base_url, api_key, max_retries=num_retries, api_version=api_version)
+    client = get_async_client(
+        provider,
+        base_url,
+        api_key,
+        max_retries=num_retries,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,
+    )
 
     try:
         sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)

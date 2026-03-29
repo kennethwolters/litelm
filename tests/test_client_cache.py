@@ -112,3 +112,49 @@ async def test_close_async_clients():
     assert len(_async_clients) == 1
     await close_async_clients()
     assert len(_async_clients) == 0
+
+
+def _fake_token():
+    return "fake-token"
+
+
+def test_azure_ad_token_provider_forwarded():
+    """azure_ad_token_provider is passed to AzureOpenAI constructor."""
+    client = get_sync_client("azure", "https://my.azure.com", None, azure_ad_token_provider=_fake_token)
+    assert client._azure_ad_token_provider is _fake_token
+
+
+def test_azure_ad_token_provider_forwarded_async():
+    """azure_ad_token_provider is passed to AsyncAzureOpenAI constructor."""
+    client = get_async_client("azure", "https://my.azure.com", None, azure_ad_token_provider=_fake_token)
+    assert client._azure_ad_token_provider is _fake_token
+
+
+def _token_a():
+    return "token-a"
+
+
+def _token_b():
+    return "token-b"
+
+
+def test_azure_different_token_providers_not_cached():
+    """Different azure_ad_token_provider functions produce different clients."""
+    c1 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_token_a)
+    c2 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_token_b)
+    assert c1 is not c2
+
+
+def test_azure_same_token_provider_cached():
+    """Same azure_ad_token_provider function reuses cached client."""
+    c1 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_fake_token)
+    c2 = get_sync_client("azure", "https://x.azure.com", None, azure_ad_token_provider=_fake_token)
+    assert c1 is c2
+
+
+def test_azure_none_token_provider_backwards_compat():
+    """Omitting azure_ad_token_provider works as before."""
+    import openai
+
+    client = get_sync_client("azure", "https://my.azure.com", "sk-az", api_version="2024-02-01")
+    assert isinstance(client, openai.AzureOpenAI)
