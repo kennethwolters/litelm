@@ -23,8 +23,13 @@ def get_sync_client(provider, base_url, api_key, max_retries=0, api_version=None
         with _lock:
             if key not in _sync_clients:
                 _sync_clients[key] = _make_client(
-                    provider, base_url, api_key, max_retries, api_version,
-                    async_client=False, azure_ad_token_provider=azure_ad_token_provider,
+                    provider,
+                    base_url,
+                    api_key,
+                    max_retries,
+                    api_version,
+                    async_client=False,
+                    azure_ad_token_provider=azure_ad_token_provider,
                 )
     return _sync_clients[key]
 
@@ -35,8 +40,13 @@ def get_async_client(provider, base_url, api_key, max_retries=0, api_version=Non
         with _lock:
             if key not in _async_clients:
                 _async_clients[key] = _make_client(
-                    provider, base_url, api_key, max_retries, api_version,
-                    async_client=True, azure_ad_token_provider=azure_ad_token_provider,
+                    provider,
+                    base_url,
+                    api_key,
+                    max_retries,
+                    api_version,
+                    async_client=True,
+                    azure_ad_token_provider=azure_ad_token_provider,
                 )
     return _async_clients[key]
 

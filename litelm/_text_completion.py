@@ -36,8 +36,9 @@ def text_completion(model, prompt, *, timeout=None, shared_session=None, **kwarg
     """Synchronous text completion (legacy completions API)."""
     mock = kwargs.pop("mock_response", None)
     model = _strip_text_prefix(model)
-    (provider, model_name, base_url, api_key, api_version,
-     num_retries, azure_ad_token_provider, kwargs) = _prepare_call(model, kwargs)
+    (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
+        _prepare_call(model, kwargs)
+    )
     if mock is not None:
         from openai.types import Completion, CompletionChoice, CompletionUsage
 
@@ -53,8 +54,12 @@ def text_completion(model, prompt, *, timeout=None, shared_session=None, **kwarg
             )
         )
     client = get_sync_client(
-        provider, base_url, api_key, max_retries=num_retries,
-        api_version=api_version, azure_ad_token_provider=azure_ad_token_provider,
+        provider,
+        base_url,
+        api_key,
+        max_retries=num_retries,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,
     )
     sdk_kwargs = dict(model=model_name, prompt=prompt, **kwargs)
     if timeout is not None:
@@ -72,8 +77,9 @@ async def atext_completion(model, prompt, *, timeout=None, shared_session=None, 
     """Async text completion (legacy completions API)."""
     mock = kwargs.pop("mock_response", None)
     model = _strip_text_prefix(model)
-    (provider, model_name, base_url, api_key, api_version,
-     num_retries, azure_ad_token_provider, kwargs) = _prepare_call(model, kwargs)
+    (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
+        _prepare_call(model, kwargs)
+    )
     if mock is not None:
         from openai.types import Completion, CompletionChoice, CompletionUsage
 
@@ -89,8 +95,12 @@ async def atext_completion(model, prompt, *, timeout=None, shared_session=None, 
             )
         )
     client = get_async_client(
-        provider, base_url, api_key, max_retries=num_retries,
-        api_version=api_version, azure_ad_token_provider=azure_ad_token_provider,
+        provider,
+        base_url,
+        api_key,
+        max_retries=num_retries,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,
     )
     sdk_kwargs = dict(model=model_name, prompt=prompt, **kwargs)
     if timeout is not None:

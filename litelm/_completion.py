@@ -117,8 +117,14 @@ def _prepare_call(model, kwargs):
         kwargs["extra_headers"] = headers
 
     return (
-        provider, model_name, base_url, resolved_api_key,
-        resolved_api_version or api_version, num_retries, azure_ad_token_provider, kwargs,
+        provider,
+        model_name,
+        base_url,
+        resolved_api_key,
+        resolved_api_version or api_version,
+        num_retries,
+        azure_ad_token_provider,
+        kwargs,
     )
 
 
@@ -150,6 +156,7 @@ def _normalize_response_format(response_format):
     if isinstance(response_format, type):
         try:
             from pydantic import BaseModel
+
             if issubclass(response_format, BaseModel):
                 schema = response_format.model_json_schema()
                 _add_additional_properties_false(schema)
@@ -181,8 +188,9 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
     """Synchronous chat completion."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
-    (provider, model_name, base_url, api_key, api_version,
-     num_retries, azure_ad_token_provider, kwargs) = _prepare_call(model, kwargs)
+    (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
+        _prepare_call(model, kwargs)
+    )
     if "response_format" in kwargs:
         kwargs["response_format"] = _normalize_response_format(kwargs["response_format"])
 
@@ -216,8 +224,12 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
         )
 
     client = get_sync_client(
-        provider, base_url, api_key, max_retries=num_retries,
-        api_version=api_version, azure_ad_token_provider=azure_ad_token_provider,
+        provider,
+        base_url,
+        api_key,
+        max_retries=num_retries,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,
     )
 
     try:
@@ -239,8 +251,9 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
     """Async chat completion."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
-    (provider, model_name, base_url, api_key, api_version,
-     num_retries, azure_ad_token_provider, kwargs) = _prepare_call(model, kwargs)
+    (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
+        _prepare_call(model, kwargs)
+    )
     if "response_format" in kwargs:
         kwargs["response_format"] = _normalize_response_format(kwargs["response_format"])
 
@@ -274,8 +287,12 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
         )
 
     client = get_async_client(
-        provider, base_url, api_key, max_retries=num_retries,
-        api_version=api_version, azure_ad_token_provider=azure_ad_token_provider,
+        provider,
+        base_url,
+        api_key,
+        max_retries=num_retries,
+        api_version=api_version,
+        azure_ad_token_provider=azure_ad_token_provider,
     )
 
     try:
@@ -424,11 +441,13 @@ def stream_chunk_builder(chunks):
                         if block.get("signature"):
                             current_thinking_signature = block["signature"]
                             # Flush: signature terminates a thinking block
-                            thinking_blocks.append({
-                                "type": "thinking",
-                                "thinking": "".join(current_thinking_parts),
-                                "signature": current_thinking_signature,
-                            })
+                            thinking_blocks.append(
+                                {
+                                    "type": "thinking",
+                                    "thinking": "".join(current_thinking_parts),
+                                    "signature": current_thinking_signature,
+                                }
+                            )
                             current_thinking_parts = []
                             current_thinking_signature = None
                 if getattr(delta, "images", None):
