@@ -127,7 +127,15 @@ class CompletionUsage:
 
 
 class ChatCompletionMessage:
-    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images", "thinking_blocks")
+    __slots__ = (
+        "role",
+        "content",
+        "tool_calls",
+        "reasoning_content",
+        "images",
+        "thinking_blocks",
+        "provider_specific_fields",
+    )
 
     def __init__(
         self,
@@ -137,6 +145,7 @@ class ChatCompletionMessage:
         reasoning_content=None,
         images=None,
         thinking_blocks=None,
+        provider_specific_fields=None,
         **kwargs,
     ):
         self.role = role
@@ -148,6 +157,7 @@ class ChatCompletionMessage:
         self.reasoning_content = reasoning_content
         self.images = images
         self.thinking_blocks = thinking_blocks
+        self.provider_specific_fields = provider_specific_fields
 
     def __getitem__(self, key):
         return getattr(self, key)
@@ -190,7 +200,15 @@ class ChatCompletion:
 
 
 class ChoiceDelta:
-    __slots__ = ("role", "content", "tool_calls", "reasoning_content", "images", "thinking_blocks")
+    __slots__ = (
+        "role",
+        "content",
+        "tool_calls",
+        "reasoning_content",
+        "images",
+        "thinking_blocks",
+        "provider_specific_fields",
+    )
 
     def __init__(
         self,
@@ -200,6 +218,7 @@ class ChoiceDelta:
         reasoning_content=None,
         images=None,
         thinking_blocks=None,
+        provider_specific_fields=None,
         **kwargs,
     ):
         self.role = role
@@ -211,6 +230,7 @@ class ChoiceDelta:
         self.reasoning_content = reasoning_content
         self.images = images
         self.thinking_blocks = thinking_blocks
+        self.provider_specific_fields = provider_specific_fields
 
     def __getitem__(self, key):
         return getattr(self, key)

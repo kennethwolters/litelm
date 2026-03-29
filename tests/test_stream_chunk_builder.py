@@ -365,3 +365,47 @@ def test_stream_chunk_builder_token_details():
     response = stream_chunk_builder(chunks)
     assert response.usage.completion_tokens_details == {"reasoning_tokens": 5}
     assert response.usage.prompt_tokens_details == {"cached_tokens": 3}
+
+
+def test_stream_chunk_builder_provider_specific_fields_citations():
+    """Citations from provider_specific_fields accumulate across chunks."""
+    cit1 = {"type": "char_location", "cited_text": "first", "document_index": 0}
+    cit2 = {"type": "char_location", "cited_text": "second", "document_index": 1}
+    chunks = [
+        ModelResponseStream(
+            id="c1",
+            model="m",
+            choices=[
+                {
+                    "delta": {
+                        "role": "assistant",
+                        "content": "a",
+                        "provider_specific_fields": {"citations": [cit1]},
+                    }
+                }
+            ],
+        ),
+        ModelResponseStream(
+            id="c1",
+            model="m",
+            choices=[
+                {
+                    "delta": {
+                        "content": "b",
+                        "provider_specific_fields": {"citations": [cit2]},
+                    }
+                }
+            ],
+        ),
+        ModelResponseStream(
+            id="c1",
+            model="m",
+            choices=[{"finish_reason": "stop", "delta": {}}],
+        ),
+    ]
+    response = stream_chunk_builder(chunks)
+    psf = response.choices[0].message.provider_specific_fields
+    assert psf is not None
+    assert len(psf["citations"]) == 2
+    assert psf["citations"][0]["cited_text"] == "first"
+    assert psf["citations"][1]["cited_text"] == "second"

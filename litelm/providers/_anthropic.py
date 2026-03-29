@@ -434,9 +434,17 @@ def _build_model_response(response):
     reasoning_content = ""
     thinking_blocks = []
 
+    citations = []
+
     for block in response.content:
         if block.type == "text":
             content_text += block.text
+            # Collect citations from text blocks
+            block_citations = getattr(block, "citations", None)
+            if block_citations:
+                for cit in block_citations:
+                    cit_dict = {k: getattr(cit, k) for k in cit.__dict__} if hasattr(cit, "__dict__") else cit
+                    citations.append(cit_dict)
         elif block.type == "tool_use":
             tool_calls.append(
                 ChatCompletionMessageToolCall(
@@ -464,6 +472,7 @@ def _build_model_response(response):
         tool_calls=tool_calls or None,
         reasoning_content=reasoning_content or None,
         thinking_blocks=thinking_blocks or None,
+        provider_specific_fields={"citations": citations} if citations else None,
     )
 
     stop_reason_map = {
@@ -535,6 +544,10 @@ def _build_stream_chunk(event, model, chunk_id):
             delta_kwargs["thinking_blocks"] = [{"type": "thinking", "thinking": delta.thinking}]
         elif delta.type == "signature_delta":
             delta_kwargs["thinking_blocks"] = [{"type": "thinking", "signature": delta.signature}]
+        elif delta.type == "citations_delta":
+            citation = delta.citation
+            cit = {k: getattr(citation, k) for k in citation.__dict__} if hasattr(citation, "__dict__") else citation
+            delta_kwargs["provider_specific_fields"] = {"citations": [cit]}
         elif delta.type == "input_json_delta":
             delta_kwargs["tool_calls"] = [
                 ChoiceDeltaToolCall(

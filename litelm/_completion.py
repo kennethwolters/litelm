@@ -361,6 +361,7 @@ def stream_chunk_builder(chunks):
     thinking_blocks = []
     current_thinking_parts = []
     current_thinking_signature = None
+    provider_specific_fields = None
 
     for c in chunks:
         chunk = c._chunk if hasattr(c, "_chunk") else c
@@ -441,6 +442,15 @@ def stream_chunk_builder(chunks):
                                 tool_calls_by_index[idx]["function"]["name"] = tc.function.name
                         if tc.function.arguments:
                             tool_calls_by_index[idx]["function"]["arguments"] += tc.function.arguments
+                psf = getattr(delta, "provider_specific_fields", None)
+                if psf and isinstance(psf, dict):
+                    if provider_specific_fields is None:
+                        provider_specific_fields = {}
+                    for k, v in psf.items():
+                        if isinstance(v, list):
+                            provider_specific_fields.setdefault(k, []).extend(v)
+                        else:
+                            provider_specific_fields[k] = v
 
     # Flush any remaining thinking block (no signature received)
     if current_thinking_parts:
@@ -470,6 +480,7 @@ def stream_chunk_builder(chunks):
         reasoning_content="".join(reasoning_content_parts) if reasoning_content_parts else None,
         images=images,
         thinking_blocks=thinking_blocks or None,
+        provider_specific_fields=provider_specific_fields,
     )
 
     if usage is None:

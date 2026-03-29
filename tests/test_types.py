@@ -234,3 +234,46 @@ def test_usage_dict_includes_token_details():
     d = dict(u)
     assert d["completion_tokens_details"] == {"reasoning_tokens": 15}
     assert d["prompt_tokens_details"] is None
+
+
+# --- provider_specific_fields ---
+
+
+def test_message_provider_specific_fields_default_none():
+    msg = ChatCompletionMessage(role="assistant", content="hi")
+    assert msg.provider_specific_fields is None
+
+
+def test_message_provider_specific_fields_set():
+    citations = [{"type": "char_location", "cited_text": "hello"}]
+    msg = ChatCompletionMessage(
+        role="assistant",
+        content="hi",
+        provider_specific_fields={"citations": citations},
+    )
+    assert msg.provider_specific_fields["citations"] == citations
+
+
+def test_delta_provider_specific_fields_default_none():
+    delta = ChoiceDelta(content="hi")
+    assert delta.provider_specific_fields is None
+
+
+def test_delta_provider_specific_fields_set():
+    delta = ChoiceDelta(
+        content="hi",
+        provider_specific_fields={"citations": [{"type": "char_location"}]},
+    )
+    assert delta.provider_specific_fields["citations"][0]["type"] == "char_location"
+
+
+def test_message_provider_specific_fields_in_dict():
+    from litelm._types import _to_dict
+
+    msg = ChatCompletionMessage(
+        role="assistant",
+        content="hi",
+        provider_specific_fields={"citations": [{"type": "char_location"}]},
+    )
+    d = _to_dict(msg)
+    assert d["provider_specific_fields"]["citations"][0]["type"] == "char_location"

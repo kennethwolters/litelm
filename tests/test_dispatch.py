@@ -530,6 +530,74 @@ class TestAnthropicTranslation:
         result = self.mod._filter_schema(schema)
         assert "minimum" not in result["anyOf"][0]
 
+    # -- Citation streaming --
+
+    def test_build_stream_chunk_citations_delta(self):
+        event = mock.MagicMock()
+        event.type = "content_block_delta"
+        event.delta.type = "citations_delta"
+        event.delta.citation = mock.MagicMock()
+        event.delta.citation.__dict__ = {
+            "type": "char_location",
+            "cited_text": "hello world",
+            "document_index": 0,
+            "start_char_index": 0,
+            "end_char_index": 11,
+        }
+        chunk = self.mod._build_stream_chunk(event, "claude-sonnet-4", "c1")
+        assert chunk is not None
+        psf = chunk.choices[0].delta.provider_specific_fields
+        assert psf is not None
+        assert len(psf["citations"]) == 1
+        assert psf["citations"][0]["type"] == "char_location"
+        assert psf["citations"][0]["cited_text"] == "hello world"
+
+    def test_build_model_response_with_citations(self):
+        from types import SimpleNamespace
+
+        cit = SimpleNamespace(type="char_location", cited_text="X", document_index=0)
+        text_block = SimpleNamespace(type="text", text="The answer is X.", citations=[cit])
+        usage = SimpleNamespace(
+            input_tokens=10,
+            output_tokens=5,
+            cache_creation_input_tokens=None,
+            cache_read_input_tokens=None,
+        )
+        response = SimpleNamespace(
+            id="msg_123",
+            model="claude-sonnet-4",
+            stop_reason="end_turn",
+            usage=usage,
+            content=[text_block],
+        )
+
+        result = self.mod._build_model_response(response)
+        msg = result.choices[0].message
+        assert msg.provider_specific_fields is not None
+        assert len(msg.provider_specific_fields["citations"]) == 1
+        assert msg.provider_specific_fields["citations"][0]["cited_text"] == "X"
+
+    def test_build_model_response_no_citations(self):
+        from types import SimpleNamespace
+
+        text_block = SimpleNamespace(type="text", text="Hello", citations=None)
+        usage = SimpleNamespace(
+            input_tokens=10,
+            output_tokens=5,
+            cache_creation_input_tokens=None,
+            cache_read_input_tokens=None,
+        )
+        response = SimpleNamespace(
+            id="msg_123",
+            model="claude-sonnet-4",
+            stop_reason="end_turn",
+            usage=usage,
+            content=[text_block],
+        )
+
+        result = self.mod._build_model_response(response)
+        assert result.choices[0].message.provider_specific_fields is None
+
     def test_translate_tools_filters_schema(self):
         tools = [
             {
