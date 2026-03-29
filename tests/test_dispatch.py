@@ -409,6 +409,105 @@ class TestAnthropicTranslation:
         assert req["messages"][0]["content"][0]["cache_control"] == {"type": "ephemeral"}
         assert req["tools"][0]["cache_control"] == {"type": "ephemeral"}
 
+    # -- Gap #5: reasoning_effort → thinking/output_config --
+
+    def test_map_reasoning_effort_none(self):
+        assert self.mod._map_reasoning_effort(None, "claude-3-haiku") == (None, None)
+
+    def test_map_reasoning_effort_none_string(self):
+        assert self.mod._map_reasoning_effort("none", "claude-3-haiku") == (None, None)
+
+    def test_map_reasoning_effort_low_standard(self):
+        t, o = self.mod._map_reasoning_effort("low", "claude-sonnet-4-20250514")
+        assert t == {"type": "enabled", "budget_tokens": 1024}
+        assert o is None
+
+    def test_map_reasoning_effort_high_standard(self):
+        t, o = self.mod._map_reasoning_effort("high", "claude-3-7-sonnet-20250219")
+        assert t == {"type": "enabled", "budget_tokens": 4096}
+        assert o is None
+
+    def test_map_reasoning_effort_opus_4_6(self):
+        t, o = self.mod._map_reasoning_effort("high", "claude-opus-4-6-20250514")
+        assert t == {"type": "adaptive"}
+        assert o == {"effort": "high"}
+
+    def test_map_reasoning_effort_opus_4_6_underscore(self):
+        t, o = self.mod._map_reasoning_effort("medium", "claude_opus_4_6")
+        assert t == {"type": "adaptive"}
+        assert o == {"effort": "medium"}
+
+    def test_build_request_kwargs_reasoning_effort(self):
+        msgs = [{"role": "user", "content": "hi"}]
+        req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, reasoning_effort="medium")
+        assert req["thinking"] == {"type": "enabled", "budget_tokens": 2048}
+        assert "reasoning_effort" not in req
+
+    def test_build_request_kwargs_explicit_thinking_overrides_reasoning_effort(self):
+        msgs = [{"role": "user", "content": "hi"}]
+        req = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None,
+            thinking={"type": "enabled", "budget_tokens": 10000}, reasoning_effort="low")
+        assert req["thinking"]["budget_tokens"] == 10000
+
+    # -- Gap #6: empty text block filtering --
+
+    def test_extract_system_filters_empty_string(self):
+        msgs = [{"role": "system", "content": ""}, {"role": "user", "content": "hi"}]
+        system, _ = self.mod._extract_system(msgs)
+        assert system is None
+
+    def test_extract_system_filters_empty_text_block(self):
+        msgs = [{"role": "system", "content": [{"type": "text", "text": ""}]}, {"role": "user", "content": "hi"}]
+        system, _ = self.mod._extract_system(msgs)
+        assert system is None
+
+    def test_extract_system_filters_empty_string_in_list(self):
+        msgs = [{"role": "system", "content": [""]}, {"role": "user", "content": "hi"}]
+        system, _ = self.mod._extract_system(msgs)
+        assert system is None
+
+    def test_translate_content_filters_empty_text(self):
+        result = self.mod._translate_content([
+            {"type": "text", "text": ""},
+            {"type": "text", "text": "hello"},
+        ])
+        assert result == [{"type": "text", "text": "hello"}]
+
+    # -- Gap #7: JSON schema filtering --
+
+    def test_filter_schema_strips_unsupported(self):
+        schema = {"type": "object", "properties": {
+            "count": {"type": "integer", "minimum": 1, "maximum": 100}
+        }}
+        result = self.mod._filter_schema(schema)
+        assert "minimum" not in result["properties"]["count"]
+        assert "maximum" not in result["properties"]["count"]
+        assert "minimum: 1" in result["properties"]["count"]["description"]
+
+    def test_filter_schema_preserves_supported(self):
+        schema = {"type": "object", "properties": {"name": {"type": "string"}}}
+        assert self.mod._filter_schema(schema) == schema
+
+    def test_filter_schema_recursive_items(self):
+        schema = {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 2}
+        result = self.mod._filter_schema(schema)
+        assert "minItems" not in result
+        assert "minLength" not in result["items"]
+
+    def test_filter_schema_anyof(self):
+        schema = {"anyOf": [{"type": "integer", "minimum": 0}, {"type": "string"}]}
+        result = self.mod._filter_schema(schema)
+        assert "minimum" not in result["anyOf"][0]
+
+    def test_translate_tools_filters_schema(self):
+        tools = [{"type": "function", "function": {
+            "name": "f", "parameters": {"type": "object", "properties": {
+                "n": {"type": "integer", "minimum": 0, "maximum": 10}
+            }}
+        }}]
+        result = self.mod._translate_tools(tools)
+        assert "minimum" not in result[0]["input_schema"]["properties"]["n"]
+
 
 # ---------------------------------------------------------------------------
 # Anthropic error mapping
