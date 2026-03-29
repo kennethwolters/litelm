@@ -68,12 +68,16 @@ def _extract_system(messages):
         if msg.get("role") == "system":
             content = msg.get("content", "")
             if isinstance(content, str):
-                system_parts.append({"type": "text", "text": content})
+                if content:
+                    system_parts.append({"type": "text", "text": content})
             elif isinstance(content, list):
                 for block in content:
                     if isinstance(block, str):
-                        system_parts.append({"type": "text", "text": block})
+                        if block:
+                            system_parts.append({"type": "text", "text": block})
                     elif isinstance(block, dict):
+                        if block.get("type") == "text" and not block.get("text"):
+                            continue
                         system_parts.append(block)
         else:
             conversation.append(msg)
@@ -93,7 +97,10 @@ def _translate_content(content):
         elif isinstance(part, dict):
             ptype = part.get("type", "text")
             if ptype == "text":
-                block = {"type": "text", "text": part.get("text", "")}
+                text = part.get("text", "")
+                if not text and "cache_control" not in part:
+                    continue
+                block = {"type": "text", "text": text}
                 if "cache_control" in part:
                     block["cache_control"] = part["cache_control"]
                 blocks.append(block)
@@ -189,6 +196,38 @@ def _translate_messages(messages):
     return merged
 
 
+_UNSUPPORTED_SCHEMA_FIELDS = frozenset({
+    "maxItems", "minItems", "minimum", "maximum",
+    "exclusiveMinimum", "exclusiveMaximum", "minLength", "maxLength",
+})
+
+
+def _filter_schema(schema):
+    """Recursively strip JSON schema fields unsupported by Anthropic, appending them to description."""
+    if not isinstance(schema, dict):
+        return schema
+    result = {}
+    constraint_labels = []
+    for key, value in schema.items():
+        if key in _UNSUPPORTED_SCHEMA_FIELDS:
+            constraint_labels.append(f"{key}: {value}")
+        elif key == "properties" and isinstance(value, dict):
+            result[key] = {k: _filter_schema(v) for k, v in value.items()}
+        elif key == "items" and isinstance(value, dict):
+            result[key] = _filter_schema(value)
+        elif key in ("$defs", "definitions") and isinstance(value, dict):
+            result[key] = {k: _filter_schema(v) for k, v in value.items()}
+        elif key in ("anyOf", "allOf") and isinstance(value, list):
+            result[key] = [_filter_schema(item) if isinstance(item, dict) else item for item in value]
+        else:
+            result[key] = value
+    if constraint_labels:
+        desc = result.get("description", "")
+        note = "Note: " + ", ".join(constraint_labels) + "."
+        result["description"] = f"{desc} {note}".strip() if desc else note
+    return result
+
+
 def _translate_tools(tools):
     """Translate OpenAI tools format to Anthropic tools format."""
     if not tools:
@@ -200,7 +239,7 @@ def _translate_tools(tools):
             tool_def = {
                 "name": fn["name"],
                 "description": fn.get("description", ""),
-                "input_schema": fn.get("parameters", {"type": "object", "properties": {}}),
+                "input_schema": _filter_schema(fn.get("parameters", {"type": "object", "properties": {}})),
             }
             if "cache_control" in tool:
                 tool_def["cache_control"] = tool["cache_control"]
@@ -247,6 +286,41 @@ def _get_max_tokens(model_name):
         if model_name.startswith(prefix):
             return tokens
     return _DEFAULT_MAX_TOKENS
+
+
+def _is_opus_4_6(model):
+    """Check if a model is Claude Opus 4.6."""
+    m = model.lower().replace("_", "-").replace(".", "-")
+    return "opus-4-6" in m
+
+
+_REASONING_EFFORT_BUDGET = {
+    "minimal": 128,
+    "low": 1024,
+    "medium": 2048,
+    "high": 4096,
+}
+
+
+def _map_reasoning_effort(reasoning_effort, model_name):
+    """Map OpenAI reasoning_effort to Anthropic thinking/output_config params.
+
+    Returns (thinking_dict_or_None, output_config_or_None).
+    """
+    if not reasoning_effort or str(reasoning_effort).lower() == "none":
+        return None, None
+
+    effort = str(reasoning_effort).lower()
+
+    if _is_opus_4_6(model_name):
+        thinking = {"type": "adaptive"}
+        output_config = {"effort": effort} if effort in ("low", "medium", "high") else None
+        return thinking, output_config
+
+    budget = _REASONING_EFFORT_BUDGET.get(effort)
+    if budget is None:
+        return None, None
+    return {"type": "enabled", "budget_tokens": budget}, None
 
 
 def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwargs):
@@ -298,6 +372,14 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
     if thinking:
         req["thinking"] = thinking
 
+    reasoning_effort = kwargs.pop("reasoning_effort", None)
+    if reasoning_effort and not thinking:
+        thinking_param, output_config = _map_reasoning_effort(reasoning_effort, model_name)
+        if thinking_param:
+            req["thinking"] = thinking_param
+        if output_config:
+            req["output_config"] = output_config
+
     for drop in (
         "frequency_penalty",
         "presence_penalty",
@@ -307,6 +389,7 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
         "n",
         "extra_headers",
         "response_format",
+        "reasoning_effort",
     ):
         kwargs.pop(drop, None)
 

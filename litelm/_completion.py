@@ -118,6 +118,50 @@ def _prepare_call(model, kwargs):
     return provider, model_name, base_url, resolved_api_key, resolved_api_version or api_version, num_retries, kwargs
 
 
+def _add_additional_properties_false(schema):
+    """Recursively add additionalProperties: false to object schemas (required by OpenAI strict mode)."""
+    if not isinstance(schema, dict):
+        return schema
+    if schema.get("type") == "object" and "properties" in schema:
+        schema["additionalProperties"] = False
+    for key in ("properties", "$defs", "definitions"):
+        container = schema.get(key)
+        if isinstance(container, dict):
+            for v in container.values():
+                _add_additional_properties_false(v)
+    if "items" in schema and isinstance(schema["items"], dict):
+        _add_additional_properties_false(schema["items"])
+    for variant_key in ("anyOf", "oneOf", "allOf"):
+        variants = schema.get(variant_key)
+        if isinstance(variants, list):
+            for v in variants:
+                _add_additional_properties_false(v)
+    return schema
+
+
+def _normalize_response_format(response_format):
+    """Convert pydantic BaseModel classes to OpenAI json_schema dicts."""
+    if response_format is None or isinstance(response_format, (dict, str)):
+        return response_format
+    if isinstance(response_format, type):
+        try:
+            from pydantic import BaseModel
+            if issubclass(response_format, BaseModel):
+                schema = response_format.model_json_schema()
+                _add_additional_properties_false(schema)
+                return {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": response_format.__name__,
+                        "schema": schema,
+                        "strict": True,
+                    },
+                }
+        except ImportError:
+            pass
+    return response_format
+
+
 def _wrap_context_window_error(e):
     """Convert BadRequestError to ContextWindowExceededError if about context length."""
     if is_context_window_error(str(e)):
@@ -134,6 +178,8 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
+    if "response_format" in kwargs:
+        kwargs["response_format"] = _normalize_response_format(kwargs["response_format"])
 
     if mock is not None:
         content = str(mock) if mock is not True else "This is a mock request"
@@ -186,6 +232,8 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     provider, model_name, base_url, api_key, api_version, num_retries, kwargs = _prepare_call(model, kwargs)
+    if "response_format" in kwargs:
+        kwargs["response_format"] = _normalize_response_format(kwargs["response_format"])
 
     if mock is not None:
         content = str(mock) if mock is not True else "This is a mock request"
