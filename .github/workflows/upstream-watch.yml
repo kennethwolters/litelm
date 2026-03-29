@@ -12,14 +12,73 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
-      - name: Run upstream watcher
-        run: uv run python scripts/upstream_watch.py --create-issue
+
+      - name: Detect upstream drift
+        id: watch
+        run: |
+          uv run python scripts/upstream_watch.py \
+            --create-issue \
+            --keep-clone \
+            --output-dir /tmp/upstream_watch
+          if [ -f /tmp/upstream_watch/has_actionable ]; then
+            echo "has_actionable=true" >> "$GITHUB_OUTPUT"
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Commit updated snapshots
-        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add scripts/upstream_snapshots/
           git diff --cached --quiet || (git commit -m "chore: update upstream snapshots" && git push)
+
+      # --- Pi agent analysis (only when actionable changes found) ---
+      # Credentials are stripped before Pi runs: git auth removed,
+      # GH_TOKEN/GITHUB_TOKEN blanked. Pi can read files and run tests
+      # but cannot push, create issues, or call gh CLI.
+
+      - uses: actions/setup-node@v4
+        if: steps.watch.outputs.has_actionable == 'true'
+        with:
+          node-version: '22'
+
+      - name: Install Pi agent
+        if: steps.watch.outputs.has_actionable == 'true'
+        run: npm install -g @mariozechner/pi-coding-agent
+
+      - name: Remove GitHub credentials before Pi
+        if: steps.watch.outputs.has_actionable == 'true'
+        run: git config --unset-all http.https://github.com/.extraheader || true
+
+      - name: Analyze upstream changes
+        if: steps.watch.outputs.has_actionable == 'true'
+        timeout-minutes: 15
+        run: |
+          pi --tools read,bash,grep,find,ls \
+             --provider openrouter \
+             --model "${ANALYSIS_MODEL}" \
+             --no-session \
+             -p @/tmp/upstream_watch/pi_prompt.md \
+             < /dev/null \
+             > /tmp/upstream_watch/analysis.md \
+             2> /tmp/upstream_watch/pi.log
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          ANALYSIS_MODEL: moonshotai/kimi-k2.5
+          GH_TOKEN: ""
+          GITHUB_TOKEN: ""
+
+      - name: Post analysis to issue
+        if: steps.watch.outputs.has_actionable == 'true'
+        run: |
+          if [ -s /tmp/upstream_watch/analysis.md ]; then
+            issue_num=$(cat /tmp/upstream_watch/issue_number.txt)
+            gh issue comment "$issue_num" \
+              --body "## Pi Agent Analysis"$'\n\n'"$(cat /tmp/upstream_watch/analysis.md)"
+          else
+            echo "::warning::Pi agent produced no output"
+            cat /tmp/upstream_watch/pi.log || true
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

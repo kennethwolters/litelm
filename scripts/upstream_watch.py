@@ -414,8 +414,39 @@ def diff_snapshots(old: dict[str, dict], new: dict[str, dict], ours: dict) -> li
 
 
 # ---------------------------------------------------------------------------
+# Change classification
+# ---------------------------------------------------------------------------
+
+_ACTIONABLE_KEYWORDS = ("We ", "Check our", "May need", "Already in our")
+
+
+def _is_actionable(change: dict) -> bool:
+    """Check if a change requires action on our side."""
+    return any(kw in change["impact"] for kw in _ACTIONABLE_KEYWORDS)
+
+
+# ---------------------------------------------------------------------------
 # Report / issue formatting
 # ---------------------------------------------------------------------------
+
+
+def _format_change_table(changes: list[dict]) -> list[str]:
+    """Format changes as markdown tables grouped by category."""
+    lines: list[str] = []
+    categories: dict[str, list[dict]] = {}
+    for c in changes:
+        categories.setdefault(c["category"], []).append(c)
+    for cat in ["API Surface", "Types", "Exceptions", "Providers"]:
+        if cat not in categories:
+            continue
+        lines.append(f"#### {cat}")
+        lines.append("")
+        lines.append("| Change | Name | Detail | Impact |")
+        lines.append("|--------|------|--------|--------|")
+        for c in categories[cat]:
+            lines.append(f"| {c['change']} | {c['name']} | {c['detail']} | {c['impact']} |")
+        lines.append("")
+    return lines
 
 
 def format_report(changes: list[dict], old_meta: dict, new_meta: dict) -> str:
@@ -428,36 +459,218 @@ def format_report(changes: list[dict], old_meta: dict, new_meta: dict) -> str:
     lines = [
         "## Upstream litellm changes detected",
         "",
-        f"**Commit:** [`{new_commit}`](https://github.com/BerriAI/litellm/commit/{new_commit_full}) (prev: `{old_commit}`)",
+        f"**Range:** [`{old_commit}...{new_commit}`](https://github.com/BerriAI/litellm/compare/{old_commit_full}...{new_commit_full})",
         "",
     ]
 
-    # Group by category
-    categories = {}
-    for c in changes:
-        categories.setdefault(c["category"], []).append(c)
+    actionable = [c for c in changes if _is_actionable(c)]
+    informational = [c for c in changes if not _is_actionable(c)]
 
-    for cat in ["API Surface", "Types", "Exceptions", "Providers"]:
-        if cat not in categories:
-            continue
-        lines.append(f"### {cat}")
-        lines.append("")
-        lines.append("| Change | Name | Detail | litelm impact |")
-        lines.append("|--------|------|--------|---------------|")
-        for c in categories[cat]:
-            lines.append(f"| {c['change']} | {c['name']} | {c['detail']} | {c['impact']} |")
-        lines.append("")
-
-    # Suggested actions
-    has_impact = [c for c in changes if "We" in c["impact"] or "Check" in c["impact"] or "May need" in c["impact"]]
-    if has_impact:
+    if actionable:
+        lines.extend(_format_change_table(actionable))
         lines.append("### Suggested actions")
         lines.append("")
-        for c in has_impact:
+        for c in actionable:
             lines.append(f"- [ ] {c['change']} {c['name']}: {c['impact']}")
         lines.append("")
 
+    if informational:
+        lines.append("<details>")
+        lines.append(f"<summary>{len(informational)} other change(s) outside our scope</summary>")
+        lines.append("")
+        lines.extend(_format_change_table(informational))
+        lines.append("</details>")
+        lines.append("")
+
+    if not actionable:
+        lines.append("*No actionable changes — all detected drift is outside our scope.*")
+        lines.append("")
+
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Commit log extraction (runs in watch script, before Pi)
+# ---------------------------------------------------------------------------
+
+_UPSTREAM_FILES = [
+    "litellm/main.py",
+    "litellm/__init__.py",
+    "litellm/types/utils.py",
+    "litellm/exceptions.py",
+    "litellm/llms/anthropic/",
+    "litellm/llms/bedrock/",
+    "litellm/llms/mistral/",
+]
+
+_OUR_FILES = [
+    "litelm/_completion.py",
+    "litelm/_types.py",
+    "litelm/_exceptions.py",
+    "litelm/_embedding.py",
+    "litelm/providers/_anthropic.py",
+    "litelm/providers/_bedrock.py",
+    "litelm/providers/_mistral.py",
+    "litelm/__init__.py",
+]
+
+# Upstream → our implementation mapping
+_FILE_MAP = {
+    "litellm/main.py": "litelm/_completion.py",
+    "litellm/__init__.py": "litelm/__init__.py",
+    "litellm/types/utils.py": "litelm/_types.py",
+    "litellm/exceptions.py": "litelm/_exceptions.py",
+    "litellm/llms/anthropic/": "litelm/providers/_anthropic.py",
+    "litellm/llms/bedrock/": "litelm/providers/_bedrock.py",
+    "litellm/llms/mistral/": "litelm/providers/_mistral.py",
+}
+
+
+def fetch_commit_log(old_commit: str, new_commit: str) -> str:
+    """Fetch relevant commits between old and new from GitHub API."""
+    import urllib.request
+    import urllib.error
+
+    url = f"https://api.github.com/repos/BerriAI/litellm/compare/{old_commit[:12]}...{new_commit[:12]}"
+    try:
+        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github.v3+json"})
+        token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+        if token:
+            req.add_header("Authorization", f"token {token}")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read())
+    except (urllib.error.URLError, json.JSONDecodeError, OSError) as e:
+        return f"ERROR: could not fetch commit log: {e}"
+
+    commits = data.get("commits", [])
+    files = data.get("files", [])
+
+    relevant_prefixes = tuple(f.rstrip("/") for f in _UPSTREAM_FILES)
+    relevant_files = [f for f in files if any(f["filename"].startswith(p) for p in relevant_prefixes)]
+
+    lines = [f"{len(commits)} total commits, {len(files)} files changed, "
+             f"{len(relevant_files)} in scope\n"]
+
+    if relevant_files:
+        lines.append("Files changed in our scope:")
+        for f in relevant_files:
+            lines.append(f"  {f['filename']} (+{f.get('additions', 0)}/-{f.get('deletions', 0)})")
+        lines.append("")
+
+    lines.append("Commits:")
+    for c in commits:
+        lines.append(f"  {c['sha'][:7]} {c['commit']['message'].splitlines()[0]}")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Pi agent prompt generation
+# ---------------------------------------------------------------------------
+
+
+def generate_pi_prompt(
+    commit_log: str, old_meta: dict, new_meta: dict, clone_path: str,
+) -> str:
+    """Generate verification prompt for the Pi agent."""
+    old_commit = old_meta.get("commit", "unknown")
+    new_commit = new_meta.get("commit", "unknown")
+
+    file_map_str = "\n".join(
+        f"  {up} → {ours}" for up, ours in _FILE_MAP.items()
+    )
+
+    return f"""# Upstream Behavioral Verification
+
+## Your role
+You are a verification agent for litelm, a 2,660 LOC reimplementation of litellm's
+core routing+formatting. A structural AST diff has already detected field/signature
+changes and is posted in the GitHub issue. Your job is different: find what the AST
+diff CANNOT see — behavioral changes inside function bodies, bug fixes, new edge
+cases — and verify every finding with evidence.
+
+## Rules
+1. **Every claim requires evidence.** Show the command and its output. "I believe X"
+   is not a finding. "Verified: `grep -n reasoning_items litelm/_types.py` → 0 hits"
+   is a finding.
+2. **Do not restate the structural diff.** It is already in the issue. You add zero
+   value by repeating it.
+3. **If you find nothing new, say so.** "No behavioral divergences found beyond the
+   structural diff." is a valid and useful report. Padding is worse than silence.
+4. **Do not speculate about impact.** Either verify it or mark it "needs investigation."
+
+## Upstream clone
+{clone_path}
+
+## File mapping (upstream → ours)
+{file_map_str}
+
+## Commit log (fetched by watch script)
+{commit_log}
+
+## Compare
+https://github.com/BerriAI/litellm/compare/{old_commit}...{new_commit}
+
+## Procedure
+
+### 1. Identify in-scope commits
+From the commit log above, filter for commits touching files in the file mapping.
+Ignore commits to Router, proxy, caching, budgeting, callbacks, model registries.
+
+### 2. Read upstream source at changed locations
+For each in-scope file that changed, read the upstream version at `{clone_path}/`
+and compare the behavioral logic against our implementation. Look for:
+- Logic changes inside function bodies (invisible to AST diff)
+- Bug fixes we may need to port
+- New error handling or edge cases
+- Changed streaming behavior or message translation
+
+### 3. Verify each finding
+For each potential divergence:
+a) Show the upstream code (file:line, quote the relevant lines)
+b) Show our code (file:line, quote the relevant lines)
+c) Run a verification command (grep, test, or comparison) that proves the
+   divergence exists or matters
+
+### 4. Check DSPy impact
+For any field or function that changed, verify whether DSPy actually uses it:
+```bash
+# Clone is at {clone_path} — DSPy source may not be available locally.
+# Instead, grep our own codebase and CLAUDE.md for DSPy touchpoints.
+grep -rn "reasoning_items\\|<field_name>" litelm/ CLAUDE.md
+```
+
+### 5. Run our tests
+```bash
+uv run pytest tests/ --ignore=tests/ported --timeout=10 -q
+```
+
+## Output format
+
+Use this structure for each finding. If no findings, skip to the verdict.
+
+### Finding: [short title]
+**Upstream:** `file:line` — [quote changed code]
+**Ours:** `file:line` — [quote our code]
+**Evidence:**
+```
+[command you ran]
+[its output]
+```
+**Verdict:** actionable / not actionable / needs investigation
+
+---
+
+### Test results
+```
+[paste test output]
+```
+
+### Bottom line
+[One sentence: what we should do, or "nothing — no behavioral divergences found."]
+
+Do NOT modify any files. Read-only analysis.
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -487,12 +700,29 @@ def clone_litellm(target: Path) -> str:
 # ---------------------------------------------------------------------------
 
 
-def create_or_comment_issue(body: str, dry_run: bool = False) -> None:
-    """Create a new issue or comment on existing open upstream-watch issue."""
+def _ensure_label(name: str, color: str = "0e8a16", description: str = "") -> None:
+    """Create a GitHub label if it doesn't exist."""
+    result = subprocess.run(
+        ["gh", "label", "list", "--search", name, "--json", "name"],
+        capture_output=True, text=True,
+    )
+    if result.returncode == 0:
+        labels = json.loads(result.stdout) if result.stdout.strip() else []
+        if any(lb["name"] == name for lb in labels):
+            return
+    cmd = ["gh", "label", "create", name, "--color", color]
+    if description:
+        cmd += ["--description", description]
+    subprocess.run(cmd, capture_output=True, text=True)
+
+
+def create_or_comment_issue(body: str, dry_run: bool = False) -> int | None:
+    """Create a new issue or comment on existing. Returns issue number or None."""
     if dry_run:
-        print("=== DRY RUN: Issue body ===")
-        print(body)
-        return
+        print("=== DRY RUN: would create/comment on upstream-watch issue ===")
+        return None
+
+    _ensure_label("upstream-watch", color="0e8a16", description="Automated upstream litellm drift detection")
 
     # Check for existing open issue
     result = subprocess.run(
@@ -508,22 +738,62 @@ def create_or_comment_issue(body: str, dry_run: bool = False) -> None:
                 check=True, capture_output=True, text=True,
             )
             print(f"Commented on issue #{issue_num}")
-            return
+            return issue_num
 
     # Create new issue
-    subprocess.run(
+    result = subprocess.run(
         ["gh", "issue", "create",
          "--title", "Upstream litellm drift detected",
          "--label", "upstream-watch",
          "--body", body],
-        check=True, capture_output=True, text=True,
+        capture_output=True, text=True,
     )
-    print("Created new upstream-watch issue")
+    if result.returncode != 0:
+        print(f"gh issue create stderr: {result.stderr}", file=sys.stderr)
+        result.check_returncode()  # raises CalledProcessError
+    url = result.stdout.strip()
+    issue_num = int(url.rstrip("/").split("/")[-1])
+    print(f"Created new upstream-watch issue: {url}")
+    return issue_num
 
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+
+def _write_output_dir(
+    output_dir: str,
+    report: str,
+    old_meta: dict,
+    new_meta: dict,
+    clone_path: str,
+    issue_num: int | None,
+    has_actionable: bool,
+) -> None:
+    """Write analysis artifacts for the Pi agent step."""
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "report.md").write_text(report)
+    (out / "meta.json").write_text(json.dumps({
+        "old_commit": old_meta.get("commit", "unknown"),
+        "new_commit": new_meta.get("commit", "unknown"),
+    }, indent=2) + "\n")
+
+    # Fetch commit log (has network + GH_TOKEN here, Pi may not)
+    old_commit = old_meta.get("commit", "unknown")
+    new_commit = new_meta.get("commit", "unknown")
+    commit_log = fetch_commit_log(old_commit, new_commit)
+    (out / "commit_log.txt").write_text(commit_log)
+    print(f"Fetched commit log: {commit_log.splitlines()[0]}")
+
+    (out / "pi_prompt.md").write_text(
+        generate_pi_prompt(commit_log, old_meta, new_meta, clone_path)
+    )
+    if has_actionable:
+        (out / "has_actionable").write_text("true\n")
+    if issue_num is not None:
+        (out / "issue_number.txt").write_text(str(issue_num) + "\n")
 
 
 def main() -> int:
@@ -534,6 +804,9 @@ def main() -> int:
     parser.add_argument("--create-issue", action="store_true", help="Create/comment GH issue if changes found")
     parser.add_argument("--dry-run", action="store_true", help="Print issue body without calling gh")
     parser.add_argument("--local", type=str, help="Use existing litellm clone at this path")
+    parser.add_argument("--keep-clone", action="store_true", help="Keep litellm clone for downstream analysis")
+    parser.add_argument("--output-dir", type=str, metavar="DIR",
+                        help="Write analysis artifacts (report, Pi prompt, meta) to DIR")
     args = parser.parse_args()
 
     # Resolve litellm source dir
@@ -546,6 +819,7 @@ def main() -> int:
                 print(f"ERROR: {local_path / 'litellm'} not found", file=sys.stderr)
                 return 2
             litellm_dir = local_path / "litellm"
+            clone_root = str(local_path)
             # Try to get commit hash
             try:
                 result = subprocess.run(
@@ -563,6 +837,7 @@ def main() -> int:
                 print(f"ERROR: git clone failed: {e}", file=sys.stderr)
                 return 2
             litellm_dir = Path(tmpdir) / "litellm"
+            clone_root = tmpdir
 
         # Extract upstream
         new_snapshots = extract_upstream(litellm_dir)
@@ -589,25 +864,43 @@ def main() -> int:
         # Diff
         changes = diff_snapshots(old_snapshots, new_snapshots, ours)
 
-        # Always update snapshots
-        write_snapshots(new_snapshots, new_meta)
-
         if not changes:
+            if not args.dry_run:
+                write_snapshots(new_snapshots, new_meta)
             print("No meaningful upstream changes detected.")
             return 0
 
-        print(f"Found {len(changes)} upstream change(s).")
+        actionable = [c for c in changes if _is_actionable(c)]
         report = format_report(changes, old_meta, new_meta)
+        print(f"Found {len(changes)} change(s) ({len(actionable)} actionable).")
+        print(report)
 
+        issue_num: int | None = None
         if args.create_issue:
-            create_or_comment_issue(report, dry_run=args.dry_run)
-        else:
-            print(report)
+            if actionable:
+                try:
+                    issue_num = create_or_comment_issue(report, dry_run=args.dry_run)
+                except subprocess.CalledProcessError as e:
+                    print(f"ERROR: issue creation failed: {e}", file=sys.stderr)
+                    # Don't update snapshots — next run will re-detect
+                    return 2
+            else:
+                print("No actionable changes — skipping issue creation.")
 
-        return 1
+        # Write analysis artifacts for downstream Pi agent
+        if args.output_dir:
+            _write_output_dir(
+                args.output_dir, report, old_meta, new_meta,
+                clone_root, issue_num, bool(actionable),
+            )
+
+        # Update snapshots after successful reporting (skip in dry-run)
+        if not args.dry_run:
+            write_snapshots(new_snapshots, new_meta)
+        return 0
 
     finally:
-        if tmpdir:
+        if tmpdir and not args.keep_clone:
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
