@@ -594,3 +594,50 @@ def test_openai_text_completion():
     assert response.choices[0].finish_reason in ("stop", "length")
     assert response.usage.prompt_tokens > 0
     assert response.usage.total_tokens > 0
+
+
+# --- Pydantic response_format ---
+
+from pydantic import BaseModel
+
+
+class StructuredAnswer(BaseModel):
+    answer: str
+    reasoning: str
+
+
+@pytest.mark.live
+@pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
+def test_openai_pydantic_response_format():
+    """Pydantic BaseModel as response_format — exercises _normalize_response_format."""
+    response = litelm.completion(
+        "openai/gpt-4o-mini",
+        messages=[{"role": "user", "content": "What is 2+2? Explain briefly."}],
+        response_format=StructuredAnswer,
+    )
+    assert_dspy_response_contract(response)
+    content = response.choices[0].message.content
+    parsed = json.loads(content)
+    assert "answer" in parsed
+    assert "reasoning" in parsed
+
+
+@pytest.mark.live
+@pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
+def test_openai_pydantic_response_format_streaming():
+    """Streaming + pydantic response_format — verify JSON reassembles."""
+    chunks = list(
+        litelm.completion(
+            "openai/gpt-4o-mini",
+            messages=[{"role": "user", "content": "What is 2+2? Explain briefly."}],
+            response_format=StructuredAnswer,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+    )
+    assert_stream_contract(chunks)
+    response = litelm.stream_chunk_builder(chunks)
+    content = response.choices[0].message.content
+    parsed = json.loads(content)
+    assert "answer" in parsed
+    assert "reasoning" in parsed

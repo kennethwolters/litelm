@@ -158,3 +158,99 @@ def test_map_openai_error_permission_denied():
 def test_map_openai_error_unprocessable():
     with pytest.raises(UnprocessableEntityError):
         _map_openai_error(_make_openai_error(openai.UnprocessableEntityError, "invalid"))
+
+
+# --- response_format normalization ---
+
+from litelm._completion import _normalize_response_format
+
+
+def test_normalize_response_format_none():
+    assert _normalize_response_format(None) is None
+
+
+def test_normalize_response_format_dict_passthrough():
+    d = {"type": "json_object"}
+    assert _normalize_response_format(d) is d
+
+
+def test_normalize_response_format_str_passthrough():
+    assert _normalize_response_format("json_object") == "json_object"
+
+
+def test_normalize_response_format_pydantic():
+    from pydantic import BaseModel
+
+    class Answer(BaseModel):
+        text: str
+        confidence: float
+
+    result = _normalize_response_format(Answer)
+    assert isinstance(result, dict)
+    assert result["type"] == "json_schema"
+    assert result["json_schema"]["name"] == "Answer"
+    assert result["json_schema"]["strict"] is True
+    schema = result["json_schema"]["schema"]
+    assert schema["type"] == "object"
+    assert "text" in schema["properties"]
+    assert "confidence" in schema["properties"]
+    assert schema["additionalProperties"] is False
+
+
+def test_normalize_response_format_non_pydantic_class():
+    class NotAModel:
+        pass
+
+    assert _normalize_response_format(NotAModel) is NotAModel
+
+
+@mock.patch("litelm._completion.get_sync_client")
+def test_completion_normalizes_pydantic_response_format(mock_get_client):
+    from pydantic import BaseModel
+
+    class Answer(BaseModel):
+        text: str
+
+    mock_client = mock.MagicMock()
+    mock_client.chat.completions.create.return_value = _mock_completion()
+    mock_get_client.return_value = mock_client
+
+    completion(
+        "openai/gpt-4o-mini",
+        messages=[{"role": "user", "content": "hi"}],
+        api_key="sk-test",
+        response_format=Answer,
+    )
+
+    call_kwargs = mock_client.chat.completions.create.call_args[1]
+    rf = call_kwargs["response_format"]
+    assert isinstance(rf, dict)
+    assert rf["type"] == "json_schema"
+    assert rf["json_schema"]["name"] == "Answer"
+
+
+@mock.patch("litelm._completion.get_async_client")
+def test_acompletion_normalizes_pydantic_response_format(mock_get_client):
+    from pydantic import BaseModel
+
+    class Answer(BaseModel):
+        text: str
+
+    mock_client = mock.MagicMock()
+    mock_client.chat.completions.create = mock.AsyncMock(return_value=_mock_completion())
+    mock_get_client.return_value = mock_client
+
+    asyncio.run(
+        acompletion(
+            "openai/gpt-4o-mini",
+            messages=[{"role": "user", "content": "hi"}],
+            api_key="sk-test",
+            response_format=Answer,
+        )
+    )
+
+    call_kwargs = mock_client.chat.completions.create.call_args[1]
+    rf = call_kwargs["response_format"]
+    assert isinstance(rf, dict)
+    assert rf["type"] == "json_schema"
+    assert rf["json_schema"]["name"] == "Answer"
