@@ -255,6 +255,7 @@
       "fields": [
         "provider_specific_fields",
         "reasoning_content",
+        "reasoning_items",
         "thinking_blocks"
       ]
     },
@@ -538,6 +539,7 @@
         "images",
         "provider_specific_fields",
         "reasoning_content",
+        "reasoning_items",
         "role",
         "thinking_blocks",
         "tool_calls"
@@ -727,6 +729,7 @@
         "supports_embedding_image_input",
         "supports_function_calling",
         "supports_native_streaming",
+        "supports_native_structured_output",
         "supports_none_reasoning_effort",
         "supports_parallel_function_calling",
         "supports_pdf_input",
@@ -1074,6 +1077,7 @@
         "user_api_key_hash",
         "user_api_key_max_budget",
         "user_api_key_org_id",
+        "user_api_key_project_alias",
         "user_api_key_project_id",
         "user_api_key_request_route",
         "user_api_key_spend",
