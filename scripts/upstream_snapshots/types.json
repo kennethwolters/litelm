@@ -1076,6 +1076,7 @@
         "user_api_key_end_user_id",
         "user_api_key_hash",
         "user_api_key_max_budget",
+        "user_api_key_org_alias",
         "user_api_key_org_id",
         "user_api_key_project_alias",
         "user_api_key_project_id",
