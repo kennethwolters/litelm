@@ -5,13 +5,13 @@ litelm is a 2,660 LOC reimplementation of litellm's core routing+formatting. It 
 ## What's Actually Proven
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests.
-- **6 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter. 41 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping.
+- **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 44 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping.
 - **161 own tests pass**, 47 skipped (live tests needing API keys).
 - **65 of litellm's ported tests pass** out of 79 high-relevance tests (82.3%). The other 1060+ collected tests fail at import — they reference litellm internals (Router, proxy, provider-specific LLM modules) we intentionally don't implement. (Upstream re-synced 2026-03-16; test count changed due to litellm restructuring.)
 
 ## What's NOT Proven
 
-- **11 providers with no API keys:** azure, bedrock, cloudflare, together_ai, fireworks_ai, deepseek, perplexity, deepinfra, gemini, cohere, ollama. They route through OpenAI-compat which works for the 6 tested providers, but provider-specific quirks (like Mistral's `type=None` tool calls) can only be found with live testing.
+- **10 providers with no API keys:** bedrock, cloudflare, together_ai, fireworks_ai, deepseek, perplexity, deepinfra, gemini, cohere, ollama. They route through OpenAI-compat which works for the 7 tested providers, but provider-specific quirks (like Mistral's `type=None` tool calls) can only be found with live testing.
 - **Bedrock + Cloudflare handlers:** 420 LOC of custom handler code (SigV4 auth, raw httpx SSE parsing) with zero live testing. The Bedrock client cache was just added — also untested against a real endpoint.
 
 ## Honest Ported Test Breakdown (1,080 collected, synced 2026-03-16)
@@ -541,7 +541,7 @@ Each provider needs verification on: basic completion, streaming, tool use, erro
 | mistral | Yes | Yes | Yes | Yes | Yes (type fix) | Yes | Yes | Yes (wrapping) | Partial |
 | xai | Yes | Yes | Yes | Yes (inflated total) | Yes | Yes | — | Yes (wrapping) | Partial |
 | openrouter | Yes | Yes | Yes | Yes | Yes (gpt-4o-mini) | Yes (gpt-4o-mini) | — | Yes (wrapping) | Partial |
-| azure | No | — | — | — | — | — | — | Yes (wrapping) | **No** |
+| azure | Yes | Yes | Yes | Yes | Yes (gpt-5.4-nano) | Yes (gpt-5.4-nano) | — | Yes (AuthenticationError) | Partial |
 | bedrock | No | — | — | — | — | — | — | Yes (own `_map_error`) | **No** |
 | cloudflare | No | — | — | — | — | — | — | Yes (own `_handle_error_response`) | **No** |
 | together_ai | No | — | — | — | — | — | — | Yes (wrapping) | **No** |
@@ -698,8 +698,11 @@ Tests run on every push/PR via `.github/workflows/test.yml` (Python 3.10–3.13)
 | Anthropic | `ANTHROPIC_API_KEY` | **Live** (verified 2026-03-13) |
 | xAI | `XAI_API_KEY` | **Live** (verified 2026-03-13) |
 | OpenRouter | `OPENROUTER_API_KEY` | **Live** (verified 2026-03-13) |
+| Azure OpenAI | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_URL` + `AZURE_OPENAI_MODEL` | **Live** (verified 2026-04-17, `gpt-5.4-nano` on aedna-foundry) |
 
 Load with `source .env.test` before running integration tests. Use cheapest models (gpt-4o-mini, claude-3-haiku, llama-3.1-8b, etc.) to minimize cost.
+
+Azure env var format: `AZURE_OPENAI_URL` is parsed by `_azure_env()` in `tests/test_live.py` to extract the base endpoint and `api-version` query param. Our code also accepts the canonical `AZURE_API_BASE` / `AZURE_API_KEY` / `AZURE_API_VERSION` env var names via `_providers.parse_model()`.
 
 ## Pre-push Checklist
 

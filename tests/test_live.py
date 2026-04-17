@@ -680,6 +680,69 @@ def test_azure_openai_streaming():
     assert_dspy_response_contract(response)
 
 
+_AZURE_REQUIRED = ("AZURE_OPENAI_API_KEY", "AZURE_OPENAI_URL", "AZURE_OPENAI_MODEL")
+
+
+def _azure_kwargs():
+    base, version = _azure_env()
+    kwargs = {"api_key": os.environ["AZURE_OPENAI_API_KEY"], "api_base": base}
+    if version:
+        kwargs["api_version"] = version
+    return kwargs
+
+
+@pytest.mark.live
+@pytest.mark.skipif(
+    not all(os.environ.get(k) for k in _AZURE_REQUIRED),
+    reason="Azure credentials not set",
+)
+def test_azure_openai_tool_call():
+    """Azure OpenAI tool calls (non-streaming)."""
+    response = litelm.completion(
+        model=f"azure/{os.environ['AZURE_OPENAI_MODEL']}",
+        **_TOOL_KW,
+        **_azure_kwargs(),
+    )
+    assert_tool_call_contract(response)
+
+
+@pytest.mark.live
+@pytest.mark.skipif(
+    not all(os.environ.get(k) for k in _AZURE_REQUIRED),
+    reason="Azure credentials not set",
+)
+def test_azure_openai_streaming_tool_call():
+    """Azure OpenAI tool calls (streaming)."""
+    chunks = list(
+        litelm.completion(
+            model=f"azure/{os.environ['AZURE_OPENAI_MODEL']}",
+            stream=True,
+            **_TOOL_KW,
+            **_azure_kwargs(),
+        )
+    )
+    has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
+    assert has_tc, "no chunk contained tool_calls delta"
+    assert_stream_tool_call_contract(chunks)
+
+
+@pytest.mark.live
+@pytest.mark.skipif(
+    not all(os.environ.get(k) for k in _AZURE_REQUIRED),
+    reason="Azure credentials not set",
+)
+def test_azure_openai_auth_error():
+    """Azure OpenAI wraps authentication error as litelm.AuthenticationError."""
+    kwargs = _azure_kwargs()
+    kwargs["api_key"] = "sk-invalid-key-for-auth-error-test"
+    with pytest.raises(litelm.AuthenticationError):
+        litelm.completion(
+            model=f"azure/{os.environ['AZURE_OPENAI_MODEL']}",
+            messages=MESSAGES,
+            **kwargs,
+        )
+
+
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("OPENAI_API_KEY"), reason="no OPENAI_API_KEY")
 def test_openai_pydantic_response_format_streaming():
