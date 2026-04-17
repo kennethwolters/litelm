@@ -130,6 +130,8 @@
       ],
       "fields": [
         "additional_costs",
+        "cache_creation_cost",
+        "cache_read_cost",
         "discount_amount",
         "discount_percent",
         "input_cost",
@@ -232,6 +234,7 @@
         "output_cost_per_pixel",
         "output_cost_per_reasoning_token",
         "output_cost_per_second",
+        "output_cost_per_second_1080p",
         "output_cost_per_token",
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
@@ -599,6 +602,7 @@
         "output_cost_per_image_token",
         "output_cost_per_reasoning_token",
         "output_cost_per_second",
+        "output_cost_per_second_1080p",
         "output_cost_per_token",
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
@@ -886,7 +890,9 @@
         "x_ratelimit_limit_requests",
         "x_ratelimit_limit_tokens",
         "x_ratelimit_remaining_requests",
-        "x_ratelimit_remaining_tokens"
+        "x_ratelimit_remaining_tokens",
+        "x_ratelimit_reset_requests",
+        "x_ratelimit_reset_tokens"
       ]
     },
     "StandardLoggingGuardrailInformation": {

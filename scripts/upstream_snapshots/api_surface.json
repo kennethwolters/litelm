@@ -95,6 +95,7 @@
     "client",
     "close_litellm_async_clients",
     "cohere_embedding_models",
+    "compress",
     "create_eval",
     "create_run",
     "create_skill",

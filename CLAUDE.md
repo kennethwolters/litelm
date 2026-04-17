@@ -1,4 +1,4 @@
-# Ground Truth (updated 2026-03-19)
+# Ground Truth (updated 2026-04-17)
 
 litelm is a 2,660 LOC reimplementation of litellm's core routing+formatting. It works as a **DSPy backend for 6 providers** — that is the only verified claim. Everything beyond that is untested.
 
@@ -93,6 +93,12 @@ litellm is ~40K LOC across 1,667 Python files. Its public namespace exports **1,
 **Router / fallbacks** — `completion(fallbacks=["model_b"])`. This is orchestration, not routing. dspy-lite can implement its own retry logic in 20 lines.
 
 **Callbacks / logging integrations** — 50+ integration hooks (langfuse, datadog, etc). Out of scope. dspy-lite doesn't need observability hooks in the LLM layer.
+
+**`reasoning_items` on Message/Delta** — ZDR round-trip of OpenAI Responses-API reasoning items through chat-completion shapes. Populated only by `completion_extras/litellm_responses_transformation/transformation.py` (the /chat/completions↔Responses adapter we don't implement). Audited 2026-04-17: 0 access via litellm across DSPy, OpenHands, MLflow, OpenInterpreter, Arize Phoenix, Instructor, Agno, CrewAI, AutoGen. CrewAI/Instructor use reasoning items but via the openai SDK directly. Dismissed.
+
+**Anthropic `text_tokens` in PromptTokensDetails** — upstream added `text_tokens=raw_input_tokens` for cost calculators to distinguish pre- vs post-cache totals. Cost calculation is out of scope; no consumer reads it. Dismissed.
+
+**Anthropic invalid-thinking-signature retry** — upstream retries `/v1/messages` once after stripping thinking blocks on HTTP 400 signature errors. Retry/orchestration layer (same reason we don't implement Router/fallbacks). Dismissed.
 
 ### What we ARE missing (actionable) — audited 2026-03-17
 
