@@ -1,5 +1,8 @@
 """Chat completion functions — openai SDK imported lazily only when needed."""
 
+import time
+
+from litelm._callbacks import fire_success, success_callbacks
 from litelm._client_cache import get_async_client, get_sync_client
 from litelm._dispatch import get_handler
 from litelm._exceptions import (
@@ -184,8 +187,28 @@ def _wrap_context_window_error(e):
     raise e
 
 
+def _fire_completion_success(model, provider, response, start_time, stream):
+    """Build the success event and dispatch to any registered callbacks.
+
+    Short-circuit on an empty registry — avoid constructing the event dict
+    (and especially the latency calc) when no observer is listening.
+    """
+    if not success_callbacks:
+        return
+    fire_success(
+        {
+            "model": model,
+            "provider": provider,
+            "response": response,
+            "latency_ms": (time.monotonic() - start_time) * 1000,
+            "stream": stream,
+        }
+    )
+
+
 def completion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
     """Synchronous chat completion."""
+    start_time = time.monotonic()
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
@@ -198,7 +221,7 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
         content = str(mock) if mock is not True else "This is a mock request"
         if stream:
             return _mock_stream_sync(content, model_name)
-        return ModelResponse(
+        result = ModelResponse(
             ChatCompletion(
                 id="mock",
                 choices=[
@@ -213,15 +236,20 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
                 usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
             )
         )
+        _fire_completion_success(model, provider, result, start_time, False)
+        return result
 
     if n > 1:
         kwargs["n"] = n
 
     handler = get_handler(provider)
     if handler:
-        return handler.completion(
+        result = handler.completion(
             model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
         )
+        if not stream:
+            _fire_completion_success(model, provider, result, start_time, False)
+        return result
 
     client = get_sync_client(
         provider,
@@ -244,11 +272,14 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
 
     if stream:
         return _wrap_stream_sync(response)
-    return ModelResponse(response)
+    result = ModelResponse(response)
+    _fire_completion_success(model, provider, result, start_time, False)
+    return result
 
 
 async def acompletion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
     """Async chat completion."""
+    start_time = time.monotonic()
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
@@ -261,7 +292,7 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
         content = str(mock) if mock is not True else "This is a mock request"
         if stream:
             return _mock_stream_async(content, model_name)
-        return ModelResponse(
+        result = ModelResponse(
             ChatCompletion(
                 id="mock",
                 choices=[
@@ -276,15 +307,20 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
                 usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
             )
         )
+        _fire_completion_success(model, provider, result, start_time, False)
+        return result
 
     if n > 1:
         kwargs["n"] = n
 
     handler = get_handler(provider)
     if handler:
-        return await handler.acompletion(
+        result = await handler.acompletion(
             model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
         )
+        if not stream:
+            _fire_completion_success(model, provider, result, start_time, False)
+        return result
 
     client = get_async_client(
         provider,
@@ -307,7 +343,9 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
 
     if stream:
         return _wrap_stream_async(response)
-    return ModelResponse(response)
+    result = ModelResponse(response)
+    _fire_completion_success(model, provider, result, start_time, False)
+    return result
 
 
 def mock_completion(model, messages, n=1, stream=False, **kwargs):
