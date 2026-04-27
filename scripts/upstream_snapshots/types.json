@@ -293,6 +293,18 @@
         "usage"
       ]
     },
+    "EvalVerdict": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "criterion_name",
+        "passed",
+        "reasoning",
+        "score",
+        "weight"
+      ]
+    },
     "ExtractedFileData": {
       "bases": [
         "TypedDict"
@@ -732,6 +744,8 @@
         "supports_computer_use",
         "supports_embedding_image_input",
         "supports_function_calling",
+        "supports_max_reasoning_effort",
+        "supports_minimal_reasoning_effort",
         "supports_native_streaming",
         "supports_native_structured_output",
         "supports_none_reasoning_effort",
@@ -895,6 +909,25 @@
         "x_ratelimit_reset_tokens"
       ]
     },
+    "StandardLoggingEvalInformation": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "duration",
+        "end_time",
+        "eval_error",
+        "eval_id",
+        "eval_name",
+        "iteration",
+        "judge_model",
+        "overall_score",
+        "passed",
+        "start_time",
+        "threshold",
+        "verdicts"
+      ]
+    },
     "StandardLoggingGuardrailInformation": {
       "bases": [
         "TypedDict"
@@ -1015,6 +1048,7 @@
         "guardrail_information",
         "hidden_params",
         "id",
+        "litellm_call_id",
         "messages",
         "metadata",
         "model",

@@ -114,6 +114,12 @@
       ],
       "fields": []
     },
+    "ModifyResponseException": {
+      "bases": [
+        "Exception"
+      ],
+      "fields": []
+    },
     "NotFoundError": {
       "bases": [
         "openai.NotFoundError"
