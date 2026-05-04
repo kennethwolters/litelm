@@ -744,6 +744,7 @@
         "supports_computer_use",
         "supports_embedding_image_input",
         "supports_function_calling",
+        "supports_low_reasoning_effort",
         "supports_max_reasoning_effort",
         "supports_minimal_reasoning_effort",
         "supports_native_streaming",
