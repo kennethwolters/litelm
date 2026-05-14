@@ -151,9 +151,19 @@ litelm.completion("ollama/llama3", messages=[...], api_base="http://localhost:11
 litelm.completion("openai/local-model", messages=[...], api_base="http://localhost:1234/v1")
 ```
 
+## Development transparency
+
+litelm is human-directed, AI-assisted software. Much of the code was written with Claude Code using Claude Opus 4.6/4.7. Code written from 2026-05-14 onward is written through Pi using GPT-5.5. Compatibility claims are based on tests and maintainer review, not AI authorship.
+
+## Upstream attestation
+
+Maintainer attestation, 2026-05-14: upstream litellm reviewed through `649eb2d`. Upstream-watch found no actionable in-scope drift; the only current drift is `responses_api_bridge_check(reasoning_summary)`, part of litellm's chat-completions↔Responses bridge and outside litelm's declared scope. Local scoped tests: `214 passed, 54 skipped` with `uv run --extra all pytest tests/ --ignore=tests/ported --timeout=10 -q`.
+
+This attests litelm's declared routing/formatting/DSPy surface only, not full litellm compatibility.
+
 ## Status
 
-**Alpha.** 129 own tests, 56 ported litellm tests passing unmodified via `sys.modules` shimming.
+**Alpha.** 214 own tests passing, 56 ported litellm tests passing unmodified via `sys.modules` shimming.
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
 
