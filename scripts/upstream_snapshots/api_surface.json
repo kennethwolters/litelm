@@ -394,7 +394,8 @@
       "custom_llm_provider",
       "web_search_options",
       "tools",
-      "reasoning_effort"
+      "reasoning_effort",
+      "reasoning_summary"
     ],
     "responses_with_retries": [
       "*args",
