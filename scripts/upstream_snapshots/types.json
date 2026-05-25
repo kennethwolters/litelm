@@ -149,6 +149,8 @@
         "TypedDict"
       ],
       "fields": [
+        "cache_creation_input_token_cost",
+        "cache_read_input_token_cost",
         "input_cost_per_token",
         "output_cost_per_token"
       ]
@@ -389,11 +391,13 @@
         "classification",
         "confidence_score",
         "detection_method",
+        "guardrail_action",
         "guardrail_id",
         "match_details",
         "patterns_checked",
         "policy_template",
-        "risk_score"
+        "risk_score",
+        "violation_categories"
       ]
     },
     "HttpHandlerRequestFields": {
@@ -605,6 +609,7 @@
         "max_output_tokens",
         "max_tokens",
         "mode",
+        "ocr_cost_per_credit",
         "ocr_cost_per_page",
         "output_cost_per_audio_per_second",
         "output_cost_per_audio_token",
@@ -750,6 +755,7 @@
         "supports_native_streaming",
         "supports_native_structured_output",
         "supports_none_reasoning_effort",
+        "supports_output_config",
         "supports_parallel_function_calling",
         "supports_pdf_input",
         "supports_prompt_caching",
@@ -940,6 +946,7 @@
         "detection_method",
         "duration",
         "end_time",
+        "guardrail_action",
         "guardrail_id",
         "guardrail_mode",
         "guardrail_name",
@@ -952,7 +959,8 @@
         "patterns_checked",
         "policy_template",
         "risk_score",
-        "start_time"
+        "start_time",
+        "violation_categories"
       ]
     },
     "StandardLoggingHiddenParams": {
