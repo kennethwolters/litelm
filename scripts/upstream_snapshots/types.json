@@ -252,6 +252,12 @@
       "bases": [],
       "fields": []
     },
+    "DataResidency": {
+      "bases": [
+        "Enum"
+      ],
+      "fields": []
+    },
     "Delta": {
       "bases": [
         "SafeAttributeModel",
@@ -630,6 +636,8 @@
         "output_cost_per_video_per_second",
         "output_vector_size",
         "provider_specific_entry",
+        "regional_processing_uplift_multiplier_eu",
+        "regional_processing_uplift_multiplier_us",
         "rpm",
         "search_context_cost_per_query",
         "tiered_pricing",
@@ -743,6 +751,7 @@
         "TypedDict"
       ],
       "fields": [
+        "bedrock_output_config_effort_ceiling",
         "supports_assistant_prefill",
         "supports_audio_input",
         "supports_audio_output",
