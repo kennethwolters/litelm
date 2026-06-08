@@ -51,6 +51,8 @@
     "REPEATED_STREAMING_CHUNK_LIMIT",
     "ROUTER_MAX_FALLBACKS",
     "RateLimitError",
+    "RateLimitErrorCategory",
+    "RateLimitType",
     "Router",
     "ServiceUnavailableError",
     "Timeout",
@@ -165,6 +167,7 @@
       "kwargs",
       "model_info"
     ],
+    "_dev_env_hot_reload_enabled": [],
     "_drop_input_examples_from_tool": [
       "tool"
     ],
@@ -244,6 +247,7 @@
       "extra_headers",
       "thinking",
       "web_search_options",
+      "include_server_side_tool_invocations",
       "shared_session",
       "enable_json_schema_validation",
       "**kwargs"
@@ -329,6 +333,7 @@
       "top_logprobs",
       "parallel_tool_calls",
       "web_search_options",
+      "include_server_side_tool_invocations",
       "deployment_id",
       "extra_headers",
       "safety_identifier",

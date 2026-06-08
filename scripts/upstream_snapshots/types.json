@@ -155,32 +155,6 @@
         "output_cost_per_token"
       ]
     },
-    "CreateCredentialItem": {
-      "bases": [
-        "CredentialBase"
-      ],
-      "fields": [
-        "credential_values",
-        "model_id"
-      ]
-    },
-    "CredentialBase": {
-      "bases": [
-        "BaseModel"
-      ],
-      "fields": [
-        "credential_info",
-        "credential_name"
-      ]
-    },
-    "CredentialItem": {
-      "bases": [
-        "CredentialBase"
-      ],
-      "fields": [
-        "credential_values"
-      ]
-    },
     "CustomHuggingfaceTokenizer": {
       "bases": [
         "TypedDict"
@@ -758,6 +732,7 @@
         "supports_computer_use",
         "supports_embedding_image_input",
         "supports_function_calling",
+        "supports_image_size",
         "supports_low_reasoning_effort",
         "supports_max_reasoning_effort",
         "supports_minimal_reasoning_effort",
@@ -997,6 +972,7 @@
         "mcp_server_cost_info",
         "mcp_server_logo_url",
         "mcp_server_name",
+        "mcp_session_id",
         "name",
         "namespaced_tool_name",
         "result"
@@ -1100,6 +1076,8 @@
         "error_class",
         "error_code",
         "error_message",
+        "error_rate_limit_category",
+        "error_rate_limit_type",
         "llm_provider",
         "traceback"
       ]

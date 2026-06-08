@@ -144,9 +144,29 @@
       ],
       "fields": []
     },
+    "RateLimitErrorCategory": {
+      "bases": [
+        "str",
+        "enum.Enum"
+      ],
+      "fields": []
+    },
+    "RateLimitType": {
+      "bases": [
+        "str",
+        "enum.Enum"
+      ],
+      "fields": []
+    },
     "RejectedRequestError": {
       "bases": [
         "BadRequestError"
+      ],
+      "fields": []
+    },
+    "SensitiveDataRouteException": {
+      "bases": [
+        "Exception"
       ],
       "fields": []
     },
