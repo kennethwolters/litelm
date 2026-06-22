@@ -134,6 +134,7 @@
     "list_skills",
     "llm_passthrough_route",
     "log_level",
+    "modelscope_models",
     "open_ai_embedding_models",
     "openai_compatible_endpoints",
     "openai_compatible_providers",

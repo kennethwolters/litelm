@@ -177,6 +177,8 @@
         "cache_read_input_audio_token_cost",
         "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_200k_tokens",
+        "cache_read_input_token_cost_above_200k_tokens_priority",
+        "cache_read_input_token_cost_above_272k_tokens_priority",
         "cache_read_input_token_cost_flex",
         "cache_read_input_token_cost_priority",
         "citation_cost_per_token",
@@ -193,6 +195,8 @@
         "input_cost_per_token",
         "input_cost_per_token_above_128k_tokens",
         "input_cost_per_token_above_200k_tokens",
+        "input_cost_per_token_above_200k_tokens_priority",
+        "input_cost_per_token_above_272k_tokens_priority",
         "input_cost_per_token_batches",
         "input_cost_per_token_cache_hit",
         "input_cost_per_token_flex",
@@ -214,6 +218,8 @@
         "output_cost_per_token",
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
+        "output_cost_per_token_above_200k_tokens_priority",
+        "output_cost_per_token_above_272k_tokens_priority",
         "output_cost_per_token_batches",
         "output_cost_per_token_flex",
         "output_cost_per_token_priority",
@@ -564,7 +570,9 @@
         "cache_creation_input_token_cost_above_200k_tokens",
         "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_200k_tokens",
+        "cache_read_input_token_cost_above_200k_tokens_priority",
         "cache_read_input_token_cost_above_272k_tokens",
+        "cache_read_input_token_cost_above_272k_tokens_priority",
         "cache_read_input_token_cost_above_512k_tokens",
         "cache_read_input_token_cost_flex",
         "cache_read_input_token_cost_priority",
@@ -580,7 +588,9 @@
         "input_cost_per_token",
         "input_cost_per_token_above_128k_tokens",
         "input_cost_per_token_above_200k_tokens",
+        "input_cost_per_token_above_200k_tokens_priority",
         "input_cost_per_token_above_272k_tokens",
+        "input_cost_per_token_above_272k_tokens_priority",
         "input_cost_per_token_above_512k_tokens",
         "input_cost_per_token_batches",
         "input_cost_per_token_flex",
@@ -606,7 +616,9 @@
         "output_cost_per_token",
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
+        "output_cost_per_token_above_200k_tokens_priority",
         "output_cost_per_token_above_272k_tokens",
+        "output_cost_per_token_above_272k_tokens_priority",
         "output_cost_per_token_above_512k_tokens",
         "output_cost_per_token_batches",
         "output_cost_per_token_flex",
@@ -779,6 +791,13 @@
     },
     "SafeAttributeModel": {
       "bases": [],
+      "fields": []
+    },
+    "SandboxProviders": {
+      "bases": [
+        "str",
+        "Enum"
+      ],
       "fields": []
     },
     "SearchContextCostPerQuery": {
