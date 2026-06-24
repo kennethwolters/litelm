@@ -6,6 +6,7 @@ then wraps responses back into OpenAI-compatible ModelResponse objects.
 
 import json
 import os
+import re
 import time
 
 from litelm._exceptions import (
@@ -39,6 +40,7 @@ from litelm._types import (
 )
 
 _SDK = None
+_THOUGHT_SIGNATURE_SEPARATOR = "__thought__"
 
 
 def _get_sdk():
@@ -131,6 +133,16 @@ def _translate_content(content):
     return blocks
 
 
+def _normalize_tool_use_id(raw_id):
+    """Normalize Anthropic tool_use/tool_result ids to the accepted pattern."""
+    if not isinstance(raw_id, str):
+        raw_id = ""
+    if _THOUGHT_SIGNATURE_SEPARATOR in raw_id:
+        raw_id = raw_id.split(_THOUGHT_SIGNATURE_SEPARATOR, 1)[0]
+    sanitized = re.sub(r"[^a-zA-Z0-9_-]", "_", raw_id)
+    return sanitized or "tool_use_id"
+
+
 def _translate_messages(messages):
     """Translate OpenAI messages list to Anthropic format."""
     result = []
@@ -151,7 +163,7 @@ def _translate_messages(messages):
                     blocks.append(
                         {
                             "type": "tool_use",
-                            "id": tc.get("id", ""),
+                            "id": _normalize_tool_use_id(tc.get("id", "")),
                             "name": fn.get("name", ""),
                             "input": args,
                         }
@@ -166,7 +178,7 @@ def _translate_messages(messages):
                     "content": [
                         {
                             "type": "tool_result",
-                            "tool_use_id": tool_call_id,
+                            "tool_use_id": _normalize_tool_use_id(tool_call_id),
                             "content": content if isinstance(content, str) else json.dumps(content),
                         }
                     ],

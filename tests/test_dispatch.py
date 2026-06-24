@@ -140,6 +140,24 @@ class TestAnthropicTranslation:
         assert result[1]["role"] == "user"
         assert result[1]["content"][0]["type"] == "tool_result"
 
+    def test_translate_messages_sanitizes_tool_use_ids(self):
+        msgs = [
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {
+                        "id": "functions.Bash:0__thought__sig",
+                        "function": {"name": "run", "arguments": "{}"},
+                    }
+                ],
+            },
+            {"role": "tool", "tool_call_id": "functions.Bash:0__thought__sig", "content": "ok"},
+        ]
+        result = self.mod._translate_messages(msgs)
+        assert result[0]["content"][0]["id"] == "functions_Bash_0"
+        assert result[1]["content"][0]["tool_use_id"] == "functions_Bash_0"
+
     def test_translate_messages_merges_consecutive_user(self):
         msgs = [
             {"role": "user", "content": "A"},
@@ -674,50 +692,70 @@ class TestCloudflareTranslation:
 
         self.mod = _cloudflare
 
-    def test_build_url(self):
-        url = self.mod._build_url("abc123", "@cf/meta/llama-2-7b-chat-int8")
-        assert "abc123" in url
-        assert "@cf/meta/llama-2-7b-chat-int8" in url
+    def test_resolve_base_url_from_account_id(self):
+        with mock.patch.dict(os.environ, {"CLOUDFLARE_ACCOUNT_ID": "abc123"}, clear=True):
+            assert self.mod._resolve_base_url() == "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
 
-    def test_build_request_body_basic(self):
-        msgs = [{"role": "user", "content": "Hi"}]
-        body, stream = self.mod._build_request_body(msgs, temperature=0.7)
-        assert body["messages"] == msgs
-        assert body["temperature"] == 0.7
-        assert stream is False
+    def test_resolve_base_url_rewrites_legacy_ai_run_base(self):
+        assert (
+            self.mod._resolve_base_url("https://api.cloudflare.com/client/v4/accounts/abc123/ai/run")
+            == "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
+        )
 
-    def test_build_request_body_stream(self):
-        msgs = [{"role": "user", "content": "Hi"}]
-        body, stream = self.mod._build_request_body(msgs, stream=True)
-        assert body["stream"] is True
-        assert stream is True
+    def test_resolve_base_url_strips_chat_completions_suffix(self):
+        assert (
+            self.mod._resolve_base_url("https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1/chat/completions")
+            == "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
+        )
 
-    def test_parse_response(self):
-        data = {"result": {"response": "Hello there!"}}
-        resp = self.mod._parse_response(data, "test-model")
-        assert resp.choices[0].message.content == "Hello there!"
-        assert resp.model == "test-model"
-
-    def test_parse_stream_line_data(self):
-        line = 'data: {"response": "Hi"}'
-        chunk = self.mod._parse_stream_line(line, "model", "id1")
-        assert chunk is not None
-        assert chunk.choices[0].delta.content == "Hi"
-
-    def test_parse_stream_line_done(self):
-        line = "data: [DONE]"
-        chunk = self.mod._parse_stream_line(line, "model", "id1")
-        assert chunk is not None
-        assert chunk.choices[0].finish_reason == "stop"
-
-    def test_parse_stream_line_empty(self):
-        assert self.mod._parse_stream_line("", "model", "id1") is None
-        assert self.mod._parse_stream_line("event: ping", "model", "id1") is None
-
-    def test_get_config_missing_account_id(self):
+    def test_resolve_base_url_missing_account_id(self):
         with mock.patch.dict(os.environ, {}, clear=True):
             with pytest.raises(ValueError, match="CLOUDFLARE_ACCOUNT_ID"):
-                self.mod._get_config()
+                self.mod._resolve_base_url()
+
+    def test_resolve_base_url_blank_base_uses_account_id(self):
+        with mock.patch.dict(os.environ, {"CLOUDFLARE_ACCOUNT_ID": "abc123"}, clear=True):
+            assert self.mod._resolve_base_url("  ") == "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1"
+
+    def test_resolve_api_key_missing_token(self):
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with pytest.raises(ValueError, match="CLOUDFLARE_API_TOKEN"):
+                self.mod._resolve_api_key()
+
+    def test_prepare_sdk_kwargs_maps_max_completion_tokens(self):
+        result = self.mod._prepare_sdk_kwargs(
+            "@cf/meta/llama-2-7b-chat-int8",
+            [{"role": "user", "content": "Hi"}],
+            False,
+            {"max_completion_tokens": 10},
+        )
+        assert result["max_tokens"] == 10
+        assert "max_completion_tokens" not in result
+
+    def test_completion_uses_openai_compatible_client(self):
+        response = mock.MagicMock()
+        client = mock.MagicMock()
+        client.chat.completions.create.return_value = response
+
+        with mock.patch.object(self.mod, "get_sync_client", return_value=client) as get_client:
+            result = self.mod.completion(
+                "@cf/meta/llama-2-7b-chat-int8",
+                [{"role": "user", "content": "Hi"}],
+                api_key="token",
+                base_url="https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1",
+                max_completion_tokens=10,
+            )
+
+        get_client.assert_called_once_with(
+            "cloudflare",
+            "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1",
+            "token",
+        )
+        client.chat.completions.create.assert_called_once()
+        sent = client.chat.completions.create.call_args.kwargs
+        assert sent["model"] == "@cf/meta/llama-2-7b-chat-int8"
+        assert sent["max_tokens"] == 10
+        assert result._completion is response
 
 
 # ---------------------------------------------------------------------------
@@ -750,6 +788,21 @@ class TestMistralTransforms:
         msgs = [{"role": "assistant", "content": "Hello", "name": "bot"}]
         result = self.mod._transform_messages(msgs)
         assert "name" not in result[0]
+
+    def test_transform_messages_strips_output_only_assistant_fields(self):
+        msgs = [
+            {
+                "role": "assistant",
+                "content": "Hello",
+                "reasoning_content": "private trace",
+                "thinking_blocks": [{"type": "thinking", "thinking": "private trace"}],
+            },
+            {"role": "user", "content": "next"},
+        ]
+        result = self.mod._transform_messages(msgs)
+        assert "reasoning_content" not in result[0]
+        assert "thinking_blocks" not in result[0]
+        assert result[1]["content"] == "next"
 
     def test_transform_messages_none_passthrough(self):
         assert self.mod._transform_messages(None) is None

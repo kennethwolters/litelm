@@ -142,11 +142,13 @@
     "rag",
     "replicate_models",
     "request_timeout",
+    "request_timeout_explicitly_set",
     "run_server",
     "set_global_bitbucket_config",
     "set_global_gitlab_config",
     "set_verbose",
     "together_ai_models",
+    "use_litellm_rust",
     "vector_store_file_content",
     "vector_store_file_create",
     "vector_store_file_delete",
@@ -169,6 +171,189 @@
       "custom_llm_provider",
       "kwargs",
       "model_info"
+    ],
+    "_complete_a2a": [
+      "ctx"
+    ],
+    "_complete_aiohttp_openai": [
+      "ctx"
+    ],
+    "_complete_aleph_alpha": [
+      "ctx"
+    ],
+    "_complete_amazon_nova": [
+      "ctx"
+    ],
+    "_complete_anthropic": [
+      "ctx"
+    ],
+    "_complete_anthropic_text": [
+      "ctx"
+    ],
+    "_complete_azure": [
+      "ctx"
+    ],
+    "_complete_azure_ai": [
+      "ctx"
+    ],
+    "_complete_azure_text": [
+      "ctx"
+    ],
+    "_complete_bedrock": [
+      "ctx"
+    ],
+    "_complete_bedrock_mantle": [
+      "ctx"
+    ],
+    "_complete_bytez": [
+      "ctx"
+    ],
+    "_complete_cloudflare": [
+      "ctx"
+    ],
+    "_complete_cohere_chat": [
+      "ctx"
+    ],
+    "_complete_cometapi": [
+      "ctx"
+    ],
+    "_complete_compactifai": [
+      "ctx"
+    ],
+    "_complete_custom": [
+      "ctx"
+    ],
+    "_complete_custom_openai": [
+      "ctx"
+    ],
+    "_complete_custom_providers": [
+      "ctx"
+    ],
+    "_complete_databricks": [
+      "ctx"
+    ],
+    "_complete_datarobot": [
+      "ctx"
+    ],
+    "_complete_deepseek": [
+      "ctx"
+    ],
+    "_complete_fireworks_ai": [
+      "ctx"
+    ],
+    "_complete_gigachat": [
+      "ctx"
+    ],
+    "_complete_gradient_ai": [
+      "ctx"
+    ],
+    "_complete_groq": [
+      "ctx"
+    ],
+    "_complete_heroku": [
+      "ctx"
+    ],
+    "_complete_hosted_vllm": [
+      "ctx"
+    ],
+    "_complete_huggingface": [
+      "ctx"
+    ],
+    "_complete_langflow": [
+      "ctx"
+    ],
+    "_complete_langgraph": [
+      "ctx"
+    ],
+    "_complete_lemonade": [
+      "ctx"
+    ],
+    "_complete_maritalk": [
+      "ctx"
+    ],
+    "_complete_minimax": [
+      "ctx"
+    ],
+    "_complete_mistral": [
+      "ctx"
+    ],
+    "_complete_nlp_cloud": [
+      "ctx"
+    ],
+    "_complete_oci": [
+      "ctx"
+    ],
+    "_complete_ollama": [
+      "ctx"
+    ],
+    "_complete_ollama_chat": [
+      "ctx"
+    ],
+    "_complete_oobabooga": [
+      "ctx"
+    ],
+    "_complete_openrouter": [
+      "ctx"
+    ],
+    "_complete_ovhcloud": [
+      "ctx"
+    ],
+    "_complete_petals": [
+      "ctx"
+    ],
+    "_complete_predibase": [
+      "ctx"
+    ],
+    "_complete_ragflow": [
+      "ctx"
+    ],
+    "_complete_replicate": [
+      "ctx"
+    ],
+    "_complete_sagemaker": [
+      "ctx"
+    ],
+    "_complete_sagemaker_chat": [
+      "ctx"
+    ],
+    "_complete_sap": [
+      "ctx"
+    ],
+    "_complete_snowflake": [
+      "ctx"
+    ],
+    "_complete_text_completion_codestral": [
+      "ctx"
+    ],
+    "_complete_text_completion_inception": [
+      "ctx"
+    ],
+    "_complete_text_completion_openai": [
+      "ctx"
+    ],
+    "_complete_triton": [
+      "ctx"
+    ],
+    "_complete_vercel_ai_gateway": [
+      "ctx"
+    ],
+    "_complete_vertex_ai": [
+      "ctx"
+    ],
+    "_complete_vertex_ai_beta": [
+      "ctx"
+    ],
+    "_complete_vllm": [
+      "ctx"
+    ],
+    "_complete_watsonx": [
+      "ctx"
+    ],
+    "_complete_watsonx_text": [
+      "ctx"
+    ],
+    "_complete_xai": [
+      "ctx"
     ],
     "_dev_env_hot_reload_enabled": [],
     "_drop_input_examples_from_tool": [

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 (2026-06-24)
+
+- **Cloudflare compatibility** — route `cloudflare/...` calls through Cloudflare's OpenAI-compatible `/ai/v1` endpoint, migrate legacy `/ai/run` bases, and normalize full `/chat/completions` URLs before handing them to the OpenAI SDK.
+- **Replay-safe provider transforms** — sanitize Anthropic tool-use IDs before native API calls, and strip Mistral output-only assistant fields (`reasoning_content`, `thinking_blocks`) before replaying message history.
+- **Upstream verification discipline** — add repo guidance requiring upstream behavior ports to inspect upstream tests first, then write local equivalents before implementation.
+
 ## 0.5.0 (2026-04-22)
 
 - **Success callback registry** — append to `litelm.success_callbacks` to receive per-completion telemetry (model, provider, response, latency_ms). Fires for both `completion` and `acompletion` on every non-streaming success path (mock, custom-handler, direct-SDK). Callback exceptions are logged and swallowed so an observer can't cascade into call failure.

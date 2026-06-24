@@ -1,245 +1,111 @@
-"""Cloudflare Workers AI handler using httpx.
+"""Cloudflare Workers AI handler via Cloudflare's OpenAI-compatible endpoint.
 
 Model strings: cloudflare/@cf/meta/llama-2-7b-chat-int8
 Env vars: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN
 """
 
-import json
 import os
-import time
 
-from litelm._exceptions import (
-    APIStatusError,
-    AuthenticationError,
-    BadRequestError,
-    InternalServerError,
-    NotFoundError,
-    PermissionDeniedError,
-    RateLimitError,
-    UnprocessableEntityError,
-)
-from litelm._types import (
-    ChatCompletion,
-    ChatCompletionChunk,
-    ChatCompletionMessage,
-    Choice,
-    ChoiceDelta,
-    ChunkChoice,
-    CompletionUsage,
-    ModelResponse,
-    ModelResponseStream,
-)
+from litelm._client_cache import get_async_client, get_sync_client
+from litelm._completion import _map_openai_error, _openai_errors
+from litelm._types import ModelResponse, ModelResponseStream
 
 _BASE_URL = "https://api.cloudflare.com/client/v4/accounts"
+_LEGACY_AI_RUN_SUFFIX = "/ai/run"
+_CHAT_COMPLETIONS_SUFFIX = "/chat/completions"
 
 
-def _get_config(api_key=None, base_url=None):
-    """Resolve account_id and api_token from args or env."""
-    account_id = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
-    if not account_id:
-        raise ValueError("CLOUDFLARE_ACCOUNT_ID environment variable is required for cloudflare/ models.")
-    token = api_key or os.environ.get("CLOUDFLARE_API_TOKEN")
-    if not token:
+def _normalize_nonempty(value):
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
+def _resolve_api_key(api_key=None):
+    token = _normalize_nonempty(api_key) or _normalize_nonempty(os.environ.get("CLOUDFLARE_API_TOKEN"))
+    if token is None:
         raise ValueError("CLOUDFLARE_API_TOKEN environment variable is required for cloudflare/ models.")
-    return account_id, token
+    return token
 
 
-def _build_url(account_id, model_name):
-    """Build the Cloudflare AI run URL."""
-    return f"{_BASE_URL}/{account_id}/ai/run/{model_name}"
+def _build_base_url(account_id):
+    return f"{_BASE_URL}/{account_id}/ai/v1"
 
 
-def _build_request_body(messages, **kwargs):
-    """Build Cloudflare-format request body from OpenAI messages."""
-    body = {"messages": messages}
+def _resolve_base_url(base_url=None):
+    """Resolve Cloudflare's OpenAI-compatible base URL.
 
-    for key in ("temperature", "max_tokens", "top_p"):
-        if key in kwargs:
-            val = kwargs.pop(key)
-            if val is not None:
-                body[key] = val
+    Cloudflare's legacy Workers AI path was /ai/run/{model}. The OpenAI-compatible
+    chat API lives under /ai/v1, so rewrite a configured /ai/run base.
+    """
+    base_url = _normalize_nonempty(base_url)
+    if base_url:
+        trimmed = base_url.rstrip("/")
+        if trimmed.endswith(_CHAT_COMPLETIONS_SUFFIX):
+            trimmed = trimmed[: -len(_CHAT_COMPLETIONS_SUFFIX)]
+        if trimmed.endswith(_LEGACY_AI_RUN_SUFFIX):
+            return f"{trimmed[: -len(_LEGACY_AI_RUN_SUFFIX)]}/ai/v1"
+        return trimmed
 
-    max_completion_tokens = kwargs.pop("max_completion_tokens", None)
-    if max_completion_tokens and "max_tokens" not in body:
-        body["max_tokens"] = max_completion_tokens
-
-    stream = kwargs.pop("stream", False)
-    if stream:
-        body["stream"] = True
-
-    # Drop unsupported params
-    for drop in (
-        "tools",
-        "tool_choice",
-        "response_format",
-        "frequency_penalty",
-        "presence_penalty",
-        "seed",
-        "logprobs",
-        "top_logprobs",
-        "n",
-        "stop",
-        "extra_headers",
-    ):
-        kwargs.pop(drop, None)
-
-    return body, stream
+    account_id = _normalize_nonempty(os.environ.get("CLOUDFLARE_ACCOUNT_ID"))
+    if account_id is None:
+        raise ValueError("CLOUDFLARE_ACCOUNT_ID environment variable is required for cloudflare/ models.")
+    return _build_base_url(account_id)
 
 
-def _parse_response(data, model_name):
-    """Parse Cloudflare response JSON into ModelResponse."""
-    result = data.get("result", {})
-    response_text = result.get("response", "")
-
-    message = ChatCompletionMessage(role="assistant", content=response_text)
-    usage = CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
-
-    completion = ChatCompletion(
-        id=f"chatcmpl-cf-{int(time.time())}",
-        choices=[Choice(index=0, message=message, finish_reason="stop")],
-        created=int(time.time()),
-        model=model_name,
-        object="chat.completion",
-        usage=usage,
-    )
-    return ModelResponse(completion)
-
-
-def _parse_stream_line(line, model_name, chunk_id):
-    """Parse a single SSE line from Cloudflare streaming response."""
-    line = line.strip()
-    if not line or not line.startswith("data:"):
-        return None
-
-    data_str = line[5:].strip()
-    if data_str == "[DONE]":
-        delta = ChoiceDelta()
-        choice = ChunkChoice(index=0, delta=delta, finish_reason="stop")
-        chunk = ChatCompletionChunk(
-            id=chunk_id,
-            choices=[choice],
-            created=int(time.time()),
-            model=model_name,
-            object="chat.completion.chunk",
-        )
-        return ModelResponseStream(chunk)
-
-    try:
-        data = json.loads(data_str)
-    except json.JSONDecodeError:
-        return None
-
-    text = data.get("response", "")
-    delta = ChoiceDelta(content=text, role="assistant")
-    choice = ChunkChoice(index=0, delta=delta, finish_reason=None)
-    chunk = ChatCompletionChunk(
-        id=chunk_id,
-        choices=[choice],
-        created=int(time.time()),
-        model=model_name,
-        object="chat.completion.chunk",
-    )
-    return ModelResponseStream(chunk)
-
-
-def _handle_error_response(response):
-    """Raise appropriate litelm exception for error HTTP status."""
-    status = response.status_code
-    try:
-        body = response.json()
-        msg = json.dumps(body.get("errors", body))
-    except Exception:
-        msg = response.text
-
-    if status == 401:
-        raise AuthenticationError(message=msg, response=response, body=msg)
-    elif status == 429:
-        raise RateLimitError(message=msg, response=response, body=msg)
-    elif status == 400:
-        raise BadRequestError(message=msg, response=response, body=msg)
-    elif status == 403:
-        raise PermissionDeniedError(message=msg, response=response, body=msg)
-    elif status == 404:
-        raise NotFoundError(message=msg, response=response, body=msg)
-    elif status == 422:
-        raise UnprocessableEntityError(message=msg, response=response, body=msg)
-    elif status >= 500:
-        raise InternalServerError(message=msg, response=response, body=msg)
-    else:
-        raise APIStatusError(message=msg, response=response, body=msg)
+def _prepare_sdk_kwargs(model_name, messages, stream, kwargs):
+    sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
+    if "max_completion_tokens" in sdk_kwargs and "max_tokens" not in sdk_kwargs:
+        sdk_kwargs["max_tokens"] = sdk_kwargs.pop("max_completion_tokens")
+    return sdk_kwargs
 
 
 def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
-    """Synchronous Cloudflare Workers AI completion."""
-    import httpx
+    """Synchronous Cloudflare completion through the OpenAI-compatible API."""
+    token = _resolve_api_key(api_key)
+    resolved_base_url = _resolve_base_url(base_url)
+    client = get_sync_client("cloudflare", resolved_base_url, token)
 
-    account_id, token = _get_config(api_key)
-    url = _build_url(account_id, model_name)
-    body, do_stream = _build_request_body(messages, stream=stream, **kwargs)
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    http_timeout = timeout if timeout is not None else 120
+    sdk_kwargs = _prepare_sdk_kwargs(model_name, messages, stream, kwargs)
+    if timeout is not None:
+        sdk_kwargs["timeout"] = timeout
 
-    if do_stream:
-        return _stream_sync(url, headers, body, model_name, http_timeout)
+    try:
+        response = client.chat.completions.create(**sdk_kwargs)
+    except _openai_errors as e:
+        _map_openai_error(e)
 
-    with httpx.Client(timeout=http_timeout) as client:
-        resp = client.post(url, json=body, headers=headers)
-
-    if resp.status_code != 200:
-        _handle_error_response(resp)
-
-    return _parse_response(resp.json(), model_name)
-
-
-def _stream_sync(url, headers, body, model_name, http_timeout=120):
-    """Synchronous streaming generator for Cloudflare."""
-    import httpx
-
-    chunk_id = f"chatcmpl-cf-{int(time.time())}"
-    with httpx.Client(timeout=http_timeout) as client:
-        with client.stream("POST", url, json=body, headers=headers) as resp:
-            if resp.status_code != 200:
-                resp.read()
-                _handle_error_response(resp)
-            for line in resp.iter_lines():
-                chunk = _parse_stream_line(line, model_name, chunk_id)
-                if chunk is not None:
-                    yield chunk
+    if stream:
+        return _wrap_stream_sync(response)
+    return ModelResponse(response)
 
 
 async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
-    """Async Cloudflare Workers AI completion."""
-    import httpx
+    """Async Cloudflare completion through the OpenAI-compatible API."""
+    token = _resolve_api_key(api_key)
+    resolved_base_url = _resolve_base_url(base_url)
+    client = get_async_client("cloudflare", resolved_base_url, token)
 
-    account_id, token = _get_config(api_key)
-    url = _build_url(account_id, model_name)
-    body, do_stream = _build_request_body(messages, stream=stream, **kwargs)
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-    http_timeout = timeout if timeout is not None else 120
+    sdk_kwargs = _prepare_sdk_kwargs(model_name, messages, stream, kwargs)
+    if timeout is not None:
+        sdk_kwargs["timeout"] = timeout
 
-    if do_stream:
-        return _stream_async(url, headers, body, model_name, http_timeout)
+    try:
+        response = await client.chat.completions.create(**sdk_kwargs)
+    except _openai_errors as e:
+        _map_openai_error(e)
 
-    async with httpx.AsyncClient(timeout=http_timeout) as client:
-        resp = await client.post(url, json=body, headers=headers)
-
-    if resp.status_code != 200:
-        _handle_error_response(resp)
-
-    return _parse_response(resp.json(), model_name)
+    if stream:
+        return _wrap_stream_async(response)
+    return ModelResponse(response)
 
 
-async def _stream_async(url, headers, body, model_name, http_timeout=120):
-    """Async streaming generator for Cloudflare."""
-    import httpx
+def _wrap_stream_sync(stream):
+    for chunk in stream:
+        yield ModelResponseStream(chunk)
 
-    chunk_id = f"chatcmpl-cf-{int(time.time())}"
-    async with httpx.AsyncClient(timeout=http_timeout) as client:
-        async with client.stream("POST", url, json=body, headers=headers) as resp:
-            if resp.status_code != 200:
-                await resp.aread()
-                _handle_error_response(resp)
-            async for line in resp.aiter_lines():
-                chunk = _parse_stream_line(line, model_name, chunk_id)
-                if chunk is not None:
-                    yield chunk
+
+async def _wrap_stream_async(stream):
+    async for chunk in stream:
+        yield ModelResponseStream(chunk)

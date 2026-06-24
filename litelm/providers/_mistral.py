@@ -11,7 +11,7 @@ from litelm._types import ModelResponse, ModelResponseStream
 
 
 def _transform_messages(messages):
-    """Strip 'name' field from non-tool messages."""
+    """Strip fields Mistral rejects from replayed messages."""
     if not messages:
         return messages
     result = []
@@ -19,6 +19,9 @@ def _transform_messages(messages):
         msg = dict(msg)
         if msg.get("role") != "tool" and "name" in msg:
             del msg["name"]
+        if msg.get("role") == "assistant":
+            msg.pop("reasoning_content", None)
+            msg.pop("thinking_blocks", None)
         result.append(msg)
     return result
 
