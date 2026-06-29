@@ -645,7 +645,8 @@
         "search_context_cost_per_query",
         "tiered_pricing",
         "tpm",
-        "uses_embed_content"
+        "uses_embed_content",
+        "web_search_billing_unit"
       ]
     },
     "ModelResponse": {
@@ -718,6 +719,7 @@
         "PromptTokensDetails"
       ],
       "fields": [
+        "audio_length_seconds",
         "cache_creation_token_details",
         "cache_creation_tokens",
         "character_count",
@@ -755,6 +757,7 @@
       ],
       "fields": [
         "bedrock_output_config_effort_ceiling",
+        "supports_adaptive_thinking",
         "supports_assistant_prefill",
         "supports_audio_input",
         "supports_audio_output",
