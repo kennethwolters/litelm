@@ -140,6 +140,7 @@
         "margin_total_amount",
         "original_cost",
         "output_cost",
+        "reasoning_cost",
         "tool_usage_cost",
         "total_cost"
       ]
@@ -756,6 +757,7 @@
         "TypedDict"
       ],
       "fields": [
+        "bedrock_converse_supports_strict_tools",
         "bedrock_output_config_effort_ceiling",
         "supports_adaptive_thinking",
         "supports_assistant_prefill",
