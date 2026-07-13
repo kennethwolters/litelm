@@ -60,12 +60,6 @@
       ],
       "fields": []
     },
-    "GuardrailInterventionNormalStringError": {
-      "bases": [
-        "Exception"
-      ],
-      "fields": []
-    },
     "GuardrailRaisedException": {
       "bases": [
         "Exception"

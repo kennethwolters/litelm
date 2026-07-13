@@ -366,6 +366,9 @@
       "tools"
     ],
     "_get_encoding": [],
+    "_get_router_deployment_id": [
+      "kwargs"
+    ],
     "_handle_mock_potential_exceptions": [
       "mock_response",
       "model",
@@ -380,6 +383,12 @@
       "mock_timeout",
       "timeout",
       "model"
+    ],
+    "_register_custom_pricing_for_request": [
+      "model",
+      "custom_llm_provider",
+      "kwargs",
+      "model_info"
     ],
     "_should_allow_input_examples": [
       "custom_llm_provider",
