@@ -212,6 +212,7 @@
         "input_cost_per_video_per_second_above_128k_tokens",
         "input_cost_per_video_per_second_above_15s_interval",
         "input_cost_per_video_per_second_above_8s_interval",
+        "input_cost_per_video_token",
         "ocr_cost_per_credit",
         "ocr_cost_per_page",
         "output_cost_per_audio_per_second",
@@ -235,6 +236,7 @@
         "output_cost_per_token_flex",
         "output_cost_per_token_priority",
         "output_cost_per_video_per_second",
+        "output_cost_per_video_token",
         "output_vector_size",
         "regional_processing_uplift_multiplier_eu",
         "regional_processing_uplift_multiplier_us",
@@ -343,6 +345,7 @@
       "fields": [
         "images",
         "model",
+        "stream_holdback_chars",
         "structured_messages",
         "texts",
         "tool_calls",
@@ -610,6 +613,7 @@
         "input_cost_per_token_flex",
         "input_cost_per_token_priority",
         "input_cost_per_video_per_second",
+        "input_cost_per_video_token",
         "key",
         "litellm_provider",
         "max_input_tokens",
@@ -638,7 +642,9 @@
         "output_cost_per_token_flex",
         "output_cost_per_token_priority",
         "output_cost_per_video_per_second",
+        "output_cost_per_video_token",
         "output_vector_size",
+        "prompt_cache_min_tokens",
         "provider_specific_entry",
         "regional_processing_uplift_multiplier_eu",
         "regional_processing_uplift_multiplier_us",
@@ -727,6 +733,7 @@
         "image_count",
         "image_tokens",
         "text_tokens",
+        "tool_use_tokens",
         "video_length_seconds",
         "video_tokens",
         "web_search_requests"
@@ -1121,6 +1128,10 @@
         "TypedDict"
       ],
       "fields": [
+        "error_budget_entity_id",
+        "error_budget_entity_type",
+        "error_budget_limit",
+        "error_budget_spend",
         "error_class",
         "error_code",
         "error_message",
@@ -1168,8 +1179,12 @@
         "user_api_key_spend",
         "user_api_key_team_alias",
         "user_api_key_team_id",
+        "user_api_key_team_max_budget",
+        "user_api_key_team_spend",
         "user_api_key_user_email",
-        "user_api_key_user_id"
+        "user_api_key_user_id",
+        "user_api_key_user_max_budget",
+        "user_api_key_user_spend"
       ]
     },
     "StandardLoggingVectorStoreRequest": {
