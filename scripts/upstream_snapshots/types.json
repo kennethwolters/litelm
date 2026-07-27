@@ -650,8 +650,10 @@
         "regional_processing_uplift_multiplier_us",
         "rpm",
         "search_context_cost_per_query",
+        "supported_endpoints",
         "tiered_pricing",
         "tpm",
+        "use_openai_responses_path",
         "uses_embed_content",
         "web_search_billing_unit"
       ]
@@ -729,6 +731,7 @@
         "audio_length_seconds",
         "cache_creation_token_details",
         "cache_creation_tokens",
+        "cache_write_tokens",
         "character_count",
         "image_count",
         "image_tokens",
