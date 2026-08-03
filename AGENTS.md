@@ -1,18 +1,18 @@
-# Ground Truth (updated 2026-04-17)
+# Ground Truth (updated 2026-08-03)
 
-litelm is a 2,660 LOC reimplementation of litellm's core routing+formatting. It works as a **DSPy backend for 6 providers** — that is the only verified claim. Everything beyond that is untested.
+litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its DSPy contract and seven providers have been verified live; everything beyond the evidence below is untested.
 
 ## What's Actually Proven
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 44 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping.
-- **161 own tests pass**, 47 skipped (live tests needing API keys).
+- **216 own tests pass**, 54 skipped (live tests needing API keys), including a 2026-08-03 run against the latest allowed dependency versions.
 - **65 of litellm's ported tests pass** out of 79 high-relevance tests (82.3%). The other 1060+ collected tests fail at import — they reference litellm internals (Router, proxy, provider-specific LLM modules) we intentionally don't implement. (Upstream re-synced 2026-03-16; test count changed due to litellm restructuring.)
 
 ## What's NOT Proven
 
 - **10 providers with no API keys:** bedrock, cloudflare, together_ai, fireworks_ai, deepseek, perplexity, deepinfra, gemini, cohere, ollama. They route through OpenAI-compat which works for the 7 tested providers, but provider-specific quirks (like Mistral's `type=None` tool calls) can only be found with live testing.
-- **Bedrock + Cloudflare handlers:** 420 LOC of custom handler code (SigV4 auth, raw httpx SSE parsing) with zero live testing. The Bedrock client cache was just added — also untested against a real endpoint.
+- **Bedrock + Cloudflare handlers:** Bedrock uses custom SigV4 auth; Cloudflare delegates to its OpenAI-compatible `/ai/v1` endpoint. Both still have zero live testing.
 
 ## Honest Ported Test Breakdown (1,080 collected, synced 2026-03-16)
 
@@ -37,7 +37,7 @@ Of the 14 high-relevance failures, **none are actionable** — all are out of sc
 - Core routing, completion, streaming, embedding, text_completion, responses API
 - 4 custom handlers (anthropic, bedrock, cloudflare, mistral)
 - Own type system, exception hierarchy, error wrapping across all SDK paths
-- DSPy contract fully satisfied for 6 providers
+- DSPy contract fully satisfied across all 7 verified execution paths
 - Client caching (thread-safe, Azure api_version-aware, Bedrock cached)
 - All actionable ported test failures fixed: exception kwargs, `__getitem__`, images, kwarg stripping, mock streaming, mock_completion, n support
 - No remaining actionable ported test failures (14 high-relevance failures all out of scope)
@@ -54,7 +54,7 @@ Only worth doing when a specific use case demands it. Each new provider key can 
 
 ### What's explicitly out of scope (and stays out)
 
-Router, proxy, caching, budgeting, agents, guardrails, image gen, audio, OCR, fine-tuning, batches, assistants, scheduler, callbacks/integrations (opik, mlflow, etc), provider config registry, a2a protocol, compactifai.
+Router, proxy, caching, budgeting, agents, guardrails, image gen, audio, OCR, fine-tuning, batches, assistants, scheduler, callback integration frameworks (opik, mlflow, etc), provider config registry, a2a protocol, compactifai. A minimal success-callback hook is implemented.
 
 ## Architecture Comparison: litellm vs litelm (audited 2026-03-16)
 
@@ -66,12 +66,12 @@ litellm is ~40K LOC across 1,667 Python files. Its public namespace exports **1,
 
 | Layer | LOC | What it does | In litelm? |
 |-------|-----|-------------|:---:|
-| `main.py` — core completion engine | 7,601 | `completion()`, `acompletion()`, `embedding()`, streaming, error handling | **Yes** (300 LOC) |
+| `main.py` — core completion engine | 7,601 | `completion()`, `acompletion()`, `embedding()`, streaming, error handling | **Yes** (564 LOC) |
 | `utils.py` — helpers | 9,313 | Token counters, param validation, model info lookups, `get_optional_params()` | **No** |
 | `router.py` — load balancer | 9,611 | Fallback routing, round-robin, cost-based, TPM/RPM strategies | **No** |
 | `cost_calculator.py` — pricing | 2,253 | `completion_cost()` from 500KB model pricing JSON | **No** |
-| `llms/` — 90+ provider handlers | ~15K | Per-provider translation classes | **4 handlers** (1,135 LOC) |
-| `types/` — 156 type files | ~8K | Response types, provider-specific types, proxy types | **1 file** (361 LOC) |
+| `llms/` — 90+ provider handlers | ~15K | Per-provider translation classes | **4 handlers** (1,127 LOC) |
+| `types/` — 156 type files | ~8K | Response types, provider-specific types, proxy types | **1 file** (413 LOC) |
 | `exceptions.py` | 1,032 | Exception hierarchy inheriting from openai SDK | **Yes** (own hierarchy, no openai dep) |
 | `proxy/` — API server | ~20K | FastAPI server, auth, user/team/key management | **No** |
 | `caching/` — cache backends | ~2K | In-memory, Redis, dual-cache, semantic cache | **No** |
@@ -100,13 +100,13 @@ litellm is ~40K LOC across 1,667 Python files. Its public namespace exports **1,
 
 **Anthropic invalid-thinking-signature retry** — upstream retries `/v1/messages` once after stripping thinking blocks on HTTP 400 signature errors. Retry/orchestration layer (same reason we don't implement Router/fallbacks). Dismissed.
 
-### What we ARE missing (actionable) — audited 2026-03-17
+### Actionable gaps from the 2026-03-17 audit
 
 Deep comparative audit against litellm's actual source revealed these behavioral gaps within our scope. All are in the core routing+formatting path that a litellm drop-in user would hit.
 
-**1. Tool call ID generation** — litellm auto-generates UUID for `ChatCompletionMessageToolCall.id` when not provided. litelm defaults to `""`. Code checking `if tool_call.id:` behaves differently. Fix in `_types.py`.
+**1. ~~Tool call ID generation~~ (DONE 2026-03-19)** — missing IDs now receive generated `call_...` UUIDs in `_types.py`.
 
-**2. Anthropic max_tokens per model** — litellm looks up per-model max output tokens. litelm hardcodes `max_tokens=4096` in `_anthropic.py:_build_request_kwargs()`. Wrong for Opus (32k output), Sonnet (8192). Causes silent truncation or API errors.
+**2. ~~Anthropic max_tokens per model~~ (DONE 2026-03-19)** — `_get_max_tokens()` supplies model-specific output limits.
 
 **3. ~~thinking_blocks + reasoning_tokens~~ (DONE 2026-03-19)** — `ChatCompletionMessage.thinking_blocks` and `ChoiceDelta.thinking_blocks` populated from Anthropic thinking blocks. `CompletionUsage.completion_tokens_details` / `.prompt_tokens_details` added (plain dicts). Anthropic cache tokens (`cache_creation_input_tokens`, `cache_read_input_tokens`) → `prompt_tokens_details`. Streaming: `thinking_delta` and `signature_delta` emit `thinking_blocks` on delta; `stream_chunk_builder` accumulates text parts and flushes on signature. 15 new tests.
 
@@ -122,7 +122,7 @@ Deep comparative audit against litellm's actual source revealed these behavioral
 
 ### Why the ported test gap is honest
 
-906 of 1,080 collected tests fail at import because they `from litellm.llms.anthropic.chat.transformation import ...` or `from litellm.proxy._types import ...`. These are litellm's **internal architecture** — per-provider translation classes, proxy request types, router strategy implementations. We don't replicate this architecture; we replaced it with 2,660 LOC that produces the same outputs.
+906 of 1,080 collected tests fail at import because they `from litellm.llms.anthropic.chat.transformation import ...` or `from litellm.proxy._types import ...`. These are litellm's **internal architecture** — per-provider translation classes, proxy request types, router strategy implementations. We don't replicate this architecture; we replaced it with 2,912 LOC that produces the same outputs.
 
 The 56 passing tests exercise: mock_completion, streaming mock, n>1, kwarg stripping, exception exports, Mistral quirks, text_completion token IDs, shared sessions, responses API, embedding transformations. These are the tests that test the **API contract** rather than internal wiring — exactly our scope.
 
@@ -172,7 +172,7 @@ Strip litellm to its core routing+formatting logic, prove correctness against it
 
 # Project Context
 
-Version: `0.1.0` (in both `pyproject.toml` and `litelm/__init__.__version__`).
+Version: `0.5.1` (in both `pyproject.toml` and `litelm/__init__.__version__`).
 
 ## Ported Tests
 
@@ -209,12 +209,12 @@ Advantages over the old sed approach:
 
 **Experiment pipeline:** `bash scripts/ported_experiment.sh [--skip-sync]` — syncs, runs, categorizes, diffs against previous baseline. Results in `/tmp/litelm_experiment_YYYYMMDD_HHMMSS/`.
 
-Own tests: 185 passing, 47 skipped (live tests need `set -a && . .env.test && set +a`; 37 live + 10 DSPy smoke tests all pass)
+Own tests: 216 passing, 54 skipped (live tests need `set -a && . .env.test && set +a`; 44 provider + 10 DSPy smoke tests)
 
 ## Key Files
 
 - `litelm/__init__.py` — public API surface, capability stubs, compat shims, `__version__`
-- `litelm/_types.py` — own type system (361 LOC): `ModelResponse`, `ModelResponseStream`, `ChatCompletion`, `Choice`, `Message`, `Usage`, etc
+- `litelm/_types.py` — own type system (413 LOC): `ModelResponse`, `ModelResponseStream`, `ChatCompletion`, `Choice`, `Message`, `Usage`, etc
 - `litelm/_exceptions.py` — own exception hierarchy rooted at `LitelmError`
 - `litelm/_providers.py` — PROVIDERS dict + `parse_model()` routing
 - `litelm/_completion.py` — completion/acompletion/mock_completion/stream_chunk_builder + `_map_openai_error`
@@ -224,9 +224,9 @@ Own tests: 185 passing, 47 skipped (live tests need `set -a && . .env.test && se
 - `litelm/_dispatch.py` — lazy handler dispatch: `get_handler()` returns module or None
 - `litelm/_client_cache.py` — thread-safe OpenAI/Azure client cache + `close_async_clients()`
 - `litelm/_logging.py` — `verbose_logger` NullHandler shim for DSPy
-- `litelm/providers/_anthropic.py` — Anthropic native handler (518 LOC, largest file)
-- `litelm/providers/_bedrock.py` — AWS Bedrock via SigV4Auth httpx hook + client cache (198 LOC)
-- `litelm/providers/_cloudflare.py` — Cloudflare Workers AI via raw httpx (224 LOC)
+- `litelm/providers/_anthropic.py` — Anthropic native handler (728 LOC, largest file)
+- `litelm/providers/_bedrock.py` — AWS Bedrock via SigV4Auth httpx hook + client cache (203 LOC)
+- `litelm/providers/_cloudflare.py` — Cloudflare Workers AI via its OpenAI-compatible `/ai/v1` endpoint (111 LOC)
 - `litelm/providers/_mistral.py` — Mistral handler (name stripping, empty content, tool_call type fix)
 - `litelm/types.py` — thin re-export of `_types` (`from litelm._types import *`)
 - `litelm/exceptions.py` — thin re-export of `_exceptions`
@@ -387,7 +387,7 @@ Exported API surface + DSPy compat shims + capability functions.
 
 | Attr/Function | Purpose |
 |---|---|
-| `__version__ = "0.1.0"` | Package version |
+| `__version__ = "0.5.1"` | Package version |
 | `telemetry = False` | DSPy disables litellm telemetry |
 | `cache = None` | DSPy disables litellm caching |
 | `suppress_debug_info = False` | DSPy logging config |
@@ -422,7 +422,7 @@ Exported API surface + DSPy compat shims + capability functions.
 | `test_dspy_smoke.py` | 10 | All 7 DSPy execution paths. Requires `-m live` + `.env.test` |
 | `conftest.py` | — | Loads `.env.test` into env, auto-skips `live`-marked tests unless `-m live` |
 
-Total: 185 passing, 47 skipped (live tests)
+Total: 216 passing, 54 skipped (live tests)
 
 ### Ported tests (`tests/ported/`, gitignored)
 
@@ -430,7 +430,7 @@ litellm's test suite synced unmodified via `scripts/sync_litellm_tests.sh`. `con
 
 ## Provider Handler Details
 
-### Anthropic (`providers/_anthropic.py`, 605 LOC)
+### Anthropic (`providers/_anthropic.py`, 728 LOC)
 
 Full bidirectional translation between OpenAI and Anthropic message formats.
 
@@ -444,7 +444,7 @@ Key functions:
 - `_map_error()` — Anthropic SDK exceptions → litelm exceptions (keyword matching for context window)
 - Streaming: full chunk assembly pipeline (`message_start`, `content_block_start/delta`, `message_delta`). Handles `thinking_delta` → `thinking_blocks` + `reasoning_content`, `signature_delta` → `thinking_blocks`
 
-### Bedrock (`providers/_bedrock.py`, 200 LOC)
+### Bedrock (`providers/_bedrock.py`, 203 LOC)
 
 Uses OpenAI-compatible endpoint with AWS SigV4 auth via httpx transport hook.
 
@@ -453,15 +453,14 @@ Uses OpenAI-compatible endpoint with AWS SigV4 auth via httpx transport hook.
 - `_map_error()` — openai SDK exceptions → litelm exceptions (same pattern as `_completion._map_openai_error`)
 - Region from `AWS_REGION` or `AWS_DEFAULT_REGION` env
 
-### Cloudflare (`providers/_cloudflare.py`, 224 LOC)
+### Cloudflare (`providers/_cloudflare.py`, 111 LOC)
 
-Raw httpx implementation (not OpenAI SDK — Cloudflare API is not fully OpenAI-compat).
+Delegates to Cloudflare's OpenAI-compatible endpoint through the shared OpenAI SDK clients.
 
-- `_get_config()` — reads `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` from env
-- `_build_url()` — `https://api.cloudflare.com/client/v4/accounts/{id}/ai/run/{model}`
-- `_build_request_body()` — transforms OpenAI messages to Cloudflare format
-- `_parse_response()` / `_parse_stream_line()` — Cloudflare JSON → `ModelResponse` / SSE parsing
-- Full streaming via httpx `stream()` with SSE line parsing
+- `_resolve_api_key()` — reads `CLOUDFLARE_API_TOKEN`
+- `_resolve_base_url()` — builds `/ai/v1`, migrates legacy `/ai/run`, and strips a supplied `/chat/completions` suffix
+- `_prepare_sdk_kwargs()` — maps `max_completion_tokens` to `max_tokens`
+- Streaming wraps OpenAI SDK chunks in `ModelResponseStream`
 
 ### Mistral (`providers/_mistral.py`)
 
@@ -671,7 +670,7 @@ OpenAI Responses API wrapper. Params: `model`, `input=`, `previous_response_id=`
 
 GH issues #1-#10 all closed. Gap analysis bugs (Azure cache key, Bedrock client leak, SDK exception leaking, missing `model_dump()`) all fixed 2026-03-13.
 
-**Remaining actionable:** None. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError added to all 4 handlers (completion, bedrock, anthropic, cloudflare). `get_llm_provider()` exported as thin wrapper around `parse_model()`. 129 own tests pass.
+**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 216 own tests pass.
 
 **Low priority:** `text_completion` mock path depends on `openai.types.Completion` (openai SDK effectively required).
 

@@ -11,6 +11,21 @@
 - **Success callback registry** — append to `litelm.success_callbacks` to receive per-completion telemetry (model, provider, response, latency_ms). Fires for both `completion` and `acompletion` on every non-streaming success path (mock, custom-handler, direct-SDK). Callback exceptions are logged and swallowed so an observer can't cascade into call failure.
 - Streaming is out of scope for 0.5.0 — usage data only lands in the final chunk and per-call firing semantics are ambiguous. Future work.
 
+## 0.4.0 (2026-03-29)
+
+- Pydantic `response_format` support with strict JSON Schema conversion
+- Anthropic citation streaming, reasoning/thinking blocks, prompt caching, per-model output limits, reasoning-effort mapping, empty-block filtering, and schema filtering
+- Azure AD token-provider passthrough
+- Automated upstream drift watch
+
+## 0.3.2 (2026-03-16)
+
+- Remove `__slots__` from `TextCompletionResponse` for deepcopy and arbitrary attribute assignment compatibility
+
+## 0.3.1 (2026-03-16)
+
+- Add the `py.typed` marker, Ruff CI, documentation polish, and dict access for streaming delta types
+
 ## 0.3.0 (2026-03-16)
 
 - Complete error mapping: `NotFoundError`, `PermissionDeniedError`, `UnprocessableEntityError` now correctly raised in all 4 handlers

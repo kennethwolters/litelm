@@ -5,7 +5,7 @@
 [![Tests](https://github.com/kennethwolters/litelm/actions/workflows/test.yml/badge.svg)](https://github.com/kennethwolters/litelm/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-litellm's routing + translation in ~2,300 lines and 2 dependencies (`openai`, `httpx`).
+litellm's routing + translation in ~2,900 lines and 2 dependencies (`openai`, `httpx`).
 
 litellm routes LLM calls across providers and translates between message formats. That core is buried under 100k+ LOC of proxy servers, caching layers, cost tracking, and dozens of features most users never touch. litelm extracts just the call path — model routing, message translation, streaming, tool use, embeddings — and nothing else. No Router class, no proxy, no caching.
 
@@ -70,7 +70,7 @@ Routes to 19 providers via `"provider/model-name"` syntax. Any OpenAI-compatible
 | Mistral | `MISTRAL_API_KEY` | Custom | Yes |
 | xAI | `XAI_API_KEY` | OpenAI-compat | Yes |
 | OpenRouter | `OPENROUTER_API_KEY` | OpenAI-compat | Yes |
-| Azure | `AZURE_API_KEY` | OpenAI SDK (Azure) | No |
+| Azure | `AZURE_API_KEY` | OpenAI SDK (Azure) | Yes |
 | Bedrock | `AWS_ACCESS_KEY_ID` | Custom | No |
 | Cloudflare | `CLOUDFLARE_API_TOKEN` | Custom | No |
 | Together | `TOGETHERAI_API_KEY` | OpenAI-compat | No |
@@ -157,21 +157,21 @@ litelm is human-directed, AI-assisted software. Much of the code was written wit
 
 ## Upstream attestation
 
-Maintainer attestation, 2026-05-14: upstream litellm reviewed through `649eb2d`. Upstream-watch found no actionable in-scope drift; the only current drift is `responses_api_bridge_check(reasoning_summary)`, part of litellm's chat-completions↔Responses bridge and outside litelm's declared scope. Local scoped tests: `214 passed, 54 skipped` with `uv run --extra all pytest tests/ --ignore=tests/ported --timeout=10 -q`.
+Maintainer attestation, 2026-05-14: upstream litellm was manually reviewed through `649eb2d`. The weekly automated upstream watch currently tracks through `491eda3` (2026-08-03) and reports no actionable in-scope drift. Local scoped tests: `216 passed, 54 skipped` with the current dependency lock.
 
 This attests litelm's declared routing/formatting/DSPy surface only, not full litellm compatibility.
 
 ## Status
 
-**Alpha.** 214 own tests passing, 56 ported litellm tests passing unmodified via `sys.modules` shimming.
+**Alpha.** 216 own tests passing, 56 ported litellm tests passing unmodified via `sys.modules` shimming.
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
 
 ## Tests
 
 ```bash
-uv run pytest tests/ -x --ignore=tests/ported        # 129 unit tests
-uv run pytest tests/test_live.py -m live --timeout=30 # 37 live provider tests
+uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 216 non-live tests
+uv run --extra all pytest tests/test_live.py -m live --timeout=30       # 44 live provider tests
 uv run pytest tests/test_dspy_smoke.py -m live --timeout=60  # 10 DSPy integration tests
 ```
 
