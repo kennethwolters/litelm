@@ -176,11 +176,17 @@
         "cache_creation_input_token_cost",
         "cache_creation_input_token_cost_above_1hr",
         "cache_creation_input_token_cost_above_200k_tokens",
+        "cache_creation_input_token_cost_above_272k_tokens",
+        "cache_creation_input_token_cost_above_272k_tokens_flex",
+        "cache_creation_input_token_cost_above_272k_tokens_priority",
+        "cache_creation_input_token_cost_flex",
+        "cache_creation_input_token_cost_priority",
         "cache_read_input_audio_token_cost",
         "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_200k_tokens",
         "cache_read_input_token_cost_above_200k_tokens_priority",
         "cache_read_input_token_cost_above_272k_tokens",
+        "cache_read_input_token_cost_above_272k_tokens_flex",
         "cache_read_input_token_cost_above_272k_tokens_priority",
         "cache_read_input_token_cost_above_512k_tokens",
         "cache_read_input_token_cost_flex",
@@ -202,6 +208,7 @@
         "input_cost_per_token_above_200k_tokens",
         "input_cost_per_token_above_200k_tokens_priority",
         "input_cost_per_token_above_272k_tokens",
+        "input_cost_per_token_above_272k_tokens_flex",
         "input_cost_per_token_above_272k_tokens_priority",
         "input_cost_per_token_above_512k_tokens",
         "input_cost_per_token_batches",
@@ -230,6 +237,7 @@
         "output_cost_per_token_above_200k_tokens",
         "output_cost_per_token_above_200k_tokens_priority",
         "output_cost_per_token_above_272k_tokens",
+        "output_cost_per_token_above_272k_tokens_flex",
         "output_cost_per_token_above_272k_tokens_priority",
         "output_cost_per_token_above_512k_tokens",
         "output_cost_per_token_batches",
@@ -585,10 +593,16 @@
         "cache_creation_input_token_cost",
         "cache_creation_input_token_cost_above_1hr",
         "cache_creation_input_token_cost_above_200k_tokens",
+        "cache_creation_input_token_cost_above_272k_tokens",
+        "cache_creation_input_token_cost_above_272k_tokens_flex",
+        "cache_creation_input_token_cost_above_272k_tokens_priority",
+        "cache_creation_input_token_cost_flex",
+        "cache_creation_input_token_cost_priority",
         "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_200k_tokens",
         "cache_read_input_token_cost_above_200k_tokens_priority",
         "cache_read_input_token_cost_above_272k_tokens",
+        "cache_read_input_token_cost_above_272k_tokens_flex",
         "cache_read_input_token_cost_above_272k_tokens_priority",
         "cache_read_input_token_cost_above_512k_tokens",
         "cache_read_input_token_cost_flex",
@@ -607,6 +621,7 @@
         "input_cost_per_token_above_200k_tokens",
         "input_cost_per_token_above_200k_tokens_priority",
         "input_cost_per_token_above_272k_tokens",
+        "input_cost_per_token_above_272k_tokens_flex",
         "input_cost_per_token_above_272k_tokens_priority",
         "input_cost_per_token_above_512k_tokens",
         "input_cost_per_token_batches",
@@ -636,6 +651,7 @@
         "output_cost_per_token_above_200k_tokens",
         "output_cost_per_token_above_200k_tokens_priority",
         "output_cost_per_token_above_272k_tokens",
+        "output_cost_per_token_above_272k_tokens_flex",
         "output_cost_per_token_above_272k_tokens_priority",
         "output_cost_per_token_above_512k_tokens",
         "output_cost_per_token_batches",
@@ -1048,6 +1064,7 @@
         "requester_custom_headers",
         "requester_ip_address",
         "requester_metadata",
+        "routing_decision",
         "spend_logs_metadata",
         "team_alias",
         "team_id",
@@ -1161,6 +1178,36 @@
         "prompt_id",
         "prompt_integration",
         "prompt_variables"
+      ]
+    },
+    "StandardLoggingRoutingDecision": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "cause",
+        "classifier_model",
+        "escalated",
+        "escalation_keyword",
+        "matched_keyword",
+        "request_type",
+        "routed_model",
+        "router_model_name",
+        "router_type",
+        "score",
+        "signals",
+        "tier",
+        "tier_boundaries"
+      ]
+    },
+    "StandardLoggingRoutingDecisionTierBoundaries": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "complex_reasoning",
+        "medium_complex",
+        "simple_medium"
       ]
     },
     "StandardLoggingUserAPIKeyMetadata": {
