@@ -65,6 +65,35 @@
       ],
       "fields": []
     },
+    "ChatCompletionCustomToolCallPayload": {
+      "bases": [
+        "_CustomToolCallAccess"
+      ],
+      "fields": [
+        "input",
+        "name"
+      ]
+    },
+    "ChatCompletionDeltaCustomToolCall": {
+      "bases": [
+        "_CustomToolCallAccess"
+      ],
+      "fields": [
+        "custom",
+        "id",
+        "index",
+        "type"
+      ]
+    },
+    "ChatCompletionDeltaCustomToolCallPayload": {
+      "bases": [
+        "_CustomToolCallAccess"
+      ],
+      "fields": [
+        "input",
+        "name"
+      ]
+    },
     "ChatCompletionDeltaToolCall": {
       "bases": [
         "OpenAIObject"
@@ -73,6 +102,16 @@
         "function",
         "id",
         "index",
+        "type"
+      ]
+    },
+    "ChatCompletionMessageCustomToolCall": {
+      "bases": [
+        "_CustomToolCallAccess"
+      ],
+      "fields": [
+        "custom",
+        "id",
         "type"
       ]
     },
@@ -132,6 +171,7 @@
         "additional_costs",
         "cache_creation_cost",
         "cache_read_cost",
+        "data_residency",
         "discount_amount",
         "discount_percent",
         "input_cost",
@@ -141,6 +181,7 @@
         "original_cost",
         "output_cost",
         "reasoning_cost",
+        "service_tier",
         "tool_usage_cost",
         "total_cost"
       ]
@@ -168,12 +209,11 @@
     },
     "CustomPricingLiteLLMParams": {
       "bases": [
-        "BaseModel"
+        "MirroredPricingParams"
       ],
       "fields": [
         "annotation_cost_per_page",
         "cache_creation_input_audio_token_cost",
-        "cache_creation_input_token_cost",
         "cache_creation_input_token_cost_above_1hr",
         "cache_creation_input_token_cost_above_200k_tokens",
         "cache_creation_input_token_cost_above_272k_tokens",
@@ -182,7 +222,6 @@
         "cache_creation_input_token_cost_flex",
         "cache_creation_input_token_cost_priority",
         "cache_read_input_audio_token_cost",
-        "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_200k_tokens",
         "cache_read_input_token_cost_above_200k_tokens_priority",
         "cache_read_input_token_cost_above_272k_tokens",
@@ -195,7 +234,6 @@
         "input_cost_per_audio_per_second",
         "input_cost_per_audio_per_second_above_128k_tokens",
         "input_cost_per_audio_token",
-        "input_cost_per_character",
         "input_cost_per_character_above_128k_tokens",
         "input_cost_per_image",
         "input_cost_per_image_above_128k_tokens",
@@ -203,7 +241,6 @@
         "input_cost_per_pixel",
         "input_cost_per_query",
         "input_cost_per_second",
-        "input_cost_per_token",
         "input_cost_per_token_above_128k_tokens",
         "input_cost_per_token_above_200k_tokens",
         "input_cost_per_token_above_200k_tokens_priority",
@@ -224,15 +261,15 @@
         "ocr_cost_per_page",
         "output_cost_per_audio_per_second",
         "output_cost_per_audio_token",
-        "output_cost_per_character",
         "output_cost_per_character_above_128k_tokens",
         "output_cost_per_image",
         "output_cost_per_image_token",
         "output_cost_per_pixel",
         "output_cost_per_reasoning_token",
+        "output_cost_per_reasoning_token_flex",
+        "output_cost_per_reasoning_token_priority",
         "output_cost_per_second",
         "output_cost_per_second_1080p",
-        "output_cost_per_token",
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
         "output_cost_per_token_above_200k_tokens_priority",
@@ -576,6 +613,19 @@
         "tool_calls"
       ]
     },
+    "MirroredPricingParams": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "cache_creation_input_token_cost",
+        "cache_read_input_token_cost",
+        "input_cost_per_character",
+        "input_cost_per_token",
+        "output_cost_per_character",
+        "output_cost_per_token"
+      ]
+    },
     "ModelInfo": {
       "bases": [
         "ModelInfoBase"
@@ -644,6 +694,8 @@
         "output_cost_per_image",
         "output_cost_per_image_token",
         "output_cost_per_reasoning_token",
+        "output_cost_per_reasoning_token_flex",
+        "output_cost_per_reasoning_token_priority",
         "output_cost_per_second",
         "output_cost_per_second_1080p",
         "output_cost_per_token",
@@ -876,6 +928,7 @@
         "BaseModel"
       ],
       "fields": [
+        "browser_open_requests",
         "tool_search_requests",
         "web_search_requests"
       ]
@@ -1186,7 +1239,9 @@
       ],
       "fields": [
         "cause",
+        "classifier_cost",
         "classifier_model",
+        "conversation_continuing",
         "escalated",
         "escalation_keyword",
         "matched_keyword",
@@ -1194,10 +1249,13 @@
         "routed_model",
         "router_model_name",
         "router_type",
+        "savings_baseline_deployment_id",
+        "savings_baseline_model",
         "score",
         "signals",
         "tier",
-        "tier_boundaries"
+        "tier_boundaries",
+        "tier_label"
       ]
     },
     "StandardLoggingRoutingDecisionTierBoundaries": {
@@ -1378,6 +1436,12 @@
         "prompt_tokens_details",
         "server_tool_use"
       ]
+    },
+    "_CustomToolCallAccess": {
+      "bases": [
+        "OpenAIObject"
+      ],
+      "fields": []
     }
   }
 }

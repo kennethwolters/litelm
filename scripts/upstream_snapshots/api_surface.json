@@ -172,6 +172,7 @@
       "kwargs",
       "model_info"
     ],
+    "_build_models_by_provider": [],
     "_complete_a2a": [
       "ctx"
     ],
@@ -384,11 +385,17 @@
       "timeout",
       "model"
     ],
+    "_populate_provider_model_sets": [
+      "model_cost_map"
+    ],
     "_register_custom_pricing_for_request": [
       "model",
       "custom_llm_provider",
       "kwargs",
       "model_info"
+    ],
+    "_resolve_openai_api_base": [
+      "api_base"
     ],
     "_should_allow_input_examples": [
       "custom_llm_provider",
@@ -610,7 +617,8 @@
       "web_search_options",
       "tools",
       "reasoning_effort",
-      "reasoning_summary"
+      "reasoning_summary",
+      "api_base"
     ],
     "responses_with_retries": [
       "*args",
