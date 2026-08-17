@@ -285,8 +285,7 @@
         "output_vector_size",
         "regional_processing_uplift_multiplier_eu",
         "regional_processing_uplift_multiplier_us",
-        "search_context_cost_per_query",
-        "tiered_pricing"
+        "search_context_cost_per_query"
       ]
     },
     "CustomStreamingDecoder": {
@@ -623,7 +622,8 @@
         "input_cost_per_character",
         "input_cost_per_token",
         "output_cost_per_character",
-        "output_cost_per_token"
+        "output_cost_per_token",
+        "tiered_pricing"
       ]
     },
     "ModelInfo": {
@@ -860,6 +860,7 @@
         "supports_response_schema",
         "supports_system_messages",
         "supports_tool_choice",
+        "supports_tool_search",
         "supports_url_context",
         "supports_vision",
         "supports_web_search",
@@ -1186,6 +1187,7 @@
         "response_cost_failure_debug_info",
         "response_time",
         "saved_cache_cost",
+        "session_id",
         "standard_built_in_tools_params",
         "startTime",
         "status",

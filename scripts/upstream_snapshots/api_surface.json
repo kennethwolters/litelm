@@ -359,7 +359,22 @@
     "_complete_xai": [
       "ctx"
     ],
+    "_custom_api_first_output": [
+      "resp"
+    ],
     "_dev_env_hot_reload_enabled": [],
+    "_dispatch_client_azure": [
+      "ctx"
+    ],
+    "_dispatch_client_http": [
+      "ctx"
+    ],
+    "_dispatch_client_openai": [
+      "ctx"
+    ],
+    "_dispatch_metadata": [
+      "ctx"
+    ],
     "_drop_input_examples_from_tool": [
       "tool"
     ],
@@ -385,8 +400,22 @@
       "timeout",
       "model"
     ],
+    "_load_default_encoding": [],
+    "_load_module_encoding": [],
+    "_locals_snapshot": [
+      "values"
+    ],
+    "_model_response_from_cached_dict": [
+      "cached_response_dict"
+    ],
     "_populate_provider_model_sets": [
       "model_cost_map"
+    ],
+    "_provider_config_items": [
+      "config"
+    ],
+    "_proxy_auth_headers": [
+      "proxy_auth"
     ],
     "_register_custom_pricing_for_request": [
       "model",
@@ -394,8 +423,17 @@
       "kwargs",
       "model_info"
     ],
+    "_resolve_dispatched_chat_response": [
+      "pending"
+    ],
+    "_resolve_dispatched_text_completion_response": [
+      "pending"
+    ],
     "_resolve_openai_api_base": [
       "api_base"
+    ],
+    "_resolve_pending_chat_response": [
+      "pending"
     ],
     "_should_allow_input_examples": [
       "custom_llm_provider",
@@ -406,6 +444,9 @@
     ],
     "_sleep_for_timeout_async": [
       "timeout"
+    ],
+    "_transcription_response_from_cached_dict": [
+      "cached_response_dict"
     ],
     "aadapter_completion": [
       "adapter_id",
