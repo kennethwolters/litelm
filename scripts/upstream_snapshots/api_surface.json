@@ -336,6 +336,9 @@
     "_complete_text_completion_openai": [
       "ctx"
     ],
+    "_complete_together_ai": [
+      "ctx"
+    ],
     "_complete_triton": [
       "ctx"
     ],
@@ -401,6 +404,9 @@
       "timeout",
       "model"
     ],
+    "_joined_streamed_citations": [
+      "streamed_citations"
+    ],
     "_load_default_encoding": [],
     "_load_module_encoding": [],
     "_locals_snapshot": [
@@ -436,6 +442,10 @@
     "_resolve_pending_chat_response": [
       "pending"
     ],
+    "_set_stream_builder_response_cost": [
+      "response",
+      "logging_obj"
+    ],
     "_should_allow_input_examples": [
       "custom_llm_provider",
       "model"
@@ -445,6 +455,13 @@
     ],
     "_sleep_for_timeout_async": [
       "timeout"
+    ],
+    "_stream_builder_model_map_cost": [
+      "response"
+    ],
+    "_stream_builder_response_cost": [
+      "response",
+      "logging_obj"
     ],
     "_transcription_response_from_cached_dict": [
       "cached_response_dict"
