@@ -40,6 +40,7 @@
     "LITELLM_CHAT_PROVIDERS",
     "LITELLM_EXCEPTION_TYPES",
     "LlmProviders",
+    "Mapping",
     "MockException",
     "NewRelicInitParams",
     "NotFoundError",
@@ -145,11 +146,11 @@
     "request_timeout",
     "request_timeout_explicitly_set",
     "run_server",
+    "rust",
     "set_global_bitbucket_config",
     "set_global_gitlab_config",
     "set_verbose",
     "together_ai_models",
-    "use_litellm_rust",
     "vector_store_file_content",
     "vector_store_file_create",
     "vector_store_file_delete",
@@ -404,6 +405,9 @@
       "timeout",
       "model"
     ],
+    "_is_openai_backed_api_base": [
+      "api_base"
+    ],
     "_joined_streamed_citations": [
       "streamed_citations"
     ],
@@ -430,6 +434,9 @@
       "kwargs",
       "model_info"
     ],
+    "_reported_cost_is_priced_by_calculator": [
+      "logging_obj"
+    ],
     "_resolve_dispatched_chat_response": [
       "pending"
     ],
@@ -455,6 +462,11 @@
     ],
     "_sleep_for_timeout_async": [
       "timeout"
+    ],
+    "_stamp_streaming_usage_cost": [
+      "usage",
+      "response",
+      "logging_obj"
     ],
     "_stream_builder_model_map_cost": [
       "response"

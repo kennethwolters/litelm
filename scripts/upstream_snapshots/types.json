@@ -450,6 +450,7 @@
         "detection_method",
         "guardrail_action",
         "guardrail_cost",
+        "guardrail_cost_by_unit",
         "guardrail_cost_in_spend",
         "guardrail_id",
         "guardrail_usage",
@@ -704,6 +705,7 @@
         "mode",
         "ocr_cost_per_credit",
         "ocr_cost_per_page",
+        "off_peak_pricing",
         "output_cost_per_audio_per_second",
         "output_cost_per_audio_token",
         "output_cost_per_character",
@@ -776,6 +778,30 @@
       "fields": [
         "choices",
         "provider_specific_fields"
+      ]
+    },
+    "OffPeakPricing": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "cache_creation_input_token_cost",
+        "cache_read_input_token_cost",
+        "hours_utc",
+        "input_cost_per_token",
+        "output_cost_per_reasoning_token",
+        "output_cost_per_token",
+        "weekday_timezone",
+        "windows"
+      ]
+    },
+    "OffPeakWindow": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "hours_utc",
+        "weekdays"
       ]
     },
     "PassthroughCallTypes": {
@@ -861,6 +887,7 @@
         "bedrock_output_config_effort_ceiling",
         "default_reasoning_effort",
         "reasoning_effort_levels",
+        "supported_audio_formats",
         "supports_adaptive_thinking",
         "supports_assistant_prefill",
         "supports_audio_input",
@@ -891,7 +918,8 @@
         "supports_vision",
         "supports_web_search",
         "supports_xhigh_reasoning_effort",
-        "thinking_always_on"
+        "thinking_always_on",
+        "vertex_ai_audio_api"
       ]
     },
     "RawRequestTypedDict": {
@@ -1088,6 +1116,7 @@
         "end_time",
         "guardrail_action",
         "guardrail_cost",
+        "guardrail_cost_by_unit",
         "guardrail_cost_in_spend",
         "guardrail_id",
         "guardrail_mode",
@@ -1280,6 +1309,8 @@
         "cause",
         "classifier_cost",
         "classifier_model",
+        "context_escalated",
+        "context_escalation_original_tier",
         "conversation_continuing",
         "escalated",
         "escalation_keyword",
