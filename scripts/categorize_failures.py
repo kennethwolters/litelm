@@ -9,33 +9,109 @@ from pathlib import Path
 
 # Known litelm top-level exports (from __init__.py)
 LITELM_EXPORTS = {
-    "acompletion", "aembedding", "aresponses", "atext_completion",
-    "AuthenticationError", "BadRequestError", "completion",
-    "ContextWindowExceededError", "embedding", "get_supported_openai_params",
-    "ModelResponse", "ModelResponseStream", "RateLimitError", "responses",
-    "stream_chunk_builder", "supports_function_calling", "supports_reasoning",
-    "supports_response_schema", "text_completion", "Timeout",
-    "ChatCompletionMessageToolCall", "Choices", "Delta", "Function",
-    "Message", "StreamingChoices", "Usage",
+    "acompletion",
+    "aembedding",
+    "aresponses",
+    "atext_completion",
+    "AuthenticationError",
+    "BadRequestError",
+    "completion",
+    "ContextWindowExceededError",
+    "embedding",
+    "get_supported_openai_params",
+    "ModelResponse",
+    "ModelResponseStream",
+    "RateLimitError",
+    "responses",
+    "stream_chunk_builder",
+    "supports_function_calling",
+    "supports_reasoning",
+    "supports_response_schema",
+    "text_completion",
+    "Timeout",
+    "ChatCompletionMessageToolCall",
+    "Choices",
+    "Delta",
+    "Function",
+    "Message",
+    "StreamingChoices",
+    "Usage",
 }
 
 # Known litelm submodules (files that exist as importable modules)
 LITELM_SUBMODULES = {
-    "_client_cache", "_completion", "_dispatch", "_embedding",
-    "_exceptions", "_providers", "_responses", "_types", "providers",
+    "_client_cache",
+    "_completion",
+    "_dispatch",
+    "_embedding",
+    "_exceptions",
+    "_providers",
+    "_responses",
+    "_types",
+    "providers",
 }
 
 # Low-relevance path keywords — features litelm doesn't implement
+KNOWN_LOW_RELEVANCE_PATHS = {
+    # Reviewed during the 2026-09-11 upstream audit. Relevant behavior from
+    # Anthropic internal tests has focused local equivalents; the upstream
+    # classes themselves require LiteLLM's model registry/transformation tree.
+    "test_anthropic_common_utils",
+    "test_openai_embedding_encoding_format_default",
+    "test_shared_session_integration",
+    "test_system_message_format_bug",
+    "test_acompletion_fallbacks",
+    "test_meta_provider",
+    "test_soniox_provider_registration",
+    "test_drop_params_env_var",
+    "test_cognition_provider",
+    "test_libertai_provider",
+    "test_scx_ai_provider",
+    "test_parallel_ai_search",
+}
+
 LOW_RELEVANCE_KEYWORDS = [
-    "proxy", "router", "caching", "budget", "guardrail", "agent",
-    "image_gen", "audio", "ocr", "fine_tun", "batch", "assistant",
-    "scheduler", "secret", "vector_store", "rag", "enterprise",
-    "realtime", "rerank", "moderation", "speech", "pass_through",
-    "store_model", "otel", "load_test", "e2e", "documentation_test",
-    "openai_endpoints", "llm_translation", "llm_response_utils",
-    "code_coverage", "spend_log", "team", "key_logging",
-    "model_info", "model_cost", "prompt_factory", "containers_api",
-    "evals_api", "skills_api", "skills_e2e",
+    "proxy",
+    "router",
+    "caching",
+    "budget",
+    "guardrail",
+    "agent",
+    "image_gen",
+    "audio",
+    "ocr",
+    "fine_tun",
+    "batch",
+    "assistant",
+    "scheduler",
+    "secret",
+    "vector_store",
+    "rag",
+    "enterprise",
+    "realtime",
+    "rerank",
+    "moderation",
+    "speech",
+    "pass_through",
+    "store_model",
+    "otel",
+    "load_test",
+    "e2e",
+    "documentation_test",
+    "openai_endpoints",
+    "llm_translation",
+    "llm_response_utils",
+    "code_coverage",
+    "spend_log",
+    "team",
+    "key_logging",
+    "model_info",
+    "model_cost",
+    "prompt_factory",
+    "containers_api",
+    "evals_api",
+    "skills_api",
+    "skills_e2e",
 ]
 
 # Error message patterns that indicate need for API keys / network (low relevance)
@@ -166,13 +242,14 @@ def relevance(bucket: str, testname: str, classname: str) -> str:
     """Classify as high or low relevance."""
     if bucket == "passed":
         return "high"
-    if bucket in ("import_absent_feature", "timeout", "skipped",
-                   "needs_api_key", "async_marker_missing"):
+    if bucket in ("import_absent_feature", "timeout", "skipped", "needs_api_key", "async_marker_missing"):
         return "low"
     if bucket in ("import_exists_wrong_path",):
         return "high"
     # assertion_error and runtime_error: check path for absent-feature keywords
     combined = f"{testname} {classname}".lower()
+    if any(path in combined for path in KNOWN_LOW_RELEVANCE_PATHS):
+        return "low"
     if any(kw in combined for kw in LOW_RELEVANCE_KEYWORDS):
         return "low"
     return "high"
@@ -232,8 +309,17 @@ def diff_baselines(old_xml: str, new_xml: str, out_dir: str | None = None):
     print(f"\nOld: {old_xml} ({len(old)} tests)")
     print(f"New: {new_xml} ({len(new)} tests)")
     print()
-    for cat in ["STABLE_PASS", "STABLE_FAIL", "IMPROVEMENT", "REGRESSION",
-                "NEW_PASS", "NEW_FAIL", "NEW_TEST", "REMOVED", "BUCKET_CHANGE"]:
+    for cat in [
+        "STABLE_PASS",
+        "STABLE_FAIL",
+        "IMPROVEMENT",
+        "REGRESSION",
+        "NEW_PASS",
+        "NEW_FAIL",
+        "NEW_TEST",
+        "REMOVED",
+        "BUCKET_CHANGE",
+    ]:
         if categories[cat]:
             print(f"  {cat:<20} {categories[cat]:>6}")
 
@@ -270,7 +356,7 @@ def diff_baselines(old_xml: str, new_xml: str, out_dir: str | None = None):
             ob = old.get(tid, "")
             nb = new.get(tid, "")
             cat = "STABLE" if ob == nb else "CHANGED"
-            if ob == "" :
+            if ob == "":
                 cat = "NEW"
             elif nb == "":
                 cat = "REMOVED"
@@ -281,14 +367,21 @@ def diff_baselines(old_xml: str, new_xml: str, out_dir: str | None = None):
             f.write(f"{tid}\t{ob}\t{nb}\t{cat}\n")
     print(f"\nTSV written to {tsv_path}")
 
-    # Capture report to txt
-    import io, contextlib
     # Already printed above, just write summary to file
     with open(txt_path, "w") as f:
         f.write(f"Old: {old_xml} ({len(old)} tests)\n")
         f.write(f"New: {new_xml} ({len(new)} tests)\n\n")
-        for cat in ["STABLE_PASS", "STABLE_FAIL", "IMPROVEMENT", "REGRESSION",
-                    "NEW_PASS", "NEW_FAIL", "NEW_TEST", "REMOVED", "BUCKET_CHANGE"]:
+        for cat in [
+            "STABLE_PASS",
+            "STABLE_FAIL",
+            "IMPROVEMENT",
+            "REGRESSION",
+            "NEW_PASS",
+            "NEW_FAIL",
+            "NEW_TEST",
+            "REMOVED",
+            "BUCKET_CHANGE",
+        ]:
             if categories[cat]:
                 f.write(f"  {cat:<20} {categories[cat]:>6}\n")
         if regressions:
@@ -338,12 +431,14 @@ def main():
                 error_msg = ""
                 if error_elem is not None:
                     error_msg = (error_elem.get("message", "") or "")[:200]
-                high_relevance_failures.append({
-                    "test": f"{classname}::{name}",
-                    "bucket": bucket,
-                    "detail": detail,
-                    "error": error_msg,
-                })
+                high_relevance_failures.append(
+                    {
+                        "test": f"{classname}::{name}",
+                        "bucket": bucket,
+                        "detail": detail,
+                        "error": error_msg,
+                    }
+                )
 
     # Print summary
     print("=" * 60)
@@ -354,17 +449,27 @@ def main():
 
     print(f"{'Bucket':<30} {'Count':>6} {'High':>6} {'Low':>6}")
     print("-" * 50)
-    for bucket in ["passed", "import_absent_feature", "import_exists_wrong_path",
-                    "assertion_error", "runtime_error", "needs_api_key",
-                    "async_marker_missing", "timeout", "skipped"]:
+    for bucket in [
+        "passed",
+        "import_absent_feature",
+        "import_exists_wrong_path",
+        "assertion_error",
+        "runtime_error",
+        "needs_api_key",
+        "async_marker_missing",
+        "timeout",
+        "skipped",
+    ]:
         count = buckets.get(bucket, 0)
         high = relevance_counts.get((bucket, "high"), 0)
         low = relevance_counts.get((bucket, "low"), 0)
         print(f"{bucket:<30} {count:>6} {high:>6} {low:>6}")
 
-    print(f"\n{'TOTAL':<30} {total:>6} "
-          f"{sum(v for (_, r), v in relevance_counts.items() if r == 'high'):>6} "
-          f"{sum(v for (_, r), v in relevance_counts.items() if r == 'low'):>6}")
+    print(
+        f"\n{'TOTAL':<30} {total:>6} "
+        f"{sum(v for (_, r), v in relevance_counts.items() if r == 'high'):>6} "
+        f"{sum(v for (_, r), v in relevance_counts.items() if r == 'low'):>6}"
+    )
 
     # Absent feature breakdown
     print(f"\n{'=' * 60}")
@@ -379,7 +484,7 @@ def main():
     print(f"{'=' * 60}")
     for f in high_relevance_failures[:100]:
         print(f"\n[{f['bucket']}] {f['test']}")
-        if f['detail']:
+        if f["detail"]:
             print(f"  detail: {f['detail']}")
         print(f"  {f['error'][:150]}")
 

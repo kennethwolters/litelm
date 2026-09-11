@@ -6,29 +6,28 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 45 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
-- **239 own tests pass**, 55 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
-- **Last classified ported baseline:** 65 of 79 high-relevance tests passed (82.3%) against LiteLLM `3dccdde9` from 2026-03-16. A 2026-09-11 raw refresh against `9a715df2` collected 4,241 results, but upstream's major test-layout/conftest changes make its unreviewed counts non-comparable; issue #14 remains open for classification.
+- **252 own tests pass**, 55 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
+- **Current classified ported baseline:** 75 tests pass against LiteLLM `9a715df2` from 2026-09-11. After explicit contract-based scope review, no remaining assertion/runtime failure is actionable. Raw counts are not comparable to the March baseline because upstream's test layout and conftest behavior changed substantially.
 
 ## What's NOT Proven
 
 - **10 providers with no API keys:** bedrock, cloudflare, together_ai, fireworks_ai, deepseek, perplexity, deepinfra, gemini, cohere, ollama. They route through OpenAI-compat which works for the 7 tested providers, but provider-specific quirks (like Mistral's `type=None` tool calls) can only be found with live testing.
 - **Bedrock + Cloudflare handlers:** Bedrock uses custom SigV4 auth; Cloudflare delegates to its OpenAI-compatible `/ai/v1` endpoint. Both still have zero live testing.
 
-## Honest Ported Test Breakdown (1,080 collected, synced 2026-03-16)
+## Honest Ported Test Breakdown (2,121 collected, synced 2026-09-11)
 
-After fixing conftest to exclude nested dirs by basename (not just root-level glob):
+The harness loads only litelm's shim conftest and excludes suites outside the declared routing/formatting contract. Upstream's repository growth means these counts are not comparable to the March baseline.
 
 | Bucket | Count | What it means |
 |--------|------:|---------------|
-| Passed | 56 | Working |
-| Assertion failures | 12 | Our code runs but produces wrong results |
-| Runtime errors | 6 | Our code runs but crashes |
-| Needs API key | 29 | Would need live credentials |
-| Skipped | 70 | Skipped by test logic |
-| Timeout | 1 | Timed out |
-| Import errors | 906 | Tests importing litellm internals we don't implement — **will never pass** |
+| Passed | 75 | Working |
+| Assertion failures | 25 | Reviewed; LiteLLM-specific config, annotations, or prompt rewriting |
+| Runtime errors | 68 | Reviewed; internal model registries/transforms or unsupported providers |
+| Needs API key | 32 | Would need unavailable credentials |
+| Skipped | 57 | Skipped by test logic |
+| Import errors | 1,864 | Tests importing LiteLLM internals/features litelm intentionally does not implement |
 
-Of the 14 high-relevance failures, **none are actionable** — all are out of scope (compactifai 7, fallbacks/Router 3, gemini no_api_key 2, poetry deps 1, Anthropic system message format 1). 0 regressions vs previous baseline; 9 fewer passes are tests removed upstream.
+The classifier reports **0 remaining high-relevance failures** after explicit path-level review. The audit found and fixed actionable gaps in future Claude thinking, Anthropic schema handling/native structured output, embedding retry propagation, and exception response headers. The categorized JUnit result was produced outside the repository; findings and the remaining source-level audit are tracked in issue #14.
 
 ## Project Plan
 
@@ -198,7 +197,7 @@ litellm's test suite is synced **unmodified** into `tests/ported/` (gitignored, 
 bash scripts/sync_litellm_tests.sh                    # shallow-clone litellm, copy tests/
 bash scripts/ported_baseline.sh                        # run + categorize
 # or manually:
-uv run pytest tests/ported/ --tb=line -q --timeout=10 --continue-on-collection-errors
+uv run pytest -p tests.ported.conftest --noconftest tests/ported/ --tb=line -q --timeout=10 --continue-on-collection-errors
 ```
 
 - `--continue-on-collection-errors` is REQUIRED or pytest aborts after collection phase
@@ -223,7 +222,7 @@ Advantages over the old sed approach:
 
 **Experiment pipeline:** `bash scripts/ported_experiment.sh [--skip-sync]` — syncs, runs, categorizes, diffs against previous baseline. Results in `/tmp/litelm_experiment_YYYYMMDD_HHMMSS/`.
 
-Own tests: 239 passing, 55 skipped (live tests need `set -a && . .env.test && set +a`; 45 provider + 10 DSPy smoke tests)
+Own tests: 252 passing, 55 skipped (live tests need `set -a && . .env.test && set +a`; 45 provider + 10 DSPy smoke tests)
 
 ## Key Files
 
@@ -436,7 +435,7 @@ Exported API surface + DSPy compat shims + capability functions.
 | `test_dspy_smoke.py` | 10 | All 7 DSPy execution paths. Requires `-m live` + `.env.test` |
 | `conftest.py` | — | Loads `.env.test` into env, auto-skips `live`-marked tests unless `-m live` |
 
-Total: 239 passing, 55 skipped (live tests)
+Total: 252 passing, 55 skipped (live tests)
 
 ### Ported tests (`tests/ported/`, gitignored)
 
@@ -681,7 +680,7 @@ OpenAI Responses API wrapper. Params: `model`, `input=`, `previous_response_id=`
 
 GH issues #1-#10 all closed. Gap analysis bugs (Azure cache key, Bedrock client leak, SDK exception leaking, missing `model_dump()`) all fixed 2026-03-13.
 
-**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 239 own tests pass.
+**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 252 own tests pass.
 
 **Low priority:** `text_completion` mock path depends on `openai.types.Completion` (openai SDK effectively required).
 

@@ -157,20 +157,20 @@ litelm is human-directed, AI-assisted software. Much of the code was written wit
 
 ## Upstream attestation
 
-Maintainer attestation, 2026-05-14: upstream litellm was manually reviewed through `649eb2d`. The weekly automated upstream watch tracks structural API drift and was green on 2026-09-07. Local scoped tests on 2026-09-11: `239 passed, 55 skipped`; all 45 available-provider live tests and all 10 DSPy smoke tests also passed with the current dependency lock.
+Maintainer attestation, 2026-05-14: upstream litellm was manually reviewed through `649eb2d`. The weekly automated upstream watch tracks structural API drift and was green on 2026-09-07. Local scoped tests on 2026-09-11: `252 passed, 55 skipped`; all 45 available-provider live tests and all 10 DSPy smoke tests also passed with the current dependency lock.
 
 This attests litelm's declared routing/formatting/DSPy surface only, not full litellm compatibility.
 
 ## Status
 
-**Alpha.** 239 own tests passing. The last fully classified ported LiteLLM baseline had 56 passing tests; a current-baseline reclassification is tracked in [#14](https://github.com/kennethwolters/litelm/issues/14).
+**Alpha.** 252 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures; source-level attestation remains tracked in [#14](https://github.com/kennethwolters/litelm/issues/14).
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
 
 ## Tests
 
 ```bash
-uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 239 non-live tests
+uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 252 non-live tests
 uv run --extra all pytest tests/test_live.py -m live --timeout=30       # 45 live provider tests
 uv run pytest tests/test_dspy_smoke.py -m live --timeout=60  # 10 DSPy integration tests
 ```
