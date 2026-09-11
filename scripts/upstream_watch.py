@@ -338,7 +338,11 @@ def diff_snapshots(old: dict[str, dict], new: dict[str, dict], ours: dict) -> li
             if removed_p:
                 parts.append("-" + ", ".join(f"`{p}`" for p in removed_p))
             detail = " ".join(parts)
-            impact = "May need passthrough" if fname in ours["functions"] else "Not implemented"
+            impact = (
+                "May need passthrough"
+                if fname in ours["functions"] or fname in ours["exports"]
+                else "Not implemented"
+            )
             changes.append(
                 {"category": "API Surface", "change": "CHANGED", "name": f"`{fname}()`", "detail": detail, "impact": impact}
             )

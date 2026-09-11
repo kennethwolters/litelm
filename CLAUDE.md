@@ -6,7 +6,7 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 44 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
-- **216 own tests pass**, 54 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
+- **217 own tests pass**, 54 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
 - **Last classified ported baseline:** 65 of 79 high-relevance tests passed (82.3%) against LiteLLM `3dccdde9` from 2026-03-16. A 2026-09-11 raw refresh against `9a715df2` collected 4,241 results, but upstream's major test-layout/conftest changes make its unreviewed counts non-comparable; issue #14 remains open for classification.
 
 ## What's NOT Proven
@@ -209,7 +209,7 @@ Advantages over the old sed approach:
 
 **Experiment pipeline:** `bash scripts/ported_experiment.sh [--skip-sync]` — syncs, runs, categorizes, diffs against previous baseline. Results in `/tmp/litelm_experiment_YYYYMMDD_HHMMSS/`.
 
-Own tests: 216 passing, 54 skipped (live tests need `set -a && . .env.test && set +a`; 44 provider + 10 DSPy smoke tests)
+Own tests: 217 passing, 54 skipped (live tests need `set -a && . .env.test && set +a`; 44 provider + 10 DSPy smoke tests)
 
 ## Key Files
 
@@ -422,7 +422,7 @@ Exported API surface + DSPy compat shims + capability functions.
 | `test_dspy_smoke.py` | 10 | All 7 DSPy execution paths. Requires `-m live` + `.env.test` |
 | `conftest.py` | — | Loads `.env.test` into env, auto-skips `live`-marked tests unless `-m live` |
 
-Total: 216 passing, 54 skipped (live tests)
+Total: 217 passing, 54 skipped (live tests)
 
 ### Ported tests (`tests/ported/`, gitignored)
 
@@ -667,7 +667,7 @@ OpenAI Responses API wrapper. Params: `model`, `input=`, `previous_response_id=`
 
 GH issues #1-#10 all closed. Gap analysis bugs (Azure cache key, Bedrock client leak, SDK exception leaking, missing `model_dump()`) all fixed 2026-03-13.
 
-**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 216 own tests pass.
+**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 217 own tests pass.
 
 **Low priority:** `text_completion` mock path depends on `openai.types.Completion` (openai SDK effectively required).
 

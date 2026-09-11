@@ -153,6 +153,15 @@
         "provider_specific_fields"
       ]
     },
+    "ClassifierAudit": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "classifier_input",
+        "originating_request_masked"
+      ]
+    },
     "CompletionTokensDetailsWrapper": {
       "bases": [
         "CompletionTokensDetails"
@@ -278,6 +287,7 @@
         "output_cost_per_second_1080p",
         "output_cost_per_second_480p",
         "output_cost_per_second_4k",
+        "output_cost_per_second_720p",
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
         "output_cost_per_token_above_200k_tokens_priority",
@@ -719,6 +729,7 @@
         "output_cost_per_second_1080p",
         "output_cost_per_second_480p",
         "output_cost_per_second_4k",
+        "output_cost_per_second_720p",
         "output_cost_per_token",
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
@@ -851,6 +862,7 @@
         "google_maps_grounding_requests",
         "image_count",
         "image_tokens",
+        "query_count",
         "text_tokens",
         "tool_use_tokens",
         "video_length_seconds",
@@ -1217,7 +1229,7 @@
     },
     "StandardLoggingPayload": {
       "bases": [
-        "TypedDict"
+        "ClassifierAudit"
       ],
       "fields": [
         "api_base",
@@ -1276,6 +1288,7 @@
         "error_class",
         "error_code",
         "error_message",
+        "error_provider_request_id",
         "error_rate_limit_category",
         "error_rate_limit_type",
         "llm_provider",

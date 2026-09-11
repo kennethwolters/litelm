@@ -49,6 +49,7 @@
     "OpenAIError",
     "PalmConfig",
     "PermissionDeniedError",
+    "PointFiveInitParams",
     "PromptSpec",
     "REPEATED_STREAMING_CHUNK_LIMIT",
     "ROUTER_MAX_FALLBACKS",
@@ -115,6 +116,7 @@
     "delete_eval",
     "delete_run",
     "delete_skill",
+    "drop_params_env_flag",
     "empower_models",
     "get_agent",
     "get_eval",
@@ -136,6 +138,7 @@
     "list_skills",
     "llm_passthrough_route",
     "log_level",
+    "mark_litellm_import_complete",
     "modelscope_models",
     "open_ai_embedding_models",
     "openai_compatible_endpoints",
@@ -551,6 +554,12 @@
     "add_known_models": [
       "model_cost_map"
     ],
+    "admission_input_tokens": [
+      "kwargs"
+    ],
+    "admitted_prompt_token_counter": [
+      "prompt_tokens"
+    ],
     "aembedding": [
       "*args",
       "**kwargs"
@@ -675,6 +684,7 @@
       "logging",
       "custom_llm_provider",
       "timeout",
+      "prompt_tokens",
       "**kwargs"
     ],
     "moderation": [
@@ -731,7 +741,8 @@
       "messages",
       "start_time",
       "end_time",
-      "logging_obj"
+      "logging_obj",
+      "count_prompt_tokens"
     ],
     "stream_chunk_builder_text_completion": [
       "chunks",
