@@ -189,7 +189,7 @@ Strip litellm to its core routing+formatting logic, prove correctness against it
 
 # Project Context
 
-Version: `0.5.1` (in both `pyproject.toml` and `litelm/__init__.__version__`).
+Version: `0.5.2` (in both `pyproject.toml` and `litelm/__init__.__version__`).
 
 ## Ported Tests
 
@@ -404,7 +404,7 @@ Exported API surface + DSPy compat shims + capability functions.
 
 | Attr/Function | Purpose |
 |---|---|
-| `__version__ = "0.5.1"` | Package version |
+| `__version__ = "0.5.2"` | Package version |
 | `telemetry = False` | DSPy disables litellm telemetry |
 | `cache = None` | DSPy disables litellm caching |
 | `suppress_debug_info = False` | DSPy logging config |

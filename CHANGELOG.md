@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.2 (2026-09-11)
 
 - **Current upstream attestation** — audited LiteLLM core-path changes through `9a715df2`, refreshed the scoped ported baseline to 75 passing tests with no actionable failures, and made relevance decisions explicit and regression-tested.
 - **Anthropic compatibility** — support future adaptive/always-on thinking models, fit reasoning budgets, request summarized reasoning, consume provider thinking-token usage, complete schema filtering/reference handling, and forward native structured outputs on supported Claude families.
