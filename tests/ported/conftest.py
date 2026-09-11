@@ -107,6 +107,15 @@ _EXCLUDE_DIRS = [
     "documentation_tests",
     "code_coverage_tests",
     "windows_tests",
+    "benchmarks",
+    "e2e",
+    "integration",
+    "proxy_behavior",
+    "proxy_migration_tests",
+    "test_gateway",
+    # Rust rewrite/parity harness (separate implementation, not Python API contract)
+    "test_litellm_rust",
+    "rust-python-harness",
     # Responses API (separate from our _responses)
     "llm_responses_api_testing",
     # Google-specific
@@ -153,10 +162,13 @@ _EXCLUDE_FILES = [
     "test_debug_warning.py",
     "test_default_encoding_non_root.py",
     "test_gpt5_azure_temperature_support.py",
+    "test_anthropic_compaction_usage.py",
+    "test_rust_python_harness.py",
 ]
 
 _EXCLUDE_DIRS_SET = frozenset(_EXCLUDE_DIRS)
 _EXCLUDE_FILES_SET = frozenset(_EXCLUDE_FILES)
+
 
 def pytest_ignore_collect(collection_path, config):
     """Skip dirs/files by basename at any nesting depth."""

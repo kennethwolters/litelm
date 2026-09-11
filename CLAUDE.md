@@ -1,13 +1,13 @@
-# Ground Truth (updated 2026-08-03)
+# Ground Truth (updated 2026-09-11)
 
 litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its DSPy contract and seven providers have been verified live; everything beyond the evidence below is untested.
 
 ## What's Actually Proven
 
-- **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests.
-- **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 44 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping.
-- **216 own tests pass**, 54 skipped (live tests needing API keys), including a 2026-08-03 run against the latest allowed dependency versions.
-- **65 of litellm's ported tests pass** out of 79 high-relevance tests (82.3%). The other 1060+ collected tests fail at import — they reference litellm internals (Router, proxy, provider-specific LLM modules) we intentionally don't implement. (Upstream re-synced 2026-03-16; test count changed due to litellm restructuring.)
+- **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
+- **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 44 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
+- **216 own tests pass**, 54 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
+- **Last classified ported baseline:** 65 of 79 high-relevance tests passed (82.3%) against LiteLLM `3dccdde9` from 2026-03-16. A 2026-09-11 raw refresh against `9a715df2` collected 4,241 results, but upstream's major test-layout/conftest changes make its unreviewed counts non-comparable; issue #14 remains open for classification.
 
 ## What's NOT Proven
 
@@ -494,7 +494,7 @@ Response access patterns DSPy uses:
 - `chunk.predict_id` (assignable on stream chunks)
 - Embedding: `response.data[i]["embedding"]`
 
-## DSPy Integration (verified 2026-03-13)
+## DSPy Integration (re-verified 2026-09-11)
 
 **litelm can replace litellm for all 7 DSPy execution paths.** Proven with 10 live smoke tests covering: Predict, CoT, typed Pydantic signatures (JSONAdapter + response_format), streaming (dspy.streamify + async iteration), embeddings (dspy.Embedder), tool use (dspy.ReAct), multi-output (n=3), multi-provider (Anthropic + Groq), and error recovery (ContextWindowExceededError propagation).
 
@@ -553,7 +553,7 @@ Each provider needs verification on: basic completion, streaming, tool use, erro
 | cohere | No | — | — | — | — | — | — | Yes (wrapping) | **No** |
 | ollama | No | — | — | — | — | — | — | Yes (wrapping) | **No** |
 
-## Streaming Usage Behavior (verified 2026-03-13)
+## Streaming Usage Behavior (re-verified 2026-09-11)
 
 Provider streaming usage is **not uniform** — three distinct patterns exist, all verified at chunk level in `tests/test_live.py`.
 
@@ -584,7 +584,7 @@ usage.total_tokens = max(existing, chunk.total_tokens, prompt + completion)
 
 `max()` handles both single-chunk (OpenAI-compat) and split-chunk (Anthropic) patterns. The three-way max on `total_tokens` preserves inflated totals from reasoning models.
 
-## Tool Call Behavior (verified 2026-03-13)
+## Tool Call Behavior (re-verified 2026-09-11)
 
 All 6 providers verified with live API calls — non-streaming and streaming tool calls, using `tool_choice="required"` and a simple `get_weather` tool. 13 tests in `tests/test_live.py -k tool_call`.
 
@@ -594,7 +594,7 @@ All providers return: `finish_reason="tool_calls"`, `tool_calls[0].type="functio
 
 ### Provider quirks
 
-- **Groq**: `llama-3.1-8b-instant` fails `tool_choice="required"` (generates malformed tool XML). Tests use `llama-3.3-70b-versatile`.
+- **Groq**: The previously tested Llama models were retired. Tests now use `openai/gpt-oss-20b`, including required tool choice.
 - **Mistral**: Returns `type=None` on tool calls. Fixed in `_mistral.py:_fix_response()` — normalizes to `"function"`.
 - **OpenRouter**: `meta-llama/llama-3.1-8b-instruct` unreliable for tools. Tests use `openai/gpt-4o-mini`.
 - **xAI grok-3-mini-fast**: Works correctly with tools. Includes `reasoning_content` in response but tool call shape is standard.
@@ -609,7 +609,7 @@ Anthropic streaming tool calls inspected at chunk level:
 - `content_block_delta` (input_json_delta) → argument fragments accumulate
 - Minimum 2 chunks with `delta.tool_calls` (start + deltas)
 
-## Embedding Behavior (verified 2026-03-13)
+## Embedding Behavior (re-verified 2026-09-11)
 
 `embedding()` returns `EmbeddingResponse` wrapping the raw SDK response. `EmbeddingResponse.data` contains `_EmbeddingItem` wrappers that support both dict-access (`data[0]["embedding"]`) and attribute-access (`data[0].embedding`). Usage delegates to the raw response (`response.usage.prompt_tokens`).
 
@@ -617,7 +617,7 @@ Anthropic streaming tool calls inspected at chunk level:
 
 **Known limitation:** Mock tests in `test_embedding.py` return raw dicts, which pass through `EmbeddingResponse` as plain dicts (not `_EmbeddingItem`). Dict-access works natively on dicts, so the tests pass but don't exercise the `_EmbeddingItem` wrapper. Live tests are the real proof.
 
-## ContextWindowExceededError (verified 2026-03-13)
+## ContextWindowExceededError (re-verified 2026-09-11)
 
 DSPy's only explicit exception catch. Triggered by keyword matching on error messages.
 
@@ -633,17 +633,14 @@ Keywords matched: "context" ✓, "token" ✓, "length" ✓. Correctly mapped to 
 
 Cannot trigger a true context-window error: haiku has 200k context but 100k/min rate limit — rate limit fires first. Anthropic SDK also rejects `max_tokens > ~21k` with a client-side `ValueError` (timeout estimation).
 
-Workaround: send `max_tokens=20000` (haiku max output is 4096). Anthropic API returns:
-```
-"max_tokens: 20000 > 4096, which is the maximum allowed number of output tokens for claude-3-haiku-20240307"
-```
+Workaround: send `max_tokens=100000` (Haiku 4.5 max output is 64000). Anthropic rejects the oversized output request with a message containing `max_tokens`, which exercises the compatible error mapping without sending a huge prompt.
 Keyword matched: "token" ✓ (from "max_tokens"). **Semantically this is a max-output-tokens error**, not context-window. But litellm uses the same keyword matching, and DSPy only catches this to retry with shorter prompts. Accepted as compatible behavior.
 
 ### Keyword matching logic (`_completion.py:_wrap_context_window_error` + `_anthropic.py:_map_error`)
 
 Both check `msg.lower()` for: "context", "token", "length", "too long". Any match → `ContextWindowExceededError`. This is intentionally broad to catch provider-specific phrasings, with the trade-off of false positives on unrelated "token" errors (like max-output-tokens).
 
-## text_completion() (verified 2026-03-13)
+## text_completion() (re-verified 2026-09-11)
 
 Legacy completions API in `_text_completion.py`. DSPy calls with `text-completion-openai/` prefix.
 
@@ -652,7 +649,7 @@ Legacy completions API in `_text_completion.py`. DSPy calls with `text-completio
 - `TextCompletionResponse` wrapper: delegates to raw SDK `Completion` via `__getattr__`, adds `cache_hit` and `_hidden_params`
 - Supports `mock_response` and `timeout` kwargs (same pattern as `completion()`)
 - Mock uses real `openai.types.Completion` object (not custom types)
-- Both sync and async verified live against `gpt-3.5-turbo-instruct` (still available as of 2026-03-13)
+- Both sync and async verified live against `gpt-3.5-turbo-instruct` (still available as of 2026-09-11)
 
 DSPy access pattern verified: `response.choices[0].text`, `.finish_reason`, `response.usage.prompt_tokens`, `response.usage.completion_tokens`.
 
@@ -692,13 +689,13 @@ Tests run on every push/PR via `.github/workflows/test.yml` (Python 3.10–3.13)
 
 | Provider | Env Var | Status |
 |----------|---------|--------|
-| OpenAI | `OPENAI_API_KEY` | **Live** (verified 2026-03-13) |
-| Mistral | `MISTRAL_API_KEY` | **Live** (verified 2026-03-13) |
-| Groq | `GROQ_API_KEY` | **Live** (verified 2026-03-13) |
-| Anthropic | `ANTHROPIC_API_KEY` | **Live** (verified 2026-03-13) |
-| xAI | `XAI_API_KEY` | **Live** (verified 2026-03-13) |
-| OpenRouter | `OPENROUTER_API_KEY` | **Live** (verified 2026-03-13) |
-| Azure OpenAI | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_URL` + `AZURE_OPENAI_MODEL` | **Live** (verified 2026-04-17, `gpt-5.4-nano` on aedna-foundry) |
+| OpenAI | `OPENAI_API_KEY` | **Live** (verified 2026-09-11) |
+| Mistral | `MISTRAL_API_KEY` | **Live** (verified 2026-09-11) |
+| Groq | `GROQ_API_KEY` | **Live** (verified 2026-09-11) |
+| Anthropic | `ANTHROPIC_API_KEY` | **Live** (verified 2026-09-11) |
+| xAI | `XAI_API_KEY` | **Live** (verified 2026-09-11) |
+| OpenRouter | `OPENROUTER_API_KEY` | **Live** (verified 2026-09-11) |
+| Azure OpenAI | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_URL` + `AZURE_OPENAI_MODEL` | **Live** (verified 2026-09-11, `gpt-5.4-nano` on aedna-foundry) |
 
 Load with `source .env.test` before running integration tests. Use cheapest models (gpt-4o-mini, claude-3-haiku, llama-3.1-8b, etc.) to minimize cost.
 

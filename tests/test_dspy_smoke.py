@@ -1,6 +1,7 @@
 """DSPy integration smoke tests — proves litelm can replace litellm across all 7 DSPy execution paths."""
 
 import asyncio
+import os
 import sys
 
 import litelm
@@ -11,6 +12,9 @@ sys.modules["litellm"] = litelm
 import dspy  # noqa: E402
 import pytest  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
+
+ANTHROPIC_MODEL = os.environ.get("LITELM_TEST_ANTHROPIC_MODEL", "anthropic/claude-haiku-4-5-20251001")
+GROQ_MODEL = os.environ.get("LITELM_TEST_GROQ_MODEL", "groq/openai/gpt-oss-20b")
 
 # ---------------------------------------------------------------------------
 # Path 0: Basic completion (Predict + CoT)
@@ -161,7 +165,7 @@ def test_dspy_multi_output():
 @pytest.mark.live
 def test_dspy_anthropic():
     """Anthropic through DSPy — exercises native handler dispatch."""
-    lm = dspy.LM("anthropic/claude-3-haiku-20240307", max_tokens=100)
+    lm = dspy.LM(ANTHROPIC_MODEL, max_tokens=100)
     dspy.configure(lm=lm)
 
     predict = dspy.Predict("question -> answer")
@@ -172,7 +176,7 @@ def test_dspy_anthropic():
 @pytest.mark.live
 def test_dspy_groq():
     """Groq through DSPy — exercises OpenAI-compat provider dispatch."""
-    lm = dspy.LM("groq/llama-3.3-70b-versatile", max_tokens=100)
+    lm = dspy.LM(GROQ_MODEL, max_tokens=100)
     dspy.configure(lm=lm)
 
     predict = dspy.Predict("question -> answer")

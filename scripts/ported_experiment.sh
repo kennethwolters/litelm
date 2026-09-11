@@ -34,19 +34,24 @@ if [ -f "tests/ported/.litellm-commit" ]; then
     echo "Synced from: $(cat tests/ported/.litellm-commit)"
 fi
 
+# Upstream now has nested conftest.py files that import LiteLLM internals before
+# collection filtering runs. Load only our shim as a plugin and disable upstream
+# conftest auto-loading so collection errors remain categorizable.
+PYTEST_PORTED_ARGS=(-p tests.ported.conftest --noconftest tests/ported/)
+
 # Step 2: Discovery
 echo "=== Step 2: Discovery ==="
 echo "Test files per directory:" | tee "$RESULTS_DIR/test_file_counts_by_dir.txt"
 find tests/ported -name 'test_*.py' -o -name '*_test.py' | sed 's|/[^/]*$||' | sort | uniq -c | sort -rn | tee -a "$RESULTS_DIR/test_file_counts_by_dir.txt"
 echo ""
 echo "Collection count (dry run):"
-uv run pytest tests/ported/ --collect-only -q --continue-on-collection-errors 2>&1 | tail -5 | tee "$RESULTS_DIR/collection_summary.txt" || true
+uv run pytest "${PYTEST_PORTED_ARGS[@]}" --collect-only -q --continue-on-collection-errors 2>&1 | tail -5 | tee "$RESULTS_DIR/collection_summary.txt" || true
 
 # Step 3: Run
 echo ""
 echo "=== Step 3: Running ported tests ==="
 NEW_XML="$RESULTS_DIR/new_baseline.xml"
-uv run pytest tests/ported/ --tb=line -q --timeout=10 --continue-on-collection-errors --junit-xml="$NEW_XML" 2>&1 | tee "$RESULTS_DIR/pytest_output.txt" || true
+uv run pytest "${PYTEST_PORTED_ARGS[@]}" --tb=line -q --timeout=10 --continue-on-collection-errors --junit-xml="$NEW_XML" 2>&1 | tee "$RESULTS_DIR/pytest_output.txt" || true
 # Also copy to standard location for future runs
 cp "$NEW_XML" "$OLD_XML"
 

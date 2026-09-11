@@ -157,13 +157,13 @@ litelm is human-directed, AI-assisted software. Much of the code was written wit
 
 ## Upstream attestation
 
-Maintainer attestation, 2026-05-14: upstream litellm was manually reviewed through `649eb2d`. The weekly automated upstream watch currently tracks through `491eda3` (2026-08-03) and reports no actionable in-scope drift. Local scoped tests: `216 passed, 54 skipped` with the current dependency lock.
+Maintainer attestation, 2026-05-14: upstream litellm was manually reviewed through `649eb2d`. The weekly automated upstream watch tracks structural API drift and was green on 2026-09-07. Local scoped tests on 2026-09-11: `216 passed, 54 skipped`; all 44 available-provider live tests and all 10 DSPy smoke tests also passed with the current dependency lock.
 
 This attests litelm's declared routing/formatting/DSPy surface only, not full litellm compatibility.
 
 ## Status
 
-**Alpha.** 216 own tests passing, 56 ported litellm tests passing unmodified via `sys.modules` shimming.
+**Alpha.** 216 own tests passing. The last fully classified ported LiteLLM baseline had 56 passing tests; a current-baseline reclassification is tracked in [#14](https://github.com/kennethwolters/litelm/issues/14).
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
 

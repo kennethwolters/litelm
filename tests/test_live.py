@@ -36,6 +36,8 @@ def assert_dspy_response_contract(response):
 
 
 MESSAGES = [{"role": "user", "content": "Say 'hello' and nothing else."}]
+ANTHROPIC_MODEL = os.environ.get("LITELM_TEST_ANTHROPIC_MODEL", "anthropic/claude-haiku-4-5-20251001")
+GROQ_MODEL = os.environ.get("LITELM_TEST_GROQ_MODEL", "groq/openai/gpt-oss-20b")
 
 
 def _chunks_with_usage(chunks):
@@ -96,7 +98,7 @@ def test_openai_basic_completion():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_basic_completion():
-    response = litelm.completion("anthropic/claude-3-haiku-20240307", messages=MESSAGES)
+    response = litelm.completion(ANTHROPIC_MODEL, messages=MESSAGES)
     print(response)
     assert_dspy_response_contract(response)
 
@@ -104,7 +106,7 @@ def test_anthropic_basic_completion():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_basic_completion():
-    response = litelm.completion("groq/llama-3.1-8b-instant", messages=MESSAGES)
+    response = litelm.completion(GROQ_MODEL, messages=MESSAGES)
     print(response)
     assert_dspy_response_contract(response)
 
@@ -168,7 +170,7 @@ def test_openai_streaming_with_usage():
 def test_groq_streaming_with_usage():
     chunks = list(
         litelm.completion(
-            "groq/llama-3.1-8b-instant",
+            GROQ_MODEL,
             messages=MESSAGES,
             stream=True,
             stream_options={"include_usage": True},
@@ -231,7 +233,7 @@ def test_openrouter_streaming_with_usage():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_streaming():
-    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", messages=MESSAGES, stream=True))
+    chunks = list(litelm.completion(ANTHROPIC_MODEL, messages=MESSAGES, stream=True))
     assert_stream_contract(chunks)
     # Anthropic sends usage in stream natively (message_start + message_delta)
     assert_stream_reassembly(chunks, require_usage=True)
@@ -240,7 +242,7 @@ def test_anthropic_streaming():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_streaming():
-    chunks = list(litelm.completion("groq/llama-3.1-8b-instant", messages=MESSAGES, stream=True))
+    chunks = list(litelm.completion(GROQ_MODEL, messages=MESSAGES, stream=True))
     assert_stream_contract(chunks)
     assert_stream_reassembly(chunks)
 
@@ -288,7 +290,7 @@ def test_openai_stream_chunks_no_usage_without_opt_in():
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_stream_chunks_split_usage():
     """Anthropic sends usage split across message_start (prompt) and message_delta (completion)."""
-    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", messages=MESSAGES, stream=True))
+    chunks = list(litelm.completion(ANTHROPIC_MODEL, messages=MESSAGES, stream=True))
     usage_chunks = _chunks_with_usage(chunks)
     print(f"usage_chunks: {usage_chunks}")
 
@@ -387,7 +389,7 @@ def test_openai_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_tool_call():
-    response = litelm.completion("anthropic/claude-3-haiku-20240307", **_TOOL_KW)
+    response = litelm.completion(ANTHROPIC_MODEL, **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
@@ -395,7 +397,7 @@ def test_anthropic_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_tool_call():
-    response = litelm.completion("groq/llama-3.3-70b-versatile", **_TOOL_KW)
+    response = litelm.completion(GROQ_MODEL, **_TOOL_KW)
     print(response)
     assert_tool_call_contract(response)
 
@@ -439,7 +441,7 @@ def test_openai_streaming_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_streaming_tool_call():
-    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", **_TOOL_KW, stream=True))
+    chunks = list(litelm.completion(ANTHROPIC_MODEL, **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -448,7 +450,7 @@ def test_anthropic_streaming_tool_call():
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_streaming_tool_call():
-    chunks = list(litelm.completion("groq/llama-3.3-70b-versatile", **_TOOL_KW, stream=True))
+    chunks = list(litelm.completion(GROQ_MODEL, **_TOOL_KW, stream=True))
     has_tc = any(c.choices and c.choices[0].delta.tool_calls for c in chunks if c.choices)
     assert has_tc, "no chunk contained tool_calls delta"
     assert_stream_tool_call_contract(chunks)
@@ -488,7 +490,7 @@ def test_openrouter_streaming_tool_call():
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
 def test_anthropic_stream_tool_call_chunks():
     """Inspect Anthropic streaming tool call chunks: content_block_start has id+name, deltas have args."""
-    chunks = list(litelm.completion("anthropic/claude-3-haiku-20240307", **_TOOL_KW, stream=True))
+    chunks = list(litelm.completion(ANTHROPIC_MODEL, **_TOOL_KW, stream=True))
 
     tc_chunks = [(i, c) for i, c in enumerate(chunks) if c.choices and c.choices[0].delta.tool_calls]
     print(f"tool_call chunks: {len(tc_chunks)} at indices {[i for i, _ in tc_chunks]}")
@@ -555,18 +557,19 @@ def test_openai_context_window_error():
 def test_anthropic_context_window_error():
     """Oversized max_tokens triggers ContextWindowExceededError via keyword match on 'token'.
 
-    Cannot trigger a true context-window error for Anthropic: haiku has 200k context but
-    100k/min rate limit — rate limit fires first. Instead we send max_tokens=20000 (haiku
-    max output is 4096). Anthropic rejects with "max_tokens: 20000 > 4096" which contains
-    "token" → _map_error maps to ContextWindowExceededError. Semantically this is a
-    max-output-tokens error, not context-window, but litellm uses the same keyword matching
-    and DSPy only catches this exception to retry with shorter prompts.
+    Cannot trigger a true context-window error cheaply for Anthropic: rate limits can
+    fire first. Instead we request more than Haiku 4.5's 64k output maximum. Anthropic
+    rejects with a message containing "token" → _map_error maps it to
+    ContextWindowExceededError. Semantically this is a max-output-tokens error, not
+    context-window, but litellm uses the same keyword matching and DSPy only catches this
+    exception to retry with shorter prompts.
     """
     try:
         litelm.completion(
-            "anthropic/claude-3-haiku-20240307",
+            ANTHROPIC_MODEL,
             messages=MESSAGES,
-            max_tokens=20_000,
+            max_tokens=100_000,
+            timeout=30,
         )
         # If API accepted it (silently capped), test is inconclusive — skip
         pytest.skip("Anthropic accepted oversized max_tokens without error")
