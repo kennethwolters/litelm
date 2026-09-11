@@ -55,7 +55,8 @@ select = ["E", "F", "W", "I", "UP"]
 
 [dependency-groups]
 dev = [
-    "dspy>=3.1.3",
+    "dspy[numpy]>=3.1.3",
+    "openai<3",  # DSPy's LiteLLM dependency requires OpenAI 2.x
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
     "pytest-timeout>=2.1",

@@ -5,7 +5,8 @@
 - **Current upstream attestation** — audited LiteLLM core-path changes through `9a715df2`, refreshed the scoped ported baseline to 75 passing tests with no actionable failures, and made relevance decisions explicit and regression-tested.
 - **Anthropic compatibility** — support future adaptive/always-on thinking models, fit reasoning budgets, request summarized reasoning, consume provider thinking-token usage, complete schema filtering/reference handling, and forward native structured outputs on supported Claude families.
 - **Retry and error compatibility** — configure chat/embedding retries on cached clients, strip remaining LiteLLM-only control kwargs, and expose provider response headers on mapped exceptions.
-- **Live evidence** — 45 provider tests and 10 DSPy smoke tests pass with the current dependency lock.
+- **Dependency refresh** — update Anthropic to 1.5.0, boto3/botocore to 1.43.92, DSPy to 3.3.1, LiteLLM to 1.100.1, and OpenAI to the latest DSPy-compatible 2.x release (2.54.0). Keep OpenAI 3.x valid for runtime users but constrained in the development group until DSPy's LiteLLM dependency supports it; a separate OpenAI 3.13.0 environment passed all 256 unit and 45 provider-live tests.
+- **Live evidence** — 45 provider tests and 10 DSPy smoke tests pass with the final dependency lock.
 
 ## 0.5.1 (2026-06-24)
 
