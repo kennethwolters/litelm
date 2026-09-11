@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Current upstream attestation** — audited LiteLLM core-path changes through `9a715df2`, refreshed the scoped ported baseline to 75 passing tests with no actionable failures, and made relevance decisions explicit and regression-tested.
+- **Anthropic compatibility** — support future adaptive/always-on thinking models, fit reasoning budgets, request summarized reasoning, consume provider thinking-token usage, complete schema filtering/reference handling, and forward native structured outputs on supported Claude families.
+- **Retry and error compatibility** — configure chat/embedding retries on cached clients, strip remaining LiteLLM-only control kwargs, and expose provider response headers on mapped exceptions.
+- **Live evidence** — 45 provider tests and 10 DSPy smoke tests pass with the current dependency lock.
+
 ## 0.5.1 (2026-06-24)
 
 - **Cloudflare compatibility** — route `cloudflare/...` calls through Cloudflare's OpenAI-compatible `/ai/v1` endpoint, migrate legacy `/ai/run` bases, and normalize full `/chat/completions` URLs before handing them to the OpenAI SDK.

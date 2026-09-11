@@ -27,7 +27,7 @@ The harness loads only litelm's shim conftest and excludes suites outside the de
 | Skipped | 57 | Skipped by test logic |
 | Import errors | 1,864 | Tests importing LiteLLM internals/features litelm intentionally does not implement |
 
-The classifier reports **0 remaining high-relevance failures** after explicit path-level review. The audit found and fixed actionable gaps in future Claude thinking, Anthropic schema handling/native structured output, embedding retry propagation, and exception response headers. The categorized JUnit result was produced outside the repository; findings and the remaining source-level audit are tracked in issue #14.
+The classifier reports **0 remaining high-relevance failures** after explicit path-level review. The audit found and fixed actionable gaps in future Claude thinking, Anthropic schema handling/native structured output, embedding retry propagation, and exception response headers. The categorized JUnit result was produced outside the repository. The source-level audit reviewed 360 core-path commits from `649eb2d` through `9a715df2`; 171 candidates received explicit decisions with no unknown rows.
 
 ## Project Plan
 
