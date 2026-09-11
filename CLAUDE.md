@@ -6,7 +6,7 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 45 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
-- **256 own tests pass**, 55 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
+- **262 own tests pass**, 55 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
 - **Current classified ported baseline:** 75 tests pass against LiteLLM `9a715df2` from 2026-09-11. After explicit contract-based scope review, no remaining assertion/runtime failure is actionable. Raw counts are not comparable to the March baseline because upstream's test layout and conftest behavior changed substantially.
 
 ## What's NOT Proven
@@ -199,14 +199,17 @@ litellm's test suite is synced **unmodified** into `tests/ported/` (gitignored, 
 
 ```bash
 bash scripts/sync_litellm_tests.sh                    # shallow-clone litellm, copy tests/
-bash scripts/ported_baseline.sh                        # run + categorize
-# or manually:
+bash scripts/ported_contract.sh                        # routine gate: 49 explicit public-contract nodes
+bash scripts/ported_baseline.sh                        # full audit: run + categorize all scoped tests
+# full audit manually:
 uv run pytest -p tests.ported.conftest --noconftest tests/ported/ --tb=line -q --timeout=10 --continue-on-collection-errors
 ```
 
 - `--continue-on-collection-errors` is REQUIRED or pytest aborts after collection phase
 - `tests/ported/conftest.py` does sys.modules shimming + excludes out-of-scope dirs
 - `tests/ported/.litellm-commit` records which upstream commit was synced
+- `scripts/ported_contract_tests.txt` is the reviewed public-contract allowlist; missing files or nodes fail loudly as upstream drift
+- Use the fast contract gate routinely; use the full baseline only for periodic scope audits
 - JUnit XML: `--junit-xml=/tmp/litelm_results.xml`
 - Categorization: `uv run python scripts/categorize_failures.py /tmp/litelm_results.xml`
 
@@ -220,13 +223,13 @@ Advantages over the old sed approach:
 - Easy sync: re-run `sync_litellm_tests.sh` to track upstream
 - Thin re-exports (`litelm/types.py` → `_types`, etc) unlock submodule imports
 
-### Baseline (synced from litellm HEAD, 2026-03-16)
+### Baseline (LiteLLM `9a715df2`, 2026-09-11)
 
-56 passed, 906 import errors, 12 assertion failures, 6 runtime errors, 29 needs_api_key, 70 skipped, 1 timeout. conftest uses `pytest_ignore_collect` hook for recursive basename matching — properly excludes nested out-of-scope dirs. 0 regressions vs previous baseline.
+The full scoped audit produced 2,121 results: 75 passed, 1,864 absent-feature imports, 25 assertion errors, 68 runtime errors, 32 API-key cases, 57 skips, and 0 timeouts. The explicit path-level classifier found 0 remaining high-relevance failures. Raw counts are not comparable to older baselines because upstream layout and conftest behavior changed.
 
 **Experiment pipeline:** `bash scripts/ported_experiment.sh [--skip-sync]` — syncs, runs, categorizes, diffs against previous baseline. Results in `/tmp/litelm_experiment_YYYYMMDD_HHMMSS/`.
 
-Own tests: 256 passing, 55 skipped (live tests need `set -a && . .env.test && set +a`; 45 provider + 10 DSPy smoke tests)
+Own tests: 262 passing, 55 skipped (live tests need `set -a && . .env.test && set +a`; 45 provider + 10 DSPy smoke tests)
 
 ## Key Files
 
@@ -250,7 +253,8 @@ Own tests: 256 passing, 55 skipped (live tests need `set -a && . .env.test && se
 - `litelm/responses.py` — thin re-export of `_responses`
 - `litelm/py.typed` — PEP 561 marker
 - `scripts/sync_litellm_tests.sh` — shallow-clones litellm, copies tests/ into tests/ported/
-- `scripts/ported_baseline.sh` — runs ported tests + categorization pipeline
+- `scripts/ported_contract.py` / `scripts/ported_contract_tests.txt` / `scripts/ported_contract.sh` — validate and run the fast explicit public-contract gate
+- `scripts/ported_baseline.sh` — runs the full scoped ported suite + categorization pipeline
 - `scripts/ported_experiment.sh` — full experiment pipeline: sync, discover, run, categorize, diff
 - `scripts/categorize_failures.py` — parses JUnit XML into failure buckets; `--diff OLD.xml NEW.xml` mode for baseline comparison
 
@@ -439,7 +443,7 @@ Exported API surface + DSPy compat shims + capability functions.
 | `test_dspy_smoke.py` | 10 | All 7 DSPy execution paths. Requires `-m live` + `.env.test` |
 | `conftest.py` | — | Loads `.env.test` into env, auto-skips `live`-marked tests unless `-m live` |
 
-Total: 256 passing, 55 skipped (live tests)
+Total: 262 passing, 55 skipped (live tests)
 
 ### Ported tests (`tests/ported/`, gitignored)
 
@@ -684,7 +688,7 @@ OpenAI Responses API wrapper. Params: `model`, `input=`, `previous_response_id=`
 
 GH issues #1-#10 all closed. Gap analysis bugs (Azure cache key, Bedrock client leak, SDK exception leaking, missing `model_dump()`) all fixed 2026-03-13.
 
-**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 256 own tests pass.
+**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 262 own tests pass.
 
 **Low priority:** `text_completion` mock path depends on `openai.types.Completion` (openai SDK effectively required).
 
@@ -726,6 +730,7 @@ Every push must pass these locally first. No exceptions.
 uvx ruff check litelm/ tests/ --exclude tests/ported          # lint
 uvx ruff format --check litelm/ tests/ --exclude tests/ported  # format
 uv run pytest tests/ --ignore=tests/ported --timeout=10 -q     # tests
+bash scripts/ported_contract.sh                                # fast upstream contract gate, when synced
 ```
 
 After pushing, verify CI is green: `gh run list --limit 1`. If red, fix immediately before doing anything else.

@@ -157,22 +157,23 @@ litelm is human-directed, AI-assisted software. Much of the code was written wit
 
 ## Upstream attestation
 
-Maintainer attestation, 2026-09-11: LiteLLM's routing/formatting changes were reviewed from `649eb2d` through `9a715df2`. The audit triaged 360 core-path commits, inspected upstream tests for potentially relevant behavior, and fixed the resulting compatibility gaps test-first. Local scoped tests: `256 passed, 55 skipped`; all 45 available-provider live tests and all 10 DSPy smoke tests also passed with the current dependency lock.
+Maintainer attestation, 2026-09-11: LiteLLM's routing/formatting changes were reviewed from `649eb2d` through `9a715df2`. The audit triaged 360 core-path commits, inspected upstream tests for potentially relevant behavior, and fixed the resulting compatibility gaps test-first. Local scoped tests: `262 passed, 55 skipped`; all 45 available-provider live tests and all 10 DSPy smoke tests also passed with the current dependency lock.
 
 This attests litelm's declared routing/formatting/DSPy surface only, not full litellm compatibility.
 
 ## Status
 
-**Alpha.** 256 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
+**Alpha.** 262 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
 
 ## Tests
 
 ```bash
-uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 256 non-live tests
+uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 262 non-live tests
+bash scripts/ported_contract.sh                                        # 49 fast upstream contract tests
 uv run --extra all pytest tests/test_live.py -m live --timeout=30       # 45 live provider tests
-uv run pytest tests/test_dspy_smoke.py -m live --timeout=60  # 10 DSPy integration tests
+uv run pytest tests/test_dspy_smoke.py -m live --timeout=60             # 10 DSPy integration tests
 ```
 
 Live tests require API keys in `.env.test`. Skipped by default; run with `-m live`.

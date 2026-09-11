@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Fast upstream contract gate** — add a reviewed 49-node public-contract allowlist and validator. Routine compatibility checks now finish in about one second instead of collecting 2,121 mostly out-of-scope tests; the full categorized audit remains available separately.
+
 ## 0.5.2 (2026-09-11)
 
 - **Current upstream attestation** — audited LiteLLM core-path changes through `9a715df2`, refreshed the scoped ported baseline to 75 passing tests with no actionable failures, and made relevance decisions explicit and regression-tested.
