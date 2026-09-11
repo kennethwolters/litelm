@@ -44,6 +44,8 @@ def embedding(model, input, *, timeout=None, caching=False, shared_session=None,
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
     kwargs.pop("account_id", None)
+    kwargs.pop("retry_strategy", None)
+    max_retries = kwargs.pop("max_retries", kwargs.pop("num_retries", 0)) or 0
     api_key = kwargs.pop("api_key", None)
     api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
     provider, model_name, base_url, resolved_api_key, api_version = parse_model(
@@ -54,7 +56,7 @@ def embedding(model, input, *, timeout=None, caching=False, shared_session=None,
     if handler and hasattr(handler, "embedding"):
         return handler.embedding(model_name, input, api_key=resolved_api_key, base_url=base_url, **kwargs)
 
-    client = get_sync_client(provider, base_url, resolved_api_key, api_version=api_version)
+    client = get_sync_client(provider, base_url, resolved_api_key, max_retries=max_retries, api_version=api_version)
     sdk_kwargs = dict(model=model_name, input=input, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout
@@ -69,6 +71,8 @@ async def aembedding(model, input, *, timeout=None, caching=False, shared_sessio
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
     kwargs.pop("account_id", None)
+    kwargs.pop("retry_strategy", None)
+    max_retries = kwargs.pop("max_retries", kwargs.pop("num_retries", 0)) or 0
     api_key = kwargs.pop("api_key", None)
     api_base = kwargs.pop("api_base", None) or kwargs.pop("base_url", None)
     provider, model_name, base_url, resolved_api_key, api_version = parse_model(
@@ -79,7 +83,7 @@ async def aembedding(model, input, *, timeout=None, caching=False, shared_sessio
     if handler and hasattr(handler, "aembedding"):
         return await handler.aembedding(model_name, input, api_key=resolved_api_key, base_url=base_url, **kwargs)
 
-    client = get_async_client(provider, base_url, resolved_api_key, api_version=api_version)
+    client = get_async_client(provider, base_url, resolved_api_key, max_retries=max_retries, api_version=api_version)
     sdk_kwargs = dict(model=model_name, input=input, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout

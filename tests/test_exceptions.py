@@ -1,5 +1,7 @@
 """Tests for exception types and compatibility."""
 
+from types import SimpleNamespace
+
 from litelm._exceptions import (
     APIConnectionError,
     AuthenticationError,
@@ -28,6 +30,12 @@ def test_exception_attributes():
     assert e.response == "resp"
     assert e.body == "body"
     assert str(e) == "RateLimitError: rate limited"
+
+
+def test_exception_exposes_provider_response_headers():
+    headers = {"retry-after": "42"}
+    e = RateLimitError(response=SimpleNamespace(status_code=429, headers=headers))
+    assert e.litellm_response_headers is headers
 
 
 def test_context_window_error_basic():

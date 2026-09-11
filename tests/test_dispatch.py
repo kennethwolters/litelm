@@ -472,6 +472,35 @@ class TestAnthropicTranslation:
         assert t == {"type": "adaptive"}
         assert o == {"effort": "medium"}
 
+    @pytest.mark.parametrize(
+        "model",
+        [
+            "claude-opus-4-8",
+            "anthropic.claude-opus-4-8-20251201-v1:0",
+            "vertex_ai/claude-sonnet-4-6@default",
+            "claude-opus-4-10",
+            "claude-fable-5-preview",
+            "us.anthropic.claude-opus-6-1",
+        ],
+    )
+    def test_map_reasoning_effort_future_adaptive_models(self, model):
+        t, o = self.mod._map_reasoning_effort("high", model)
+        assert t == {"type": "adaptive"}
+        assert o == {"effort": "high"}
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            "claude-opus-4-5",
+            "claude-3-7-sonnet",
+            "us.anthropic.claude-opus-4-20250514",
+        ],
+    )
+    def test_map_reasoning_effort_legacy_models_use_budget(self, model):
+        t, o = self.mod._map_reasoning_effort("high", model)
+        assert t == {"type": "enabled", "budget_tokens": 4096}
+        assert o is None
+
     def test_build_request_kwargs_reasoning_effort(self):
         msgs = [{"role": "user", "content": "hi"}]
         req = self.mod._build_request_kwargs(

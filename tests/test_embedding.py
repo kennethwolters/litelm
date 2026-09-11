@@ -41,6 +41,18 @@ def test_embedding_strips_kwargs(mock_get_client):
     assert "caching" not in call_kwargs.kwargs
 
 
+@mock.patch("litelm._embedding.get_sync_client")
+def test_embedding_configures_retries_on_client(mock_get_client):
+    mock_client = mock.MagicMock()
+    mock_client.embeddings.create.return_value = {}
+    mock_get_client.return_value = mock_client
+
+    embedding("openai/text-embedding-3-small", input=["x"], api_key="sk-test", max_retries=0)
+
+    assert mock_get_client.call_args.kwargs["max_retries"] == 0
+    assert "max_retries" not in mock_client.embeddings.create.call_args.kwargs
+
+
 @mock.patch("litelm._embedding.get_handler")
 def test_embedding_routes_to_handler(mock_get_handler):
     handler = mock.MagicMock()

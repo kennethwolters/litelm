@@ -308,10 +308,18 @@ def _get_max_tokens(model_name):
     return _DEFAULT_MAX_TOKENS
 
 
-def _is_opus_4_6(model):
-    """Check if a model is Claude Opus 4.6."""
-    m = model.lower().replace("_", "-").replace(".", "-")
-    return "opus-4-6" in m
+def _is_adaptive_thinking_model(model):
+    """Check whether a Claude model requires adaptive thinking."""
+    normalized = model.lower().replace("_", "-").replace(".", "-")
+    match = re.search(
+        r"claude-[a-z][a-z0-9-]*?-(\d+)(?:-(\d{1,2})(?!\d))?(?:-|@|$)",
+        normalized,
+    )
+    if match is None:
+        return False
+    major = int(match.group(1))
+    minor = int(match.group(2) or 0)
+    return major >= 5 or (major == 4 and minor >= 6)
 
 
 _REASONING_EFFORT_BUDGET = {
@@ -332,7 +340,7 @@ def _map_reasoning_effort(reasoning_effort, model_name):
 
     effort = str(reasoning_effort).lower()
 
-    if _is_opus_4_6(model_name):
+    if _is_adaptive_thinking_model(model_name):
         thinking = {"type": "adaptive"}
         output_config = {"effort": effort} if effort in ("low", "medium", "high") else None
         return thinking, output_config

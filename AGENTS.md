@@ -6,7 +6,7 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 44 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
-- **217 own tests pass**, 54 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
+- **228 own tests pass**, 54 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
 - **Last classified ported baseline:** 65 of 79 high-relevance tests passed (82.3%) against LiteLLM `3dccdde9` from 2026-03-16. A 2026-09-11 raw refresh against `9a715df2` collected 4,241 results, but upstream's major test-layout/conftest changes make its unreviewed counts non-comparable; issue #14 remains open for classification.
 
 ## What's NOT Proven
@@ -120,6 +120,10 @@ Deep comparative audit against litellm's actual source revealed these behavioral
 
 **8. ~~Usage.completion_tokens_details~~ (DONE 2026-03-19)** — Implemented as part of gap #3. `CompletionUsage` now has `completion_tokens_details` and `prompt_tokens_details` slots (plain dicts, default `None`). `dict(usage)` includes them. `stream_chunk_builder` passes through latest non-None values. Anthropic handler populates `prompt_tokens_details` from cache tokens.
 
+**9. ~~Future Claude adaptive-thinking detection~~ (DONE 2026-09-11)** — `_map_reasoning_effort()` now uses adaptive thinking for Claude family models at version 4.6+ and all version 5+ models, including provider prefixes, dotted/underscored names, dated aliases, and `@default` suffixes. Lower versions and date-like suffixes retain budget-token thinking. 9 new cases ported from upstream tests.
+
+**10. ~~Embedding retry configuration and response headers~~ (DONE 2026-09-11)** — `embedding()` / `aembedding()` consume `max_retries` and `num_retries` as client configuration instead of leaking them into `embeddings.create()`. Mapped exceptions expose provider headers through `litellm_response_headers`. 2 new tests plus the focused upstream regression test.
+
 ### Why the ported test gap is honest
 
 906 of 1,080 collected tests fail at import because they `from litellm.llms.anthropic.chat.transformation import ...` or `from litellm.proxy._types import ...`. These are litellm's **internal architecture** — per-provider translation classes, proxy request types, router strategy implementations. We don't replicate this architecture; we replaced it with 2,912 LOC that produces the same outputs.
@@ -209,7 +213,7 @@ Advantages over the old sed approach:
 
 **Experiment pipeline:** `bash scripts/ported_experiment.sh [--skip-sync]` — syncs, runs, categorizes, diffs against previous baseline. Results in `/tmp/litelm_experiment_YYYYMMDD_HHMMSS/`.
 
-Own tests: 217 passing, 54 skipped (live tests need `set -a && . .env.test && set +a`; 44 provider + 10 DSPy smoke tests)
+Own tests: 228 passing, 54 skipped (live tests need `set -a && . .env.test && set +a`; 44 provider + 10 DSPy smoke tests)
 
 ## Key Files
 
@@ -422,7 +426,7 @@ Exported API surface + DSPy compat shims + capability functions.
 | `test_dspy_smoke.py` | 10 | All 7 DSPy execution paths. Requires `-m live` + `.env.test` |
 | `conftest.py` | — | Loads `.env.test` into env, auto-skips `live`-marked tests unless `-m live` |
 
-Total: 217 passing, 54 skipped (live tests)
+Total: 228 passing, 54 skipped (live tests)
 
 ### Ported tests (`tests/ported/`, gitignored)
 
@@ -667,7 +671,7 @@ OpenAI Responses API wrapper. Params: `model`, `input=`, `previous_response_id=`
 
 GH issues #1-#10 all closed. Gap analysis bugs (Azure cache key, Bedrock client leak, SDK exception leaking, missing `model_dump()`) all fixed 2026-03-13.
 
-**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 217 own tests pass.
+**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 228 own tests pass.
 
 **Low priority:** `text_completion` mock path depends on `openai.types.Completion` (openai SDK effectively required).
 

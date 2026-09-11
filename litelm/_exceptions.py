@@ -24,6 +24,7 @@ class LitelmError(Exception):
         self.body = body
         self.request = request
         self.status_code = getattr(response, "status_code", self._default_status_code) or self._default_status_code
+        self.litellm_response_headers = kwargs.get("litellm_response_headers", getattr(response, "headers", {}))
         self.llm_provider = kwargs.get("llm_provider")
         self.model = kwargs.get("model")
         self.max_retries = kwargs.get("max_retries")
