@@ -67,6 +67,7 @@ for _k, _v in _SUBMODULE_MAP.items():
 # Match actual litellm test dir names
 _EXCLUDE_DIRS = [
     # Proxy (multiple dirs)
+    "proxy",
     "basic_proxy_startup_tests",
     "old_proxy_tests",
     "proxy_admin_ui_tests",
@@ -77,6 +78,9 @@ _EXCLUDE_DIRS = [
     "litellm-proxy-extras",
     # Router
     "router_unit_tests",
+    "router_strategy",
+    "router_utils",
+    "test_router",
     # Agents
     "agent_tests",
     "mcp_tests",
@@ -86,15 +90,18 @@ _EXCLUDE_DIRS = [
     "ocr_tests",
     # Batch / fine-tuning / assistants
     "batches_tests",
+    "batches",
     # Caching / budget / guardrails
     "spend_tracking_tests",
     "guardrails_tests",
     # Vector stores / search
     "vector_store_tests",
+    "vector_stores",
     "search_tests",
     # Pass-through
     "pass_through_tests",
     "pass_through_unit_tests",
+    "passthrough",
     # Logging / observability
     "logging_callback_tests",
     "otel_tests",
@@ -107,6 +114,16 @@ _EXCLUDE_DIRS = [
     "documentation_tests",
     "code_coverage_tests",
     "windows_tests",
+    "caching",
+    "compression",
+    "containers",
+    "images",
+    "ocr",
+    "repositories",
+    "sandbox",
+    "secret_managers",
+    "skills",
+    "videos",
     "benchmarks",
     "e2e",
     "integration",
@@ -162,6 +179,11 @@ _EXCLUDE_FILES = [
     "test_debug_warning.py",
     "test_default_encoding_non_root.py",
     "test_gpt5_azure_temperature_support.py",
+    # Upstream repository policy/tooling, not runtime API behavior
+    "test_check_licenses.py",
+    "test_check_migrations_no_data_rewrites.py",
+    "test_check_py310_typing_imports.py",
+    "test_circleci_path_filter.py",
     "test_anthropic_compaction_usage.py",
     "test_rust_python_harness.py",
 ]
