@@ -44,6 +44,7 @@ def test_prepare_call_strips_litellm_kwargs():
         "num_retries": 3,
         "retry_strategy": "exponential",
         "caching": True,
+        "use_chat_completions_api": True,
         "temperature": 0.5,
         "api_key": "sk-test",
     }
@@ -55,7 +56,15 @@ def test_prepare_call_strips_litellm_kwargs():
     assert "num_retries" not in cleaned
     assert "retry_strategy" not in cleaned
     assert "caching" not in cleaned
+    assert "use_chat_completions_api" not in cleaned
     assert cleaned["temperature"] == 0.5
+
+
+def test_prepare_call_maps_max_retries_to_client_retries():
+    kwargs = {"max_retries": 4, "api_key": "sk-test"}
+    *_, num_retries, _atp, cleaned = _prepare_call("openai/gpt-4o", kwargs)
+    assert num_retries == 4
+    assert "max_retries" not in cleaned
 
 
 def test_prepare_call_headers():

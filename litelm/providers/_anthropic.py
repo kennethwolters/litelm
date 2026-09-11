@@ -467,7 +467,7 @@ def _map_reasoning_effort(reasoning_effort, model_name):
     effort = str(reasoning_effort).lower()
 
     if _is_adaptive_thinking_model(model_name):
-        thinking = {"type": "adaptive"}
+        thinking = {"type": "adaptive", "display": "summarized"}
         output_config = {"effort": effort} if effort in ("low", "medium", "high") else None
         return thinking, output_config
 
@@ -542,6 +542,19 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
         }
     elif thinking is False:
         thinking = None
+    if (
+        isinstance(thinking, dict)
+        and thinking.get("type") == "adaptive"
+        and not _is_adaptive_thinking_model(model_name)
+    ):
+        max_tokens = req["max_tokens"]
+        if max_tokens <= _REASONING_EFFORT_BUDGET["low"]:
+            thinking = None
+        else:
+            thinking = {
+                "type": "enabled",
+                "budget_tokens": min(_REASONING_EFFORT_BUDGET["medium"], max_tokens - 1),
+            }
     if isinstance(thinking, dict) and thinking.get("type") == "disabled" and _is_always_on_thinking_model(model_name):
         thinking = None
     if isinstance(thinking, dict) and thinking.get("type") == "enabled" and _is_adaptive_only_model(model_name):

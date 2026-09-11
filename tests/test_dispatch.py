@@ -518,12 +518,12 @@ class TestAnthropicTranslation:
 
     def test_map_reasoning_effort_opus_4_6(self):
         t, o = self.mod._map_reasoning_effort("high", "claude-opus-4-6-20250514")
-        assert t == {"type": "adaptive"}
+        assert t == {"type": "adaptive", "display": "summarized"}
         assert o == {"effort": "high"}
 
     def test_map_reasoning_effort_opus_4_6_underscore(self):
         t, o = self.mod._map_reasoning_effort("medium", "claude_opus_4_6")
-        assert t == {"type": "adaptive"}
+        assert t == {"type": "adaptive", "display": "summarized"}
         assert o == {"effort": "medium"}
 
     @pytest.mark.parametrize(
@@ -539,7 +539,7 @@ class TestAnthropicTranslation:
     )
     def test_map_reasoning_effort_future_adaptive_models(self, model):
         t, o = self.mod._map_reasoning_effort("high", model)
-        assert t == {"type": "adaptive"}
+        assert t == {"type": "adaptive", "display": "summarized"}
         assert o == {"effort": "high"}
 
     @pytest.mark.parametrize(
@@ -561,6 +561,27 @@ class TestAnthropicTranslation:
         disabled = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, thinking=False)
         assert enabled["thinking"] == {"type": "enabled", "budget_tokens": 2048}
         assert "thinking" not in disabled
+
+    @pytest.mark.parametrize(
+        "max_tokens,expected",
+        [
+            (8192, {"type": "enabled", "budget_tokens": 2048}),
+            (2000, {"type": "enabled", "budget_tokens": 1999}),
+            (1024, None),
+        ],
+    )
+    def test_build_request_kwargs_translates_adaptive_thinking_for_legacy_model(self, max_tokens, expected):
+        msgs = [{"role": "user", "content": "hi"}]
+        req = self.mod._build_request_kwargs(
+            "claude-haiku-4-5-20251001",
+            msgs,
+            False,
+            None,
+            None,
+            max_tokens=max_tokens,
+            thinking={"type": "adaptive"},
+        )
+        assert req.get("thinking") == expected
 
     def test_build_request_kwargs_upgrades_legacy_thinking_on_adaptive_only_model(self):
         msgs = [{"role": "user", "content": "hi"}]

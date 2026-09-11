@@ -93,13 +93,21 @@ def _map_openai_error(e):
 
 
 # kwargs that are litellm-specific and must be stripped before passing to OpenAI SDK
-_LITELLM_ONLY_KWARGS = {"cache", "num_retries", "retry_strategy", "caching"}
+_LITELLM_ONLY_KWARGS = {
+    "cache",
+    "caching",
+    "max_retries",
+    "num_retries",
+    "retry_strategy",
+    "use_chat_completions_api",
+}
 
 
 def _prepare_call(model, kwargs):
     """Parse model, build client kwargs, strip litellm-specific params."""
-    num_retries = kwargs.pop("num_retries", 0)
+    num_retries = kwargs.pop("num_retries", kwargs.pop("max_retries", 0))
     kwargs.pop("retry_strategy", None)
+    kwargs.pop("use_chat_completions_api", None)
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
     kwargs.pop("custom_llm_provider", None)
