@@ -212,14 +212,51 @@ _UNSUPPORTED_SCHEMA_FIELDS = frozenset(
     {
         "maxItems",
         "minItems",
+        "uniqueItems",
+        "contains",
+        "minContains",
+        "maxContains",
+        "prefixItems",
         "minimum",
         "maximum",
         "exclusiveMinimum",
         "exclusiveMaximum",
+        "multipleOf",
         "minLength",
         "maxLength",
+        "minProperties",
+        "maxProperties",
+        "if",
+        "then",
+        "else",
+        "not",
+        "patternProperties",
+        "propertyNames",
+        "dependentRequired",
+        "dependentSchemas",
+        "unevaluatedProperties",
     }
 )
+
+
+def _enum_conflicts_with_type(schema):
+    enum = schema.get("enum")
+    declared_type = schema.get("type")
+    if not isinstance(enum, list) or declared_type is None:
+        return False
+    if isinstance(declared_type, list):
+        return True
+    checks = {
+        "null": lambda value: value is None,
+        "boolean": lambda value: isinstance(value, bool),
+        "integer": lambda value: isinstance(value, int) and not isinstance(value, bool),
+        "number": lambda value: isinstance(value, (int, float)) and not isinstance(value, bool),
+        "string": lambda value: isinstance(value, str),
+        "array": lambda value: isinstance(value, list),
+        "object": lambda value: isinstance(value, dict),
+    }
+    check = checks.get(declared_type)
+    return check is not None and not all(check(value) for value in enum)
 
 
 def _filter_schema(schema):
@@ -227,25 +264,77 @@ def _filter_schema(schema):
     if not isinstance(schema, dict):
         return schema
     result = {}
+    drop_type = _enum_conflicts_with_type(schema)
     constraint_labels = []
+    one_of = schema.get("oneOf")
     for key, value in schema.items():
         if key in _UNSUPPORTED_SCHEMA_FIELDS:
-            constraint_labels.append(f"{key}: {value}")
-        elif key == "properties" and isinstance(value, dict):
-            result[key] = {k: _filter_schema(v) for k, v in value.items()}
-        elif key == "items" and isinstance(value, dict):
+            if not (isinstance(value, bool) and not value):
+                rendered = json.dumps(value, sort_keys=True) if isinstance(value, (dict, list)) else value
+                constraint_labels.append(f"{key}: {rendered}")
+        elif key == "oneOf" or (key == "type" and drop_type):
+            continue
+        elif key == "additionalProperties" and value is not False:
+            result[key] = False
+        elif key in {"properties", "$defs", "definitions"} and isinstance(value, dict):
+            result[key] = {name: _filter_schema(child) for name, child in value.items()}
+        elif isinstance(value, dict):
             result[key] = _filter_schema(value)
-        elif key in ("$defs", "definitions") and isinstance(value, dict):
-            result[key] = {k: _filter_schema(v) for k, v in value.items()}
-        elif key in ("anyOf", "allOf") and isinstance(value, list):
+        elif isinstance(value, list):
             result[key] = [_filter_schema(item) if isinstance(item, dict) else item for item in value]
         else:
             result[key] = value
+    if isinstance(one_of, list):
+        alternatives = [_filter_schema(item) if isinstance(item, dict) else item for item in one_of]
+        result["anyOf"] = [*result.get("anyOf", []), *alternatives]
     if constraint_labels:
         desc = result.get("description", "")
         note = "Note: " + ", ".join(constraint_labels) + "."
         result["description"] = f"{desc} {note}".strip() if desc else note
     return result
+
+
+_MAX_INLINED_SCHEMA_BYTES = 1_000_000
+
+
+def _inline_schema_refs(schema):
+    """Inline local JSON Schema refs with a bound on expanded data."""
+    if not isinstance(schema, dict):
+        return schema
+    expanded_bytes = 0
+
+    def lookup(ref):
+        if not ref.startswith("#/"):
+            return None
+        value = schema
+        for raw_part in ref[2:].split("/"):
+            part = raw_part.replace("~1", "/").replace("~0", "~")
+            if not isinstance(value, dict) or part not in value:
+                return None
+            value = value[part]
+        return value
+
+    def resolve(value, stack=()):
+        nonlocal expanded_bytes
+        if isinstance(value, list):
+            return [resolve(item, stack) for item in value]
+        if not isinstance(value, dict):
+            return value
+        ref = value.get("$ref")
+        if isinstance(ref, str):
+            target = lookup(ref)
+            if target is not None:
+                if ref in stack:
+                    raise ValueError(f"Circular JSON schema reference: {ref}")
+                expanded_bytes += len(json.dumps(target, sort_keys=True))
+                if expanded_bytes > _MAX_INLINED_SCHEMA_BYTES:
+                    raise ValueError("Expanded JSON schema exceeds byte budget")
+                resolved = resolve(target, (*stack, ref))
+                siblings = {key: resolve(item, stack) for key, item in value.items() if key != "$ref"}
+                return {**resolved, **siblings}
+        return {key: resolve(item, stack) for key, item in value.items() if key not in {"$defs", "definitions"}}
+
+    return resolve(schema)
 
 
 def _translate_tools(tools):
@@ -259,7 +348,9 @@ def _translate_tools(tools):
             tool_def = {
                 "name": fn["name"],
                 "description": fn.get("description", ""),
-                "input_schema": _filter_schema(fn.get("parameters", {"type": "object", "properties": {}})),
+                "input_schema": _filter_schema(
+                    _inline_schema_refs(fn.get("parameters", {"type": "object", "properties": {}}))
+                ),
             }
             if "cache_control" in tool:
                 tool_def["cache_control"] = tool["cache_control"]
@@ -308,18 +399,53 @@ def _get_max_tokens(model_name):
     return _DEFAULT_MAX_TOKENS
 
 
-def _is_adaptive_thinking_model(model):
-    """Check whether a Claude model requires adaptive thinking."""
+def _claude_family_version(model):
     normalized = model.lower().replace("_", "-").replace(".", "-")
     match = re.search(
-        r"claude-[a-z][a-z0-9-]*?-(\d+)(?:-(\d{1,2})(?!\d))?(?:-|@|$)",
+        r"claude-([a-z][a-z0-9-]*?)-(\d+)(?:-(\d{1,2})(?!\d))?(?:-|@|$)",
         normalized,
     )
     if match is None:
+        return None
+    return match.group(1), int(match.group(2)), int(match.group(3) or 0)
+
+
+def _is_adaptive_thinking_model(model):
+    """Check whether a Claude model requires adaptive thinking."""
+    parsed = _claude_family_version(model)
+    if parsed is None:
         return False
-    major = int(match.group(1))
-    minor = int(match.group(2) or 0)
+    _, major, minor = parsed
     return major >= 5 or (major == 4 and minor >= 6)
+
+
+def _is_adaptive_only_model(model):
+    parsed = _claude_family_version(model)
+    if parsed is None:
+        return False
+    _, major, minor = parsed
+    return major >= 5 or (major == 4 and minor > 6)
+
+
+def _is_always_on_thinking_model(model):
+    parsed = _claude_family_version(model)
+    if parsed is None:
+        return False
+    family, major, _ = parsed
+    return major >= 5 and family.split("-")[-1] in {"fable", "mythos"}
+
+
+def _supports_native_structured_output(model):
+    parsed = _claude_family_version(model)
+    if parsed is None:
+        return False
+    family, major, minor = parsed
+    family = family.split("-")[-1]
+    return (
+        major >= 5
+        or (major == 4 and family == "haiku" and minor >= 5)
+        or (major == 4 and family == "opus" and minor >= 8)
+    )
 
 
 _REASONING_EFFORT_BUDGET = {
@@ -397,14 +523,46 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
                 pass
             else:
                 req["messages"].append({"role": "assistant", "content": [{"type": "text", "text": "{"}]})
+        elif rf_type == "json_schema" and _supports_native_structured_output(model_name):
+            json_schema = response_format.get("json_schema", {})
+            schema = json_schema.get("schema") if isinstance(json_schema, dict) else None
+            if isinstance(schema, dict):
+                req["output_config"] = {
+                    "format": {
+                        "type": "json_schema",
+                        "schema": _filter_schema(_inline_schema_refs(schema)),
+                    }
+                }
 
     thinking = kwargs.pop("thinking", None)
+    if thinking is True:
+        thinking = {
+            "type": "enabled",
+            "budget_tokens": _REASONING_EFFORT_BUDGET["medium"],
+        }
+    elif thinking is False:
+        thinking = None
+    if isinstance(thinking, dict) and thinking.get("type") == "disabled" and _is_always_on_thinking_model(model_name):
+        thinking = None
+    if isinstance(thinking, dict) and thinking.get("type") == "enabled" and _is_adaptive_only_model(model_name):
+        budget = int(thinking.get("budget_tokens") or 0)
+        effort = "high" if budget >= _REASONING_EFFORT_BUDGET["high"] else "medium"
+        if budget < _REASONING_EFFORT_BUDGET["medium"]:
+            effort = "low"
+        thinking = {"type": "adaptive"}
+        req["output_config"] = {"effort": effort}
     if thinking:
         req["thinking"] = thinking
 
     reasoning_effort = kwargs.pop("reasoning_effort", None)
     if reasoning_effort and not thinking:
         thinking_param, output_config = _map_reasoning_effort(reasoning_effort, model_name)
+        if thinking_param and "budget_tokens" in thinking_param:
+            max_tokens = req["max_tokens"]
+            if max_tokens <= _REASONING_EFFORT_BUDGET["low"]:
+                thinking_param = None
+            elif thinking_param["budget_tokens"] >= max_tokens:
+                thinking_param = {**thinking_param, "budget_tokens": max_tokens - 1}
         if thinking_param:
             req["thinking"] = thinking_param
         if output_config:
@@ -445,6 +603,21 @@ def _get_client(api_key, base_url, async_client=False):
 # ---------------------------------------------------------------------------
 # Response translation: Anthropic → OpenAI
 # ---------------------------------------------------------------------------
+
+
+def _completion_token_details(usage):
+    details = getattr(usage, "output_tokens_details", None)
+    thinking_tokens = (
+        details.get("thinking_tokens") if isinstance(details, dict) else getattr(details, "thinking_tokens", None)
+    )
+    if not isinstance(thinking_tokens, int):
+        return None
+    completion_tokens = usage.output_tokens
+    reasoning_tokens = min(max(0, thinking_tokens), completion_tokens)
+    return {
+        "reasoning_tokens": reasoning_tokens,
+        "text_tokens": completion_tokens - reasoning_tokens,
+    }
 
 
 def _build_model_response(response):
@@ -507,6 +680,7 @@ def _build_model_response(response):
         prompt_tokens=response.usage.input_tokens,
         completion_tokens=response.usage.output_tokens,
         total_tokens=response.usage.input_tokens + response.usage.output_tokens,
+        completion_tokens_details=_completion_token_details(response.usage),
     )
 
     # Populate prompt_tokens_details from Anthropic cache tokens
@@ -590,6 +764,7 @@ def _build_stream_chunk(event, model, chunk_id):
                 prompt_tokens=0,
                 completion_tokens=event.usage.output_tokens,
                 total_tokens=event.usage.output_tokens,
+                completion_tokens_details=_completion_token_details(event.usage),
             )
     elif event_type == "message_start":
         delta_kwargs["role"] = "assistant"

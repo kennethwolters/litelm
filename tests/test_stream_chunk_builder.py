@@ -31,6 +31,34 @@ def test_stream_chunk_builder_litellm_empty_chunks():
     assert response.choices == []
 
 
+def test_stream_chunk_builder_empty_choices_preserves_usage():
+    chunks = [
+        ModelResponseStream(
+            id="usage-only",
+            model="gpt-5.4-mini",
+            choices=[],
+            usage={"prompt_tokens": 10, "completion_tokens": 0, "total_tokens": 10},
+        )
+    ]
+    response = stream_chunk_builder(chunks)
+    assert response.choices[0].message.role == "assistant"
+    assert response.choices[0].finish_reason == "stop"
+    assert response.usage.prompt_tokens == 10
+
+
+def test_stream_chunk_builder_defaults_missing_delta_role():
+    chunks = [
+        ModelResponseStream(
+            id="no-role",
+            model="gpt-5.4-mini",
+            choices=[{"index": 0, "delta": {"content": "Hi"}, "finish_reason": None}],
+        )
+    ]
+    response = stream_chunk_builder(chunks)
+    assert response.choices[0].message.role == "assistant"
+    assert response.choices[0].message.content == "Hi"
+
+
 def test_stream_chunk_builder_multiple_tool_calls():
     """Ported from litellm: multiple parallel tool calls (exponentiate + add) from GPT-4o chunks."""
     init_chunks = [

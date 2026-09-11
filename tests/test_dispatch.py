@@ -256,6 +256,40 @@ class TestAnthropicTranslation:
         )
         assert req["max_tokens"] == 2048
 
+    def test_build_request_kwargs_native_structured_output(self):
+        msgs = [{"role": "user", "content": "Hi"}]
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {"answer": {"type": "integer", "minimum": 0}},
+                    "required": ["answer"],
+                    "additionalProperties": False,
+                },
+            },
+        }
+        native = self.mod._build_request_kwargs(
+            "claude-haiku-4-5-20251001",
+            msgs,
+            False,
+            None,
+            None,
+            response_format=response_format,
+        )
+        legacy = self.mod._build_request_kwargs(
+            "claude-sonnet-4-5-20250929",
+            msgs,
+            False,
+            None,
+            None,
+            response_format=response_format,
+        )
+        assert native["output_config"]["format"]["type"] == "json_schema"
+        assert "minimum" not in native["output_config"]["format"]["schema"]["properties"]["answer"]
+        assert "output_config" not in legacy
+
     def test_build_request_kwargs_with_tools(self):
         msgs = [{"role": "user", "content": "Hi"}]
         tools = [{"type": "function", "function": {"name": "f", "parameters": {}}}]
@@ -293,6 +327,26 @@ class TestAnthropicTranslation:
         assert msg.thinking_blocks == [
             {"type": "thinking", "thinking": "Let me reason...", "signature": "sig_abc"},
         ]
+
+    def test_build_model_response_provider_thinking_tokens(self):
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.id = "msg_123"
+        mock_response.model = "claude-opus-4-8"
+        mock_response.stop_reason = "end_turn"
+        mock_response.usage.input_tokens = 32
+        mock_response.usage.output_tokens = 421
+        mock_response.usage.output_tokens_details.thinking_tokens = 372
+        mock_response.usage.cache_creation_input_tokens = None
+        mock_response.usage.cache_read_input_tokens = None
+        mock_response.content = [MagicMock(type="text", text="Answer")]
+
+        result = self.mod._build_model_response(mock_response)
+        assert result.usage.completion_tokens_details == {
+            "reasoning_tokens": 372,
+            "text_tokens": 49,
+        }
 
     def test_build_model_response_cache_tokens(self):
         from unittest.mock import MagicMock
@@ -501,6 +555,52 @@ class TestAnthropicTranslation:
         assert t == {"type": "enabled", "budget_tokens": 4096}
         assert o is None
 
+    def test_build_request_kwargs_bool_thinking(self):
+        msgs = [{"role": "user", "content": "hi"}]
+        enabled = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, thinking=True)
+        disabled = self.mod._build_request_kwargs("claude-sonnet-4-20250514", msgs, False, None, None, thinking=False)
+        assert enabled["thinking"] == {"type": "enabled", "budget_tokens": 2048}
+        assert "thinking" not in disabled
+
+    def test_build_request_kwargs_upgrades_legacy_thinking_on_adaptive_only_model(self):
+        msgs = [{"role": "user", "content": "hi"}]
+        upgraded = self.mod._build_request_kwargs(
+            "claude-opus-4-8",
+            msgs,
+            False,
+            None,
+            None,
+            thinking={"type": "enabled", "budget_tokens": 4096},
+        )
+        legacy = self.mod._build_request_kwargs(
+            "claude-opus-4-6",
+            msgs,
+            False,
+            None,
+            None,
+            thinking={"type": "enabled", "budget_tokens": 4096},
+        )
+        assert upgraded["thinking"] == {"type": "adaptive"}
+        assert upgraded["output_config"] == {"effort": "high"}
+        assert legacy["thinking"] == {"type": "enabled", "budget_tokens": 4096}
+        assert "output_config" not in legacy
+
+    def test_build_request_kwargs_omits_disabled_thinking_for_always_on_model(self):
+        msgs = [{"role": "user", "content": "hi"}]
+        req = self.mod._build_request_kwargs("claude-fable-5", msgs, False, None, None, thinking={"type": "disabled"})
+        assert "thinking" not in req
+
+    def test_build_request_kwargs_caps_reasoning_budget_below_max_tokens(self):
+        msgs = [{"role": "user", "content": "hi"}]
+        capped = self.mod._build_request_kwargs(
+            "claude-haiku-4-5", msgs, False, None, None, max_tokens=4000, reasoning_effort="high"
+        )
+        dropped = self.mod._build_request_kwargs(
+            "claude-haiku-4-5", msgs, False, None, None, max_tokens=1024, reasoning_effort="high"
+        )
+        assert capped["thinking"] == {"type": "enabled", "budget_tokens": 3999}
+        assert "thinking" not in dropped
+
     def test_build_request_kwargs_reasoning_effort(self):
         msgs = [{"role": "user", "content": "hi"}]
         req = self.mod._build_request_kwargs(
@@ -576,6 +676,83 @@ class TestAnthropicTranslation:
         schema = {"anyOf": [{"type": "integer", "minimum": 0}, {"type": "string"}]}
         result = self.mod._filter_schema(schema)
         assert "minimum" not in result["anyOf"][0]
+
+    @pytest.mark.parametrize("defs_key", ["$defs", "definitions"])
+    def test_translate_tools_inlines_schema_refs(self, defs_key):
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "lookup",
+                    "parameters": {
+                        "type": "object",
+                        defs_key: {"Item": {"type": "string", "minLength": 1}},
+                        "properties": {"item": {"$ref": f"#/{defs_key}/Item"}},
+                    },
+                },
+            }
+        ]
+        schema = self.mod._translate_tools(tools)[0]["input_schema"]
+        assert "$ref" not in str(schema)
+        assert defs_key not in schema
+        assert schema["properties"]["item"]["type"] == "string"
+        assert "minLength" not in schema["properties"]["item"]
+
+    def test_filter_schema_strips_remaining_anthropic_constraints(self):
+        schema = {
+            "type": "object",
+            "properties": {
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "uniqueItems": True,
+                    "contains": {"const": "required"},
+                    "minContains": 1,
+                    "maxContains": 2,
+                    "prefixItems": [{"type": "string"}],
+                },
+                "count": {"type": "integer", "multipleOf": 5},
+                "sound": {"type": "string", "not": {"const": "moo"}},
+                "id": {"oneOf": [{"type": "string"}, {"type": "integer"}]},
+                "nullable": {"type": "string", "enum": ["yes", None]},
+                "attributes": {"type": "object", "additionalProperties": True},
+                "not": {"type": "string"},
+            },
+            "minProperties": 1,
+            "maxProperties": 5,
+            "if": {"required": ["tags"]},
+            "then": {"required": ["count"]},
+            "else": {"required": ["sound"]},
+            "patternProperties": {"^x": {"type": "string"}},
+            "propertyNames": {"pattern": "^[a-z]+$"},
+            "dependentRequired": {"first": ["last"]},
+            "dependentSchemas": {"first": {"required": ["last"]}},
+            "unevaluatedProperties": False,
+        }
+        result = self.mod._filter_schema(schema)
+
+        assert result["properties"]["id"]["anyOf"] == [{"type": "string"}, {"type": "integer"}]
+        assert "type" not in result["properties"]["nullable"]
+        assert result["properties"]["attributes"]["additionalProperties"] is False
+        assert result["properties"]["not"] == {"type": "string"}
+        serialized = str(result)
+        for field in (
+            "uniqueItems",
+            "contains",
+            "minContains",
+            "maxContains",
+            "prefixItems",
+            "multipleOf",
+            "oneOf",
+            "minProperties",
+            "maxProperties",
+            "patternProperties",
+            "propertyNames",
+            "dependentRequired",
+            "dependentSchemas",
+            "unevaluatedProperties",
+        ):
+            assert f"'{field}':" not in serialized
 
     # -- Citation streaming --
 

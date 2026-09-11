@@ -104,6 +104,30 @@ def test_anthropic_basic_completion():
 
 
 @pytest.mark.live
+@pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
+def test_anthropic_native_structured_output():
+    response = litelm.completion(
+        ANTHROPIC_MODEL,
+        messages=[{"role": "user", "content": "Return the answer to 2+2."}],
+        max_tokens=40,
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {"answer": {"type": "integer", "minimum": 0}},
+                    "required": ["answer"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+    )
+    assert json.loads(response.choices[0].message.content) == {"answer": 4}
+
+
+@pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("GROQ_API_KEY"), reason="no GROQ_API_KEY")
 def test_groq_basic_completion():
     response = litelm.completion(GROQ_MODEL, messages=MESSAGES)
