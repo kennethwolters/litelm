@@ -901,6 +901,7 @@
         "reasoning_effort_levels",
         "supported_audio_formats",
         "supports_adaptive_thinking",
+        "supports_anthropic_thinking_payload",
         "supports_assistant_prefill",
         "supports_audio_input",
         "supports_audio_output",

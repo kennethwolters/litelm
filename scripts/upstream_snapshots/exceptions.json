@@ -187,6 +187,12 @@
         "BadRequestError"
       ],
       "fields": []
+    },
+    "VectorStoreSearchError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
     }
   }
 }
