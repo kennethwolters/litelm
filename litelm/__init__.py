@@ -1,8 +1,8 @@
 """litelm — thin OpenAI-SDK wrapper replacing litellm in DSPy."""
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
-from litelm._callbacks import success_callbacks
+from litelm._callbacks import failure_callback, success_callback, success_callbacks
 from litelm._client_cache import close_async_clients as close_litelm_async_clients
 from litelm._completion import acompletion, completion, mock_completion, stream_chunk_builder
 from litelm._embedding import aembedding, embedding
@@ -138,6 +138,7 @@ __all__ = [
     "ContextWindowExceededError",
     "Delta",
     "embedding",
+    "failure_callback",
     "Function",
     "get_llm_provider",
     "get_secret",
@@ -157,6 +158,7 @@ __all__ = [
     "Usage",
     "responses",
     "stream_chunk_builder",
+    "success_callback",
     "success_callbacks",
     "supports_function_calling",
     "supports_reasoning",

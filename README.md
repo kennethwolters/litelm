@@ -120,6 +120,22 @@ except AuthenticationError:
     pass
 ```
 
+## Completion Callbacks
+
+LiteLLM-compatible callbacks receive `(kwargs, response, start_time, end_time)`:
+
+```python
+def on_failure(kwargs, response, start_time, end_time):
+    error = kwargs["exception"]
+    print(kwargs["model"], error)
+
+litelm.failure_callback.append(on_failure)
+```
+
+`success_callback` and `failure_callback` cover non-streaming `completion` and `acompletion` calls. Callback errors are logged without replacing the provider result or exception. Callback `kwargs` can contain messages and request metadata; observers should explicitly redact exported telemetry. Streaming lifecycle callbacks are not yet supported.
+
+The older `success_callbacks` one-event-dict registry remains available for litelm 0.5.0 compatibility.
+
 ## Tool Calling
 
 ```python
@@ -163,14 +179,14 @@ This attests litelm's declared routing/formatting/DSPy surface only, not full li
 
 ## Status
 
-**Alpha.** 262 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
+**Alpha.** 265 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
 
 ## Tests
 
 ```bash
-uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 262 non-live tests
+uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 265 non-live tests
 bash scripts/ported_contract.sh                                        # 49 fast upstream contract tests
 uv run --extra all pytest tests/test_live.py -m live --timeout=30       # 45 live provider tests
 uv run pytest tests/test_dspy_smoke.py -m live --timeout=60             # 10 DSPy integration tests

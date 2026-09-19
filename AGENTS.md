@@ -1,4 +1,4 @@
-# Ground Truth (updated 2026-09-11)
+# Ground Truth (updated 2026-09-19)
 
 litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its DSPy contract and seven providers have been verified live; everything beyond the evidence below is untested.
 
@@ -6,7 +6,7 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 45 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
-- **262 own tests pass**, 55 skipped (live tests needing API keys), including a 2026-09-11 run against the current lock on Python 3.14.
+- **265 own tests pass**, 55 skipped (live tests needing API keys), including a 2026-09-19 local gate run against the current lock.
 - **Current classified ported baseline:** 75 tests pass against LiteLLM `9a715df2` from 2026-09-11. After explicit contract-based scope review, no remaining assertion/runtime failure is actionable. Raw counts are not comparable to the March baseline because upstream's test layout and conftest behavior changed substantially.
 
 ## What's NOT Proven
@@ -53,7 +53,7 @@ Only worth doing when a specific use case demands it. Each new provider key can 
 
 ### What's explicitly out of scope (and stays out)
 
-Router, proxy, caching, budgeting, agents, guardrails, image gen, audio, OCR, fine-tuning, batches, assistants, scheduler, callback integration frameworks (opik, mlflow, etc), provider config registry, a2a protocol, compactifai. A minimal success-callback hook is implemented.
+Router, proxy, caching, budgeting, agents, guardrails, image gen, audio, OCR, fine-tuning, batches, assistants, scheduler, callback integration frameworks (opik, mlflow, etc), provider config registry, a2a protocol, compactifai. Minimal LiteLLM-compatible completion success/failure callback hooks are implemented.
 
 ## Architecture Comparison: litellm vs litelm (audited 2026-03-16)
 
@@ -163,7 +163,7 @@ litellm._logging.verbose_logger           — clients/__init__.py
 litellm.telemetry / cache / suppress_debug_info — module attrs
 ```
 
-Every one of these is implemented and verified. The remaining 1,279 litellm attributes (provider config classes, Router, proxy types, model lists, callback hooks, 250+ functions for image/audio/batch/assistant/fine-tuning APIs) are never touched by DSPy.
+Every one of these is implemented and verified. The remaining 1,279 litellm attributes (provider config classes, Router, proxy types, model lists, callback integrations, 250+ functions for image/audio/batch/assistant/fine-tuning APIs) are never touched by DSPy.
 
 # Philosophy
 
@@ -189,7 +189,7 @@ Strip litellm to its core routing+formatting logic, prove correctness against it
 
 # Project Context
 
-Version: `0.5.2` (in both `pyproject.toml` and `litelm/__init__.__version__`).
+Version: `0.5.3` (in both `pyproject.toml` and `litelm/__init__.__version__`).
 
 ## Ported Tests
 
@@ -229,7 +229,7 @@ The full scoped audit produced 2,121 results: 75 passed, 1,864 absent-feature im
 
 **Experiment pipeline:** `bash scripts/ported_experiment.sh [--skip-sync]` — syncs, runs, categorizes, diffs against previous baseline. Results in `/tmp/litelm_experiment_YYYYMMDD_HHMMSS/`.
 
-Own tests: 262 passing, 55 skipped (live tests need `set -a && . .env.test && set +a`; 45 provider + 10 DSPy smoke tests)
+Own tests: 265 passing, 55 skipped (live tests need `set -a && . .env.test && set +a`; 45 provider + 10 DSPy smoke tests)
 
 ## Key Files
 
@@ -408,7 +408,7 @@ Exported API surface + DSPy compat shims + capability functions.
 
 | Attr/Function | Purpose |
 |---|---|
-| `__version__ = "0.5.2"` | Package version |
+| `__version__ = "0.5.3"` | Package version |
 | `telemetry = False` | DSPy disables litellm telemetry |
 | `cache = None` | DSPy disables litellm caching |
 | `suppress_debug_info = False` | DSPy logging config |
@@ -443,7 +443,7 @@ Exported API surface + DSPy compat shims + capability functions.
 | `test_dspy_smoke.py` | 10 | All 7 DSPy execution paths. Requires `-m live` + `.env.test` |
 | `conftest.py` | — | Loads `.env.test` into env, auto-skips `live`-marked tests unless `-m live` |
 
-Total: 262 passing, 55 skipped (live tests)
+Total: 265 passing, 55 skipped (live tests)
 
 ### Ported tests (`tests/ported/`, gitignored)
 
@@ -688,7 +688,7 @@ OpenAI Responses API wrapper. Params: `model`, `input=`, `previous_response_id=`
 
 GH issues #1-#10 all closed. Gap analysis bugs (Azure cache key, Bedrock client leak, SDK exception leaking, missing `model_dump()`) all fixed 2026-03-13.
 
-**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 262 own tests pass.
+**Remaining actionable:** None from the last completed audit. Error mappings for NotFoundError/PermissionDeniedError/UnprocessableEntityError exist across all handlers. `get_llm_provider()` is exported as a thin wrapper around `parse_model()`. 265 own tests pass.
 
 **Low priority:** `text_completion` mock path depends on `openai.types.Completion` (openai SDK effectively required).
 

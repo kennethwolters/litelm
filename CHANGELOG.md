@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.5.3 (2026-09-19)
+
+- **LiteLLM-compatible completion callbacks** — add the canonical `success_callback` and `failure_callback` registries with LiteLLM's four-argument callable contract, assignment support, mapped failure propagation, and callback-error isolation for synchronous and asynchronous non-streaming completions. Keep the 0.5.0 `success_callbacks` event-dict registry for backward compatibility.
 - **Fast upstream contract gate** — add a reviewed 49-node public-contract allowlist and validator. Routine compatibility checks now finish in about one second instead of collecting 2,121 mostly out-of-scope tests; the full categorized audit remains available separately.
 
 ## 0.5.2 (2026-09-11)

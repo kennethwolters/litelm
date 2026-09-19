@@ -1,8 +1,8 @@
 """Chat completion functions — openai SDK imported lazily only when needed."""
 
-import time
+import datetime
 
-from litelm._callbacks import fire_success, success_callbacks
+from litelm._callbacks import fire_failure, fire_success, has_failure_callbacks, has_success_callbacks
 from litelm._client_cache import get_async_client, get_sync_client
 from litelm._dispatch import get_handler
 from litelm._exceptions import (
@@ -195,28 +195,8 @@ def _wrap_context_window_error(e):
     raise e
 
 
-def _fire_completion_success(model, provider, response, start_time, stream):
-    """Build the success event and dispatch to any registered callbacks.
-
-    Short-circuit on an empty registry — avoid constructing the event dict
-    (and especially the latency calc) when no observer is listening.
-    """
-    if not success_callbacks:
-        return
-    fire_success(
-        {
-            "model": model,
-            "provider": provider,
-            "response": response,
-            "latency_ms": (time.monotonic() - start_time) * 1000,
-            "stream": stream,
-        }
-    )
-
-
-def completion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
-    """Synchronous chat completion."""
-    start_time = time.monotonic()
+def _completion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
+    """Synchronous chat completion implementation."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
@@ -244,7 +224,6 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
                 usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
             )
         )
-        _fire_completion_success(model, provider, result, start_time, False)
         return result
 
     if n > 1:
@@ -255,8 +234,6 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
         result = handler.completion(
             model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
         )
-        if not stream:
-            _fire_completion_success(model, provider, result, start_time, False)
         return result
 
     client = get_sync_client(
@@ -280,14 +257,11 @@ def completion(model, messages=None, *, timeout=None, stream=False, shared_sessi
 
     if stream:
         return _wrap_stream_sync(response)
-    result = ModelResponse(response)
-    _fire_completion_success(model, provider, result, start_time, False)
-    return result
+    return ModelResponse(response)
 
 
-async def acompletion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
-    """Async chat completion."""
-    start_time = time.monotonic()
+async def _acompletion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
+    """Async chat completion implementation."""
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
@@ -315,7 +289,6 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
                 usage=CompletionUsage(prompt_tokens=0, completion_tokens=0, total_tokens=0),
             )
         )
-        _fire_completion_success(model, provider, result, start_time, False)
         return result
 
     if n > 1:
@@ -326,8 +299,6 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
         result = await handler.acompletion(
             model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
         )
-        if not stream:
-            _fire_completion_success(model, provider, result, start_time, False)
         return result
 
     client = get_async_client(
@@ -351,9 +322,70 @@ async def acompletion(model, messages=None, *, timeout=None, stream=False, share
 
     if stream:
         return _wrap_stream_async(response)
-    result = ModelResponse(response)
-    _fire_completion_success(model, provider, result, start_time, False)
-    return result
+    return ModelResponse(response)
+
+
+def _callback_call_details(model, messages, stream, kwargs):
+    """Build the LiteLLM callable-callback kwargs payload."""
+    details = dict(kwargs)
+    provider = details.get("custom_llm_provider")
+    if provider is None:
+        provider = model.split("/", 1)[0] if isinstance(model, str) and "/" in model else "openai"
+    details.update(
+        {
+            "model": model,
+            "messages": messages,
+            "stream": stream,
+            "litellm_params": {"custom_llm_provider": provider},
+        }
+    )
+    return details
+
+
+def completion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
+    """Synchronous chat completion with LiteLLM-compatible callbacks."""
+    observe_success = not stream and has_success_callbacks()
+    observe_failure = not stream and has_failure_callbacks()
+    if not observe_success and not observe_failure:
+        return _completion(model, messages, timeout=timeout, stream=stream, shared_session=shared_session, **kwargs)
+
+    start_time = datetime.datetime.now()
+    call_details = _callback_call_details(model, messages, stream, kwargs)
+    try:
+        response = _completion(model, messages, timeout=timeout, stream=stream, shared_session=shared_session, **kwargs)
+    except Exception as exc:
+        if observe_failure:
+            call_details["exception"] = exc
+            fire_failure(call_details, None, start_time, datetime.datetime.now())
+        raise
+    if observe_success:
+        fire_success(call_details, response, start_time, datetime.datetime.now())
+    return response
+
+
+async def acompletion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
+    """Async chat completion with LiteLLM-compatible callbacks."""
+    observe_success = not stream and has_success_callbacks()
+    observe_failure = not stream and has_failure_callbacks()
+    if not observe_success and not observe_failure:
+        return await _acompletion(
+            model, messages, timeout=timeout, stream=stream, shared_session=shared_session, **kwargs
+        )
+
+    start_time = datetime.datetime.now()
+    call_details = _callback_call_details(model, messages, stream, kwargs)
+    try:
+        response = await _acompletion(
+            model, messages, timeout=timeout, stream=stream, shared_session=shared_session, **kwargs
+        )
+    except Exception as exc:
+        if observe_failure:
+            call_details["exception"] = exc
+            fire_failure(call_details, None, start_time, datetime.datetime.now())
+        raise
+    if observe_success:
+        fire_success(call_details, response, start_time, datetime.datetime.now())
+    return response
 
 
 def mock_completion(model, messages, n=1, stream=False, **kwargs):
