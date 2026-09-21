@@ -71,7 +71,9 @@
     "WANDB_MODELS",
     "XAIModelInfo",
     "acancel_eval",
+    "acancel_responses",
     "acancel_run",
+    "acompact_responses",
     "acreate_agent",
     "acreate_eval",
     "acreate_realtime_client_secret",
@@ -81,20 +83,24 @@
     "add_known_models",
     "adelete_agent",
     "adelete_eval",
+    "adelete_responses",
     "adelete_run",
     "adelete_skill",
     "agenerate_content",
     "aget_agent",
     "aget_eval",
+    "aget_responses",
     "aget_run",
     "aget_skill",
     "alist_agent_versions",
     "alist_agents",
     "alist_evals",
+    "alist_input_items",
     "alist_runs",
     "alist_skills",
     "allm_passthrough_route",
     "arealtime_calls",
+    "aresponses_api_with_mcp",
     "avector_store_file_content",
     "avector_store_file_create",
     "avector_store_file_delete",
@@ -104,11 +110,13 @@
     "baseten_models",
     "bedrock_embedding_models",
     "cancel_eval",
+    "cancel_responses",
     "cancel_run",
     "clarifai_models",
     "client",
     "close_litellm_async_clients",
     "cohere_embedding_models",
+    "compact_responses",
     "compress",
     "create_agent",
     "create_eval",
@@ -116,6 +124,7 @@
     "create_skill",
     "delete_agent",
     "delete_eval",
+    "delete_responses",
     "delete_run",
     "delete_skill",
     "drop_params_env_flag",
@@ -124,6 +133,7 @@
     "get_eval",
     "get_litellm_gateway_api_key",
     "get_model_cost_map",
+    "get_responses",
     "get_run",
     "get_skill",
     "huggingface_models",
@@ -136,11 +146,13 @@
     "list_agent_versions",
     "list_agents",
     "list_evals",
+    "list_input_items",
     "list_runs",
     "list_skills",
     "llm_passthrough_route",
     "log_level",
     "mark_litellm_import_complete",
+    "mock_responses_api_response",
     "modelscope_models",
     "open_ai_embedding_models",
     "openai_compatible_endpoints",
@@ -372,6 +384,9 @@
     "_custom_api_first_output": [
       "resp"
     ],
+    "_delta_carries_more_than_text": [
+      "delta"
+    ],
     "_dev_env_hot_reload_enabled": [],
     "_dispatch_client_azure": [
       "ctx"
@@ -385,10 +400,7 @@
     "_dispatch_metadata": [
       "ctx"
     ],
-    "_drop_input_examples_from_tool": [
-      "tool"
-    ],
-    "_drop_input_examples_from_tools": [
+    "_drop_anthropic_only_tool_keys": [
       "tools"
     ],
     "_get_encoding": [],
@@ -408,6 +420,10 @@
     "_handle_mock_timeout_async": [
       "mock_timeout",
       "timeout",
+      "model"
+    ],
+    "_is_claude_tool_target": [
+      "custom_llm_provider",
       "model"
     ],
     "_is_openai_backed_api_base": [
@@ -458,9 +474,8 @@
       "response",
       "logging_obj"
     ],
-    "_should_allow_input_examples": [
-      "custom_llm_provider",
-      "model"
+    "_simple_text_part": [
+      "choices"
     ],
     "_sleep_for_timeout": [
       "timeout"
@@ -480,8 +495,14 @@
       "response",
       "logging_obj"
     ],
+    "_stream_choice_delta": [
+      "choice"
+    ],
     "_transcription_response_from_cached_dict": [
       "cached_response_dict"
+    ],
+    "_without_anthropic_only_tool_keys": [
+      "tool"
     ],
     "aadapter_completion": [
       "adapter_id",

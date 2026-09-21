@@ -13,6 +13,14 @@
         "model"
       ]
     },
+    "AzureSpillover": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "from_deployment"
+      ]
+    },
     "BudgetConfig": {
       "bases": [
         "BaseModel"
@@ -224,6 +232,7 @@
       ],
       "fields": [
         "annotation_cost_per_page",
+        "annotation_cost_per_page_batches",
         "cache_creation_input_audio_token_cost",
         "cache_creation_input_token_cost_above_1hr",
         "cache_creation_input_token_cost_above_200k_tokens",
@@ -248,10 +257,12 @@
         "input_cost_per_audio_per_second",
         "input_cost_per_audio_per_second_above_128k_tokens",
         "input_cost_per_audio_token",
+        "input_cost_per_audio_token_batches",
         "input_cost_per_character_above_128k_tokens",
         "input_cost_per_image",
         "input_cost_per_image_above_128k_tokens",
         "input_cost_per_image_token",
+        "input_cost_per_image_token_batches",
         "input_cost_per_pixel",
         "input_cost_per_query",
         "input_cost_per_second",
@@ -272,8 +283,10 @@
         "input_cost_per_video_per_second_above_15s_interval",
         "input_cost_per_video_per_second_above_8s_interval",
         "input_cost_per_video_token",
+        "input_cost_per_video_token_batches",
         "ocr_cost_per_credit",
         "ocr_cost_per_page",
+        "ocr_cost_per_page_batches",
         "output_cost_per_audio_per_second",
         "output_cost_per_audio_token",
         "output_cost_per_character_above_128k_tokens",
@@ -572,6 +585,7 @@
       "fields": [
         "_hidden_params",
         "results",
+        "service_tier",
         "usage"
       ]
     },
@@ -664,6 +678,7 @@
       ],
       "fields": [
         "annotation_cost_per_page",
+        "annotation_cost_per_page_batches",
         "cache_creation_input_token_cost",
         "cache_creation_input_token_cost_above_1hr",
         "cache_creation_input_token_cost_above_200k_tokens",
@@ -673,6 +688,7 @@
         "cache_creation_input_token_cost_flex",
         "cache_creation_input_token_cost_priority",
         "cache_creation_input_token_cost_ultrafast",
+        "cache_read_input_audio_token_cost",
         "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_200k_tokens",
         "cache_read_input_token_cost_above_200k_tokens_priority",
@@ -687,10 +703,12 @@
         "google_maps_grounding_cost_per_query",
         "input_cost_per_audio_per_second",
         "input_cost_per_audio_token",
+        "input_cost_per_audio_token_batches",
         "input_cost_per_character",
         "input_cost_per_character_above_128k_tokens",
         "input_cost_per_image",
         "input_cost_per_image_token",
+        "input_cost_per_image_token_batches",
         "input_cost_per_query",
         "input_cost_per_second",
         "input_cost_per_token",
@@ -707,6 +725,7 @@
         "input_cost_per_token_ultrafast",
         "input_cost_per_video_per_second",
         "input_cost_per_video_token",
+        "input_cost_per_video_token_batches",
         "key",
         "litellm_provider",
         "max_input_tokens",
@@ -715,6 +734,7 @@
         "mode",
         "ocr_cost_per_credit",
         "ocr_cost_per_page",
+        "ocr_cost_per_page_batches",
         "off_peak_pricing",
         "output_cost_per_audio_per_second",
         "output_cost_per_audio_token",
@@ -858,6 +878,7 @@
         "cache_creation_token_details",
         "cache_creation_tokens",
         "cache_write_tokens",
+        "cached_tokens_details",
         "character_count",
         "google_maps_grounding_requests",
         "image_count",
@@ -925,6 +946,7 @@
         "supports_reasoning",
         "supports_response_schema",
         "supports_system_messages",
+        "supports_thinking_cache_preservation",
         "supports_tool_choice",
         "supports_tool_search",
         "supports_url_context",
@@ -1060,6 +1082,7 @@
         "langfuse_public_key",
         "langfuse_secret",
         "langfuse_secret_key",
+        "langfuse_span_scope",
         "langsmith_api_key",
         "langsmith_base_url",
         "langsmith_project",
@@ -1148,6 +1171,17 @@
         "violation_categories"
       ]
     },
+    "StandardLoggingHeuristicV2Forecast": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "predicted_tier",
+        "probabilities",
+        "request_type",
+        "threshold"
+      ]
+    },
     "StandardLoggingHiddenParams": {
       "bases": [
         "TypedDict"
@@ -1234,7 +1268,9 @@
       ],
       "fields": [
         "api_base",
+        "autorouter_baseline_observation",
         "autorouter_savings",
+        "autorouter_savings_estimate",
         "cache_hit",
         "cache_key",
         "call_type",
@@ -1321,13 +1357,29 @@
       ],
       "fields": [
         "cause",
+        "classifier_calibrated_capable_p_solve",
+        "classifier_calibrated_efficient_p_solve",
+        "classifier_calibrated_p_solve",
+        "classifier_calibration_version",
+        "classifier_capability_boundary",
+        "classifier_capable_p_solve",
+        "classifier_confidence",
         "classifier_cost",
+        "classifier_crux",
+        "classifier_efficient_p_solve",
+        "classifier_max_quality_gap",
         "classifier_model",
+        "classifier_p_solve",
+        "classifier_primary_rule",
+        "classifier_probabilities",
+        "classifier_prompt_version",
+        "classifier_threshold",
         "context_escalated",
         "context_escalation_original_tier",
         "conversation_continuing",
         "escalated",
         "escalation_keyword",
+        "heuristic_v2_forecast",
         "matched_keyword",
         "reasoning_override_min_score",
         "request_type",
