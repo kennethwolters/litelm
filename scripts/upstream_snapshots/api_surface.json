@@ -42,6 +42,7 @@
     "LlmProviders",
     "Mapping",
     "MockException",
+    "ModelNotMappedError",
     "NewRelicInitParams",
     "NotFoundError",
     "OPENAI_CHAT_COMPLETION_PARAMS",
@@ -70,6 +71,7 @@
     "VertexAITextEmbeddingConfig",
     "WANDB_MODELS",
     "XAIModelInfo",
+    "ZerobusInitParams",
     "acancel_eval",
     "acancel_responses",
     "acancel_run",
@@ -258,6 +260,12 @@
     "_complete_deepseek": [
       "ctx"
     ],
+    "_complete_edenai": [
+      "ctx"
+    ],
+    "_complete_fal_ai": [
+      "ctx"
+    ],
     "_complete_fireworks_ai": [
       "ctx"
     ],
@@ -298,6 +306,9 @@
       "ctx"
     ],
     "_complete_mistral": [
+      "ctx"
+    ],
+    "_complete_nadir": [
       "ctx"
     ],
     "_complete_nlp_cloud": [
@@ -457,6 +468,10 @@
     ],
     "_reported_cost_is_priced_by_calculator": [
       "logging_obj"
+    ],
+    "_resolve_control_options": [
+      "kwargs",
+      "model"
     ],
     "_resolve_dispatched_chat_response": [
       "pending"

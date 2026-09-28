@@ -108,6 +108,12 @@
       ],
       "fields": []
     },
+    "ModelNotMappedError": {
+      "bases": [
+        "Exception"
+      ],
+      "fields": []
+    },
     "ModifyResponseException": {
       "bases": [
         "Exception"
