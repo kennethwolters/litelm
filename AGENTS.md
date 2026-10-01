@@ -11,6 +11,8 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 ## Core resilience fixes (2026-10-01)
 
+- Release 0.5.4 lock refresh: urllib3 2.7.0 → 2.8.0 addresses Dependabot alerts #45–#47 (proxy TLS configuration, unbounded chunk headers, and deflate streaming). No new base dependency was added.
+
 - `tests/test_resilience.py` adds 281 offline cases through real SDKs/mocked HTTPX2 transports or focused wrapper cleanup tests. Public sync/async calls cover OpenAI, Mistral, Cloudflare, Anthropic, and Bedrock; socket connections are blocked and AWS credentials are mocked.
 - Ordinary SDK bad-request errors now pass through the shared mapper rather than escaping as OpenAI exceptions. Context classification uses explicit overflow codes/phrases, not arbitrary `token`/`length`/`context` substrings. Output-only max_tokens violations are `BadRequestError`; earlier broad-classification descriptions below are historical, not the current contract.
 - Chat completion `num_retries` (or `max_retries`, with num_retries taking precedence) reaches every custom handler client. Default is zero retries. Bedrock's cache key includes the retry count. Tests assert actual attempts for 400, 429, 503, and timeouts, including streamed request creation.
