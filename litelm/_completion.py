@@ -1,6 +1,9 @@
 """Chat completion functions — openai SDK imported lazily only when needed."""
 
 import datetime
+import logging
+
+import httpx2
 
 from litelm._callbacks import fire_failure, fire_success, has_failure_callbacks, has_success_callbacks
 from litelm._client_cache import get_async_client, get_sync_client
@@ -58,7 +61,7 @@ def _map_openai_error(e):
     msg = str(e)
 
     if isinstance(e, openai.BadRequestError):
-        if is_context_window_error(msg):
+        if is_context_window_error(msg, getattr(e, "body", None)):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
@@ -186,8 +189,10 @@ def _normalize_response_format(response_format):
 
 
 def _wrap_context_window_error(e):
-    """Convert BadRequestError to ContextWindowExceededError if about context length."""
-    if is_context_window_error(str(e)):
+    """Preserve local errors, but normalize SDK bad requests through the shared mapper."""
+    if not isinstance(e, BadRequestError):
+        _map_openai_error(e)
+    if is_context_window_error(str(e), getattr(e, "body", None)):
         raise ContextWindowExceededError(
             message=str(e),
             response=getattr(e, "response", None),
@@ -233,7 +238,14 @@ def _completion(model, messages=None, *, timeout=None, stream=False, shared_sess
     handler = get_handler(provider)
     if handler:
         result = handler.completion(
-            model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
+            model_name,
+            messages,
+            stream=stream,
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+            max_retries=num_retries,
+            **kwargs,
         )
         return result
 
@@ -298,7 +310,14 @@ async def _acompletion(model, messages=None, *, timeout=None, stream=False, shar
     handler = get_handler(provider)
     if handler:
         result = await handler.acompletion(
-            model_name, messages, stream=stream, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs
+            model_name,
+            messages,
+            stream=stream,
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+            max_retries=num_retries,
+            **kwargs,
         )
         return result
 
@@ -430,16 +449,58 @@ async def _mock_stream_async(content, model):
     )
 
 
+def _map_transport_error(e):
+    """SDK streaming iterators can expose raw HTTPX2 transport errors."""
+    try:
+        request = e.request
+    except RuntimeError:  # An iterator failure may not carry a request.
+        request = None
+    cls = Timeout if isinstance(e, httpx2.TimeoutException) else APIConnectionError
+    raise cls(message=str(e), request=request) from e
+
+
 def _wrap_stream_sync(stream):
-    """Wrap sync stream to yield ModelResponseStream objects."""
-    for chunk in stream:
-        yield ModelResponseStream(chunk)
+    """Normalize errors without replaying output; release the active source on exit."""
+    completed = False
+    try:
+        for chunk in stream:
+            yield ModelResponseStream(chunk)
+        completed = True
+    except _openai_errors as e:
+        _map_openai_error(e)
+    except httpx2.RequestError as e:
+        _map_transport_error(e)
+    finally:
+        close = getattr(stream, "close", None)
+        if close is not None:
+            try:
+                close()
+            except Exception:
+                if completed:
+                    raise
+                logging.getLogger(__name__).debug("Stream cleanup failed during unwinding", exc_info=True)
 
 
 async def _wrap_stream_async(stream):
-    """Wrap async stream to yield ModelResponseStream objects."""
-    async for chunk in stream:
-        yield ModelResponseStream(chunk)
+    """Async counterpart, including cleanup when iteration is cancelled or closed."""
+    completed = False
+    try:
+        async for chunk in stream:
+            yield ModelResponseStream(chunk)
+        completed = True
+    except _openai_errors as e:
+        _map_openai_error(e)
+    except httpx2.RequestError as e:
+        _map_transport_error(e)
+    finally:
+        close = getattr(stream, "close", None)
+        if close is not None:
+            try:
+                await close()
+            except Exception:
+                if completed:
+                    raise
+                logging.getLogger(__name__).debug("Stream cleanup failed during unwinding", exc_info=True)
 
 
 def stream_chunk_builder(chunks):

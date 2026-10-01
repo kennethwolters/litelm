@@ -7,8 +7,8 @@ Env vars: CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN
 import os
 
 from litelm._client_cache import get_async_client, get_sync_client
-from litelm._completion import _map_openai_error, _openai_errors
-from litelm._types import ModelResponse, ModelResponseStream
+from litelm._completion import _map_openai_error, _openai_errors, _wrap_stream_async, _wrap_stream_sync
+from litelm._types import ModelResponse
 
 _BASE_URL = "https://api.cloudflare.com/client/v4/accounts"
 _LEGACY_AI_RUN_SUFFIX = "/ai/run"
@@ -61,11 +61,13 @@ def _prepare_sdk_kwargs(model_name, messages, stream, kwargs):
     return sdk_kwargs
 
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+def completion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Synchronous Cloudflare completion through the OpenAI-compatible API."""
     token = _resolve_api_key(api_key)
     resolved_base_url = _resolve_base_url(base_url)
-    client = get_sync_client("cloudflare", resolved_base_url, token)
+    client = get_sync_client("cloudflare", resolved_base_url, token, max_retries=max_retries)
 
     sdk_kwargs = _prepare_sdk_kwargs(model_name, messages, stream, kwargs)
     if timeout is not None:
@@ -81,11 +83,13 @@ def completion(model_name, messages, *, stream=False, api_key=None, base_url=Non
     return ModelResponse(response)
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+async def acompletion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Async Cloudflare completion through the OpenAI-compatible API."""
     token = _resolve_api_key(api_key)
     resolved_base_url = _resolve_base_url(base_url)
-    client = get_async_client("cloudflare", resolved_base_url, token)
+    client = get_async_client("cloudflare", resolved_base_url, token, max_retries=max_retries)
 
     sdk_kwargs = _prepare_sdk_kwargs(model_name, messages, stream, kwargs)
     if timeout is not None:
@@ -99,13 +103,3 @@ async def acompletion(model_name, messages, *, stream=False, api_key=None, base_
     if stream:
         return _wrap_stream_async(response)
     return ModelResponse(response)
-
-
-def _wrap_stream_sync(stream):
-    for chunk in stream:
-        yield ModelResponseStream(chunk)
-
-
-async def _wrap_stream_async(stream):
-    async for chunk in stream:
-        yield ModelResponseStream(chunk)

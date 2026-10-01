@@ -6,8 +6,17 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 45 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
-- **299 own tests pass**, 55 skipped (live tests needing API keys), verified on Python 3.10 and 3.14 on 2026-10-01. The 49-node upstream contract gate also passes.
+- **580 own tests pass**, 55 skipped (live tests needing API keys), verified on Python 3.10 and 3.14 on 2026-10-01. The 49-node upstream contract gate also passes.
 - **Current classified ported baseline:** 75 tests pass against LiteLLM `9a715df2` from 2026-09-11. After explicit contract-based scope review, no remaining assertion/runtime failure is actionable. Raw counts are not comparable to the March baseline because upstream's test layout and conftest behavior changed substantially.
+
+## Core resilience fixes (2026-10-01)
+
+- `tests/test_resilience.py` adds 281 offline cases through real SDKs/mocked HTTPX2 transports or focused wrapper cleanup tests. Public sync/async calls cover OpenAI, Mistral, Cloudflare, Anthropic, and Bedrock; socket connections are blocked and AWS credentials are mocked.
+- Ordinary SDK bad-request errors now pass through the shared mapper rather than escaping as OpenAI exceptions. Context classification uses explicit overflow codes/phrases, not arbitrary `token`/`length`/`context` substrings. Output-only max_tokens violations are `BadRequestError`; earlier broad-classification descriptions below are historical, not the current contract.
+- Chat completion `num_retries` (or `max_retries`, with num_retries taking precedence) reaches every custom handler client. Default is zero retries. Bedrock's cache key includes the retry count. Tests assert actual attempts for 400, 429, 503, and timeouts, including streamed request creation.
+- OpenAI-compatible handlers share streaming wrappers that map SDK/raw HTTPX2 errors, never replay an open stream, and close active streams on exhaustion/error/explicit close/cancellation. Wrapper cleanup errors do not replace an existing failure. Anthropic uses its SDK stream context manager and maps raw HTTPX2 iterator errors too.
+- Latest live check: **52 passed, 3 deselected** across provider/DSPy suites; excluded the two costly context-window probes and the retired text-completion model. The Anthropic output-token-limit test now verifies the correct ordinary bad-request classification. No live Bedrock check was performed.
+- This fixes existing call-path bugs; it does not add fallback execution, certify DSPy 3.4 canonical paths, or establish new consumer compatibility. Consumer audit/probe findings remain a separate workstream.
 
 ## Immediate feedback fixes (2026-10-01)
 
@@ -199,7 +208,7 @@ Strip litellm to its core routing+formatting logic, prove correctness against it
 
 # Project Context
 
-Version: `0.5.3` (in both `pyproject.toml` and `litelm/__init__.__version__`).
+Version: `0.5.4` (in both `pyproject.toml` and `litelm/__init__.__version__`).
 
 ## Ported Tests
 
@@ -418,7 +427,7 @@ Exported API surface + DSPy compat shims + capability functions.
 
 | Attr/Function | Purpose |
 |---|---|
-| `__version__ = "0.5.3"` | Package version |
+| `__version__ = "0.5.4"` | Package version |
 | `telemetry = False` | DSPy disables litellm telemetry |
 | `cache = None` | DSPy disables litellm caching |
 | `suppress_debug_info = False` | DSPy logging config |

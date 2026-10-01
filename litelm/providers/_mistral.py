@@ -6,8 +6,8 @@ Transforms:
 """
 
 from litelm._client_cache import get_async_client, get_sync_client
-from litelm._completion import _map_openai_error, _openai_errors
-from litelm._types import ModelResponse, ModelResponseStream
+from litelm._completion import _map_openai_error, _openai_errors, _wrap_stream_async, _wrap_stream_sync
+from litelm._types import ModelResponse
 
 
 def _transform_messages(messages):
@@ -41,10 +41,12 @@ def _fix_response(response):
     return response
 
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+def completion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Synchronous Mistral completion with message transforms."""
     messages = _transform_messages(messages)
-    client = get_sync_client("mistral", base_url, api_key)
+    client = get_sync_client("mistral", base_url, api_key, max_retries=max_retries)
     sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout
@@ -58,10 +60,12 @@ def completion(model_name, messages, *, stream=False, api_key=None, base_url=Non
     return ModelResponse(response)
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+async def acompletion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Async Mistral completion with message transforms."""
     messages = _transform_messages(messages)
-    client = get_async_client("mistral", base_url, api_key)
+    client = get_async_client("mistral", base_url, api_key, max_retries=max_retries)
     sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
     if timeout is not None:
         sdk_kwargs["timeout"] = timeout
@@ -73,13 +77,3 @@ async def acompletion(model_name, messages, *, stream=False, api_key=None, base_
         return _wrap_stream_async(response)
     _fix_response(response)
     return ModelResponse(response)
-
-
-def _wrap_stream_sync(stream):
-    for chunk in stream:
-        yield ModelResponseStream(chunk)
-
-
-async def _wrap_stream_async(stream):
-    async for chunk in stream:
-        yield ModelResponseStream(chunk)

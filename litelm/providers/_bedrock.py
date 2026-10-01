@@ -6,6 +6,7 @@ Model strings: bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
 import os
 import threading
 
+from litelm._completion import _wrap_stream_async, _wrap_stream_sync
 from litelm._exceptions import (
     APIConnectionError,
     APIStatusError,
@@ -21,7 +22,7 @@ from litelm._exceptions import (
     UnprocessableEntityError,
     is_context_window_error,
 )
-from litelm._types import ModelResponse, ModelResponseStream
+from litelm._types import ModelResponse
 
 
 def _get_boto3():
@@ -54,20 +55,20 @@ _client_lock = threading.Lock()
 _client_cache: dict[tuple, object] = {}
 
 
-def _get_openai_client(base_url, region, async_client=False):
+def _get_openai_client(base_url, region, async_client=False, max_retries=0):
     """Get or create an OpenAI client with Bedrock auth via HTTPX2 auth hook."""
     region = region or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
     base_url = base_url or _get_bedrock_url(region)
-    key = (base_url, region, async_client)
+    key = (base_url, region, async_client, max_retries)
 
     if key not in _client_cache:
         with _client_lock:
             if key not in _client_cache:
-                _client_cache[key] = _create_openai_client(base_url, region, async_client)
+                _client_cache[key] = _create_openai_client(base_url, region, async_client, max_retries=max_retries)
     return _client_cache[key]
 
 
-def _create_openai_client(base_url, region, async_client):
+def _create_openai_client(base_url, region, async_client, max_retries=0):
     """Create a new OpenAI client with Bedrock SigV4 auth."""
     openai = _require_openai()
     _get_boto3()
@@ -104,6 +105,7 @@ def _create_openai_client(base_url, region, async_client):
             base_url=base_url,
             api_key="bedrock",  # dummy, SigV4 handles auth
             http_client=http_client,
+            max_retries=max_retries,
         )
     else:
         http_client = openai.DefaultHttpx2Client(auth=SigV4AuthFlow())
@@ -111,6 +113,7 @@ def _create_openai_client(base_url, region, async_client):
             base_url=base_url,
             api_key="bedrock",  # dummy, SigV4 handles auth
             http_client=http_client,
+            max_retries=max_retries,
         )
 
 
@@ -120,7 +123,7 @@ def _map_error(e):
     msg = str(e)
 
     if isinstance(e, openai.BadRequestError):
-        if is_context_window_error(msg):
+        if is_context_window_error(msg, getattr(e, "body", None)):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
@@ -154,12 +157,14 @@ def _map_error(e):
     raise LitelmError(message=msg) from e
 
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+def completion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Synchronous Bedrock chat completion via OpenAI-compat endpoint."""
     openai = _require_openai()
     region = kwargs.pop("region", None)
     base_url = base_url or _get_bedrock_url(region)
-    client = _get_openai_client(base_url, region, async_client=False)
+    client = _get_openai_client(base_url, region, async_client=False, max_retries=max_retries)
 
     sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
     if timeout is not None:
@@ -175,12 +180,14 @@ def completion(model_name, messages, *, stream=False, api_key=None, base_url=Non
     return ModelResponse(response)
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+async def acompletion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Async Bedrock chat completion via OpenAI-compat endpoint."""
     openai = _require_openai()
     region = kwargs.pop("region", None)
     base_url = base_url or _get_bedrock_url(region)
-    client = _get_openai_client(base_url, region, async_client=True)
+    client = _get_openai_client(base_url, region, async_client=True, max_retries=max_retries)
 
     sdk_kwargs = dict(model=model_name, messages=messages, stream=stream, **kwargs)
     if timeout is not None:
@@ -194,13 +201,3 @@ async def acompletion(model_name, messages, *, stream=False, api_key=None, base_
     if stream:
         return _wrap_stream_async(response)
     return ModelResponse(response)
-
-
-def _wrap_stream_sync(stream):
-    for chunk in stream:
-        yield ModelResponseStream(chunk)
-
-
-async def _wrap_stream_async(stream):
-    async for chunk in stream:
-        yield ModelResponseStream(chunk)

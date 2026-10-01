@@ -578,16 +578,8 @@ def test_openai_context_window_error():
 
 @pytest.mark.live
 @pytest.mark.skipif(not os.environ.get("ANTHROPIC_API_KEY"), reason="no ANTHROPIC_API_KEY")
-def test_anthropic_context_window_error():
-    """Oversized max_tokens triggers ContextWindowExceededError via keyword match on 'token'.
-
-    Cannot trigger a true context-window error cheaply for Anthropic: rate limits can
-    fire first. Instead we request more than Haiku 4.5's 64k output maximum. Anthropic
-    rejects with a message containing "token" → _map_error maps it to
-    ContextWindowExceededError. Semantically this is a max-output-tokens error, not
-    context-window, but litellm uses the same keyword matching and DSPy only catches this
-    exception to retry with shorter prompts.
-    """
+def test_anthropic_output_token_limit_error():
+    """An oversized output budget is a bad request, not an input context overflow."""
     try:
         litelm.completion(
             ANTHROPIC_MODEL,
@@ -597,8 +589,8 @@ def test_anthropic_context_window_error():
         )
         # If API accepted it (silently capped), test is inconclusive — skip
         pytest.skip("Anthropic accepted oversized max_tokens without error")
-    except litelm.ContextWindowExceededError:
-        pass  # Expected
+    except litelm.BadRequestError as exc:
+        assert type(exc) is litelm.BadRequestError
 
 
 # ---------------------------------------------------------------------------

@@ -883,17 +883,18 @@ class TestAnthropicErrorMapping:
         with pytest.raises(ContextWindowExceededError):
             self.mod._map_error(err)
 
-    def test_context_window_max_tokens(self):
-        from litelm._exceptions import ContextWindowExceededError
+    def test_output_token_limit_is_not_context_overflow(self):
+        from litelm._exceptions import BadRequestError
 
         sdk = self.mod._get_sdk()
         err = sdk.BadRequestError(
-            message="max token limit exceeded",
+            message="max_tokens must be less than 64000",
             response=mock.MagicMock(status_code=400),
-            body={"error": {"message": "max token limit exceeded"}},
+            body={"error": {"message": "max_tokens must be less than 64000"}},
         )
-        with pytest.raises(ContextWindowExceededError):
+        with pytest.raises(BadRequestError) as caught:
             self.mod._map_error(err)
+        assert type(caught.value) is BadRequestError
 
     def test_bad_request_no_context_window(self):
         from litelm._exceptions import BadRequestError
@@ -977,6 +978,7 @@ class TestCloudflareTranslation:
             "cloudflare",
             "https://api.cloudflare.com/client/v4/accounts/abc123/ai/v1",
             "token",
+            max_retries=0,
         )
         client.chat.completions.create.assert_called_once()
         sent = client.chat.completions.create.call_args.kwargs

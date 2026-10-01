@@ -1,5 +1,7 @@
 """Exception types — own hierarchy, no openai dependency."""
 
+import re
+
 
 class _DefaultResponse:
     """Minimal response stub when no real response is provided."""
@@ -121,7 +123,21 @@ LITELLM_EXCEPTION_TYPES = [
 ]
 
 
-def is_context_window_error(msg: str) -> bool:
-    """Check if an error message indicates a context window / token limit error."""
-    low = msg.lower()
-    return any(kw in low for kw in ("context", "token", "length", "too long"))
+def is_context_window_error(msg: str, body=None) -> bool:
+    """Recognize input/context overflow, not arbitrary token/length parameter errors."""
+    error = body.get("error", body) if isinstance(body, dict) else None
+    if isinstance(error, dict):
+        if error.get("code") in {"context_length_exceeded", "context_window_exceeded", "prompt_too_long"}:
+            return True
+        msg = error.get("message") or msg
+    return bool(
+        re.search(
+            r"\b(?:prompt|input)(?: is)? too long\b"
+            r"|\btoo many tokens in (?:the )?(?:request|prompt|input)\b"
+            r"|\b(?:maximum|max) context (?:length|window)\b"
+            r"|\bcontext (?:length|window|limit) (?:is )?(?:exceeded|too (?:long|large))\b"
+            r"|\bexceeds? (?:the )?(?:model['’]s )?(?:maximum )?context (?:length|window|limit)\b",
+            msg,
+            re.IGNORECASE,
+        )
+    )

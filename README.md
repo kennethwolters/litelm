@@ -124,6 +124,14 @@ except AuthenticationError:
     pass
 ```
 
+## Retries and Streaming Errors
+
+`num_retries` configures provider SDK retries for chat completion calls (default: `0`). `max_retries` is an alias; `num_retries` takes precedence when both are supplied. This applies to OpenAI-compatible providers and the Anthropic, Bedrock, Cloudflare, and Mistral handlers. Each SDK controls which errors it retries and its backoff behavior.
+
+Once a streaming response is open, iterator failures are surfaced without replaying the request. Transport timeouts become `Timeout`; other HTTPX2 request errors become `APIConnectionError`. Already-yielded output is not replayed. Close partially consumed streams explicitly with `close()` or `await aclose()` to release the response.
+
+`ContextWindowExceededError` identifies input/context overflow. Invalid token credentials, parameter lengths, and output-only `max_tokens` limits are not classified as context overflow.
+
 ## Completion Callbacks
 
 LiteLLM-compatible callbacks receive `(kwargs, response, start_time, end_time)`:
@@ -183,16 +191,16 @@ This attests litelm's declared routing/formatting/DSPy surface only, not full li
 
 ## Status
 
-**Alpha.** 299 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
+**Alpha.** 580 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
 
-HTTPX2 validation, 2026-10-01: 299 local tests passed on Python 3.10 and 3.14; 49 upstream contract tests passed. Of 52 selected live provider/DSPy tests, 51 passed and the legacy text-completion test failed because OpenAI retired `gpt-3.5-turbo-instruct`. Three context-window tests were not run. Bedrock signing has sync/async mocked-transport coverage, not live AWS verification.
+Resilience validation, 2026-10-01: 580 local tests passed on Python 3.10 and 3.14; 49 upstream contract tests passed. All 52 selected live provider/DSPy tests passed, including the corrected Anthropic output-token error classification. Two context-window tests and the retired `gpt-3.5-turbo-instruct` test were excluded. Bedrock signing/retries have sync/async mocked-transport coverage, not live AWS verification.
 
 ## Tests
 
 ```bash
-uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 299 non-live tests
+uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 580 non-live tests
 bash scripts/ported_contract.sh                                        # 49 fast upstream contract tests
 uv run --extra all pytest tests/test_live.py -m live --timeout=30       # 45 live provider tests
 uv run pytest tests/test_dspy_smoke.py -m live --timeout=60             # 10 DSPy integration tests

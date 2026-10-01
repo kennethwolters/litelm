@@ -9,6 +9,9 @@ import os
 import re
 import time
 
+import httpx2
+
+from litelm._completion import _map_transport_error
 from litelm._exceptions import (
     APIConnectionError,
     APIStatusError,
@@ -602,11 +605,11 @@ def _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwa
     return req
 
 
-def _get_client(api_key, base_url, async_client=False):
+def _get_client(api_key, base_url, async_client=False, max_retries=0):
     """Create an Anthropic client."""
     sdk = _get_sdk()
     key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-    kwargs = {"api_key": key}
+    kwargs = {"api_key": key, "max_retries": max_retries}
     if base_url and base_url != "https://api.anthropic.com":
         kwargs["base_url"] = base_url
     cls = sdk.AsyncAnthropic if async_client else sdk.Anthropic
@@ -823,7 +826,7 @@ def _map_error(e):
     elif isinstance(e, sdk.RateLimitError):
         raise RateLimitError(message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)) from e
     elif isinstance(e, sdk.BadRequestError):
-        if is_context_window_error(msg):
+        if is_context_window_error(msg, getattr(e, "body", None)):
             raise ContextWindowExceededError(
                 message=msg, response=getattr(e, "response", None), body=getattr(e, "body", None)
             ) from e
@@ -856,10 +859,12 @@ def _map_error(e):
 # ---------------------------------------------------------------------------
 
 
-def completion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+def completion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Synchronous Anthropic chat completion."""
     sdk = _get_sdk()
-    client = _get_client(api_key, base_url)
+    client = _get_client(api_key, base_url, max_retries=max_retries)
     req = _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwargs)
     if timeout is not None:
         req["timeout"] = timeout
@@ -888,12 +893,16 @@ def _stream_sync(client, req):
                     yield chunk
     except sdk.APIError as e:
         _map_error(e)
+    except httpx2.RequestError as e:
+        _map_transport_error(e)
 
 
-async def acompletion(model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, **kwargs):
+async def acompletion(
+    model_name, messages, *, stream=False, api_key=None, base_url=None, timeout=None, max_retries=0, **kwargs
+):
     """Async Anthropic chat completion."""
     sdk = _get_sdk()
-    client = _get_client(api_key, base_url, async_client=True)
+    client = _get_client(api_key, base_url, async_client=True, max_retries=max_retries)
     req = _build_request_kwargs(model_name, messages, stream, api_key, base_url, **kwargs)
     if timeout is not None:
         req["timeout"] = timeout
@@ -922,3 +931,5 @@ async def _stream_async(client, req):
                     yield chunk
     except sdk.APIError as e:
         _map_error(e)
+    except httpx2.RequestError as e:
+        _map_transport_error(e)
