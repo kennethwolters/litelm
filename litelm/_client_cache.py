@@ -2,6 +2,8 @@
 
 import threading
 
+from litelm._providers import PROVIDERS
+
 _lock = threading.Lock()
 _sync_clients: dict[tuple, object] = {}
 _async_clients: dict[tuple, object] = {}
@@ -14,7 +16,7 @@ def _require_openai():
 
         return openai
     except ImportError:
-        raise ImportError("The openai SDK is required for this provider. Install it with: pip install litelm[openai]")
+        raise ImportError("The openai SDK is required for this provider. Install it with: pip install litelm")
 
 
 def get_sync_client(provider, base_url, api_key, max_retries=0, api_version=None, azure_ad_token_provider=None):
@@ -60,6 +62,11 @@ async def close_async_clients():
 
 
 def _make_client(provider, base_url, api_key, max_retries, api_version, async_client, azure_ad_token_provider=None):
+    if provider not in PROVIDERS and not base_url:
+        raise ValueError(
+            f"Unknown provider {provider!r}. Use 'provider/model' (for example, "
+            "'openrouter/z-ai/glm-5.3-flash'), or pass api_base for a custom OpenAI-compatible endpoint."
+        )
     openai = _require_openai()
     if provider == "azure":
         cls = openai.AsyncAzureOpenAI if async_client else openai.AzureOpenAI
@@ -68,13 +75,18 @@ def _make_client(provider, base_url, api_key, max_retries, api_version, async_cl
             api_key=api_key,
             api_version=api_version or "2024-02-01",
             max_retries=max_retries,
+            http_client=openai.DefaultAsyncHttpx2Client() if async_client else openai.DefaultHttpx2Client(),
         )
         if azure_ad_token_provider is not None:
             azure_kwargs["azure_ad_token_provider"] = azure_ad_token_provider
         return cls(**azure_kwargs)
     else:
         cls = openai.AsyncOpenAI if async_client else openai.OpenAI
-        kwargs = {"api_key": api_key, "max_retries": max_retries}
+        kwargs = {
+            "api_key": api_key,
+            "max_retries": max_retries,
+            "http_client": openai.DefaultAsyncHttpx2Client() if async_client else openai.DefaultHttpx2Client(),
+        }
         if base_url:
             kwargs["base_url"] = base_url
         return cls(**kwargs)

@@ -3,6 +3,8 @@
 import os
 from unittest import mock
 
+import pytest
+
 from litelm._providers import PROVIDERS, parse_model
 
 
@@ -83,6 +85,45 @@ def test_parse_unknown_provider():
     assert provider == "custom"
     assert model == "my-model"
     assert base_url == "https://my.api.com/v1"
+
+
+def test_openrouter_preserves_model_namespace():
+    with mock.patch.dict(os.environ, {"OPENROUTER_API_KEY": "router-key"}, clear=True):
+        assert parse_model("openrouter/z-ai/glm-5.3-flash") == (
+            "openrouter",
+            "z-ai/glm-5.3-flash",
+            "https://openrouter.ai/api/v1",
+            "router-key",
+            None,
+        )
+
+
+@pytest.mark.parametrize("provider", ["ollama", "vllm", "lm_studio", "lmstudio"])
+def test_local_provider_without_credentials(provider):
+    with mock.patch.dict(os.environ, {}, clear=True):
+        assert parse_model(f"{provider}/model")[3] == "local"
+
+
+@pytest.mark.parametrize("provider", ["ollama", "vllm", "lm_studio", "lmstudio"])
+def test_local_provider_respects_credentials(provider):
+    key_env = PROVIDERS[provider][1]
+    with mock.patch.dict(os.environ, {key_env: "env-key"}, clear=True):
+        assert parse_model(f"{provider}/model")[3] == "env-key"
+        assert parse_model(f"{provider}/model", api_key="explicit-key")[3] == "explicit-key"
+
+
+def test_bedrock_does_not_look_up_a_none_env_var():
+    assert parse_model("bedrock/model") == ("bedrock", "model", None, None, None)
+
+
+def test_unknown_provider_accepts_base_url_alias():
+    assert parse_model("custom/model", base_url="https://example.test/v1", api_key="key") == (
+        "custom",
+        "model",
+        "https://example.test/v1",
+        "key",
+        None,
+    )
 
 
 def test_api_base_kwarg_overrides_registry():

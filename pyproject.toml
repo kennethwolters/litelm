@@ -25,15 +25,15 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-    "httpx>=0.24.0",
-    "openai>=1.0.0",
+    "httpx2>=2.12.0,<3",
+    "openai[httpx2]>=2.54.0,<3",
 ]
 
 [project.optional-dependencies]
-cloudflare = []  # only needs httpx (base dep)
-anthropic = ["anthropic>=0.39.0"]
+cloudflare = []  # uses the shared OpenAI-compatible client
+anthropic = ["anthropic>=1.5.0"]
 bedrock = ["boto3>=1.28.0"]
-all = ["anthropic>=0.39.0", "boto3>=1.28.0"]
+all = ["anthropic>=1.5.0", "boto3>=1.28.0"]
 
 [project.urls]
 Homepage = "https://github.com/kennethwolters/litelm"

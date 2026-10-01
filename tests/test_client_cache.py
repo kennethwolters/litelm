@@ -1,7 +1,12 @@
 """Tests for the client cache module."""
 
+import json
+
+import httpx2
+import openai
 import pytest
 
+import litelm
 from litelm._client_cache import (
     _async_clients,
     _sync_clients,
@@ -19,6 +24,109 @@ def clear_caches():
     yield
     _sync_clients.clear()
     _async_clients.clear()
+
+
+@pytest.mark.parametrize("provider", ["openai", "azure"])
+@pytest.mark.asyncio
+async def test_httpx2_client_transport(provider):
+    base = "https://example.test" if provider == "azure" else None
+    sync_client = get_sync_client(provider, base, "test-key")
+    async_client = get_async_client(provider, base, "test-key")
+    try:
+        assert isinstance(sync_client._client, httpx2.Client)
+        assert isinstance(async_client._client, httpx2.AsyncClient)
+        assert sync_client.timeout.read == 600
+        assert async_client.timeout.read == 600
+    finally:
+        sync_client.close()
+        await async_client.close()
+
+
+@pytest.mark.parametrize("async_call", [False, True])
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.asyncio
+async def test_httpx2_completion_round_trip(monkeypatch, async_call, stream):
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        assert request.headers["authorization"] == "Bearer test-key"
+        assert json.loads(request.content)["model"] == "test-model"
+        assert request.extensions["timeout"]["read"] == 7
+        if stream:
+            chunk = {
+                "id": "test",
+                "model": "test-model",
+                "choices": [{"index": 0, "delta": {"content": "hello"}, "finish_reason": None}],
+            }
+            return httpx2.Response(
+                200,
+                headers={"content-type": "text/event-stream"},
+                content=f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n",
+            )
+        return httpx2.Response(
+            200,
+            json={
+                "id": "test",
+                "model": "test-model",
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": "hello"}, "finish_reason": "stop"}
+                ],
+            },
+        )
+
+    factory_name = "DefaultAsyncHttpx2Client" if async_call else "DefaultHttpx2Client"
+    factory = getattr(openai, factory_name)
+    monkeypatch.setattr(openai, factory_name, lambda **kw: factory(transport=httpx2.MockTransport(handle), **kw))
+    kwargs = dict(messages=[{"role": "user", "content": "hi"}], api_key="test-key", stream=stream, timeout=7)
+    try:
+        # Fail before any network I/O if a regression restores the old transport.
+        client = (get_async_client if async_call else get_sync_client)("openai", None, "test-key")
+        assert isinstance(client._client, httpx2.AsyncClient if async_call else httpx2.Client)
+        result = (
+            await litelm.acompletion("openai/test-model", **kwargs)
+            if async_call
+            else litelm.completion("openai/test-model", **kwargs)
+        )
+        if stream:
+            chunks = [chunk async for chunk in result] if async_call else list(result)
+            assert chunks[0].choices[0].delta.content == "hello"
+        else:
+            assert result.choices[0].message.content == "hello"
+        assert len(requests) == 1
+        assert str(requests[0].url) == "https://api.openai.com/v1/chat/completions"
+    finally:
+        for client in _sync_clients.values():
+            client.close()
+        await close_async_clients()
+
+
+@pytest.mark.parametrize("async_call", [False, True])
+@pytest.mark.parametrize("failure", ["rate_limit", "timeout"])
+@pytest.mark.asyncio
+async def test_httpx2_errors_are_mapped(monkeypatch, async_call, failure):
+    def handle(request):
+        if failure == "timeout":
+            raise httpx2.ReadTimeout("timed out", request=request)
+        return httpx2.Response(429, headers={"retry-after": "9"}, json={"error": {"message": "slow down"}})
+
+    factory_name = "DefaultAsyncHttpx2Client" if async_call else "DefaultHttpx2Client"
+    factory = getattr(openai, factory_name)
+    monkeypatch.setattr(openai, factory_name, lambda **kw: factory(transport=httpx2.MockTransport(handle), **kw))
+    try:
+        client = (get_async_client if async_call else get_sync_client)("openai", None, "test-key")
+        assert isinstance(client._client, httpx2.AsyncClient if async_call else httpx2.Client)
+        with pytest.raises(litelm.Timeout if failure == "timeout" else litelm.RateLimitError) as exc:
+            if async_call:
+                await litelm.acompletion("openai/test", messages=[], api_key="test-key")
+            else:
+                litelm.completion("openai/test", messages=[], api_key="test-key")
+        if failure == "rate_limit":
+            assert exc.value.litellm_response_headers["retry-after"] == "9"
+    finally:
+        for client in _sync_clients.values():
+            client.close()
+        await close_async_clients()
 
 
 def test_sync_client_creation():

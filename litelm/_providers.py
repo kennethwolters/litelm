@@ -41,7 +41,7 @@ def parse_model(model_str, **kwargs):
     - "openai/gpt-4o" -> ("openai", "gpt-4o", None, <OPENAI_API_KEY>)
     - "gpt-4o" -> ("openai", "gpt-4o", None, <OPENAI_API_KEY>)
     - "azure/gpt-4o" -> ("azure", "gpt-4o", <AZURE_API_BASE>, <AZURE_API_KEY>)
-    - "ollama/llama3" -> ("ollama", "llama3", "http://localhost:11434/v1", None)
+    - "ollama/llama3" -> ("ollama", "llama3", "http://localhost:11434/v1", "local")
 
     kwargs `api_base` and `api_key` override registry values.
     """
@@ -62,9 +62,11 @@ def parse_model(model_str, **kwargs):
     if provider in PROVIDERS:
         base_url, key_env = PROVIDERS[provider]
         api_base = api_base or base_url
-        api_key = api_key or os.environ.get(key_env)
+        api_key = api_key or (os.environ.get(key_env) if key_env else None)
+        if provider in {"ollama", "vllm", "lm_studio", "lmstudio"}:
+            api_key = api_key or "local"  # SDK requires a key even for unauthenticated local servers.
     else:
-        # Unknown provider: treat as OpenAI-compatible with custom base_url
+        # Parsing and mocks can describe unknown providers; client creation requires an explicit endpoint.
         api_key = api_key or os.environ.get("OPENAI_API_KEY")
 
     return provider, model_name, api_base, api_key, None

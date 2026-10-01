@@ -5,18 +5,20 @@
 [![Tests](https://github.com/kennethwolters/litelm/actions/workflows/test.yml/badge.svg)](https://github.com/kennethwolters/litelm/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-litellm's routing + translation in ~2,900 lines and 2 dependencies (`openai`, `httpx`).
+litelm is a Python library for calling language models through a common, LiteLLM-style API. It handles provider selection, message translation, streaming, tool calls, and embeddings.
 
-litellm routes LLM calls across providers and translates between message formats. That core is buried under 100k+ LOC of proxy servers, caching layers, cost tracking, and dozens of features most users never touch. litelm extracts just the call path — model routing, message translation, streaming, tool use, embeddings — and nothing else. No Router class, no proxy, no caching.
+It does not include LiteLLM's Router, proxy server, response caching, or cost tracking. If you need those features, litelm is not a replacement for LiteLLM.
 
 ## Install
 
 ```bash
-pip install litelm                # openai + httpx
+pip install litelm                # openai + httpx2
 pip install litelm[anthropic]     # + anthropic SDK
 pip install litelm[bedrock]       # + boto3
 pip install litelm[all]           # everything
 ```
+
+The two direct runtime dependencies are `openai[httpx2]>=2.54.0,<3` and `httpx2>=2.12.0,<3`. Requests use HTTPX2; OpenAI still installs HTTPX as a transitive dependency. The Anthropic extra requires `anthropic>=1.5.0`, which also uses HTTPX2.
 
 ## Usage
 
@@ -28,7 +30,7 @@ response = litelm.completion("openai/gpt-4o", messages=[{"role": "user", "conten
 print(response.choices[0].message.content)
 
 # Streaming
-for chunk in litelm.completion("groq/llama-3.1-70b-versatile", messages=[...], stream=True):
+for chunk in litelm.completion("groq/openai/gpt-oss-20b", messages=[...], stream=True):
     print(chunk.choices[0].delta.content or "", end="")
 
 # Embeddings
@@ -37,7 +39,7 @@ response = litelm.embedding("openai/text-embedding-3-small", input=["hello world
 
 Every function has an async variant: `acompletion`, `aembedding`, `aresponses`, `atext_completion`.
 
-The API mirrors litellm — same function names, same arguments, same response types. If you're using litellm today, switching is `s/litellm/litelm/` in your imports.
+The supported functions use LiteLLM-style arguments and response access patterns. This is a scoped compatibility layer, not a full drop-in replacement: check the feature table before changing imports. Non-empty `fallbacks=` raises `ValueError`; litelm does not execute failover. Empty or `None` fallbacks are accepted.
 
 ## What's in / what's out
 
@@ -60,7 +62,9 @@ The API mirrors litellm — same function names, same arguments, same response t
 
 ## Providers
 
-Routes to 19 providers via `"provider/model-name"` syntax. Any OpenAI-compatible endpoint works via `api_base`.
+Routes to 19 providers via `"provider/model-name"` syntax. Use `api_base` for a custom OpenAI-compatible endpoint.
+
+The first segment selects the provider; the remainder is the model identifier. For example, OpenRouter model `z-ai/glm-5.3-flash` becomes `openrouter/z-ai/glm-5.3-flash`. Unknown prefixes require an explicit `api_base` for real calls rather than silently sending the request to OpenAI. Bare names without a slash still select OpenAI.
 
 | Provider | Env Var | Handler | Verified |
 |----------|---------|---------|:--------:|
@@ -102,7 +106,7 @@ litelm.completion("openai/gpt-4o", messages=[...], api_base="http://localhost:80
 
 ## Error Handling
 
-All provider errors are mapped to litelm's exception hierarchy:
+Catch provider API errors using litelm's exception hierarchy:
 
 ```python
 from litelm import ContextWindowExceededError, RateLimitError, AuthenticationError
@@ -154,17 +158,17 @@ print(tool_call.function.name, tool_call.function.arguments)
 
 ## Custom / Local Providers
 
-Any OpenAI-compatible server works via `api_base`:
+Use `api_base` to override an OpenAI-compatible server's endpoint. The `ollama`, `vllm`, `lm_studio`, and `lmstudio` prefixes work without an API key; an explicit key or the provider's environment variable takes precedence over the SDK placeholder.
 
 ```python
 # vLLM
-litelm.completion("openai/my-model", messages=[...], api_base="http://localhost:8000/v1")
+litelm.completion("vllm/my-model", messages=[...], api_base="http://localhost:8000/v1")
 
 # Ollama
 litelm.completion("ollama/llama3", messages=[...], api_base="http://localhost:11434/v1")
 
 # LM Studio
-litelm.completion("openai/local-model", messages=[...], api_base="http://localhost:1234/v1")
+litelm.completion("lm_studio/local-model", messages=[...], api_base="http://localhost:1234/v1")
 ```
 
 ## Development transparency
@@ -179,14 +183,16 @@ This attests litelm's declared routing/formatting/DSPy surface only, not full li
 
 ## Status
 
-**Alpha.** 265 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
+**Alpha.** 299 own tests passing. The current scoped LiteLLM `9a715df2` baseline has 75 passing ported tests and no remaining actionable assertion/runtime failures.
 
 [DSPy](https://github.com/stanfordnlp/dspy) drop-in verified — all 7 execution paths proven live (Predict, CoT, typed signatures, streaming, embeddings, tool use, multi-output).
+
+HTTPX2 validation, 2026-10-01: 299 local tests passed on Python 3.10 and 3.14; 49 upstream contract tests passed. Of 52 selected live provider/DSPy tests, 51 passed and the legacy text-completion test failed because OpenAI retired `gpt-3.5-turbo-instruct`. Three context-window tests were not run. Bedrock signing has sync/async mocked-transport coverage, not live AWS verification.
 
 ## Tests
 
 ```bash
-uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 265 non-live tests
+uv run --extra all pytest tests/ -x --ignore=tests/ported --timeout=10  # 299 non-live tests
 bash scripts/ported_contract.sh                                        # 49 fast upstream contract tests
 uv run --extra all pytest tests/test_live.py -m live --timeout=30       # 45 live provider tests
 uv run pytest tests/test_dspy_smoke.py -m live --timeout=60             # 10 DSPy integration tests

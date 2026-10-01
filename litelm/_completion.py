@@ -111,7 +111,8 @@ def _prepare_call(model, kwargs):
     kwargs.pop("cache", None)
     kwargs.pop("caching", None)
     kwargs.pop("custom_llm_provider", None)
-    kwargs.pop("fallbacks", None)
+    if kwargs.pop("fallbacks", None):
+        raise ValueError("fallbacks are not supported by litelm; handle failover in the calling application.")
     kwargs.pop("mock_timeout", None)
 
     api_key = kwargs.pop("api_key", None)

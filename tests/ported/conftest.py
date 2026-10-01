@@ -5,7 +5,12 @@ sys.modules so that `import litellm` resolves to litelm at runtime.
 This keeps litellm's test files unmodified and avoids string corruption.
 """
 
+import os
+import socket
 import sys
+
+import openai
+import pytest
 
 import litelm
 import litelm._logging
@@ -59,6 +64,23 @@ for _litellm_path, _litelm_path in [
 
 for _k, _v in _SUBMODULE_MAP.items():
     sys.modules[_k] = _v
+
+@pytest.fixture(autouse=True)
+def upstream_httpx_mock_compat(monkeypatch):
+    """Keep unmodified upstream HTTPX/respx mocks at their original transport boundary.
+
+    These tests verify the public API contract, not our transport choice. Our own
+    transport tests exercise the real HTTPX2 adapters, including streaming/SigV4.
+    """
+    monkeypatch.setattr(openai, "DefaultHttpx2Client", openai.DefaultHttpxClient)
+    monkeypatch.setattr(openai, "DefaultAsyncHttpx2Client", openai.DefaultAsyncHttpxClient)
+    if os.environ.get("LITELM_PORTED_OFFLINE") == "1":
+        def block_network(*args, **kwargs):
+            raise AssertionError("The ported contract gate must not make real network connections")
+
+        monkeypatch.setattr(socket.socket, "connect", block_network)
+        monkeypatch.setattr(socket.socket, "connect_ex", block_network)
+
 
 # ---------------------------------------------------------------------------
 # Exclude test dirs that exercise features litelm doesn't implement

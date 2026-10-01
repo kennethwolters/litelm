@@ -14,4 +14,4 @@ while IFS= read -r node; do
 done < <(uv run python scripts/ported_contract.py)
 
 echo "=== Running ${#NODES[@]} public-contract nodes ==="
-uv run pytest -p tests.ported.conftest --noconftest "${NODES[@]}" --tb=short -q --timeout=10 "$@"
+LITELM_PORTED_OFFLINE=1 uv run pytest -p tests.ported.conftest --noconftest "${NODES[@]}" --tb=short -q --timeout=10 "$@"

@@ -55,7 +55,7 @@ _client_cache: dict[tuple, object] = {}
 
 
 def _get_openai_client(base_url, region, async_client=False):
-    """Get or create an OpenAI client with Bedrock auth via httpx auth hook."""
+    """Get or create an OpenAI client with Bedrock auth via HTTPX2 auth hook."""
     region = region or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
     base_url = base_url or _get_bedrock_url(region)
     key = (base_url, region, async_client)
@@ -72,7 +72,7 @@ def _create_openai_client(base_url, region, async_client):
     openai = _require_openai()
     _get_boto3()
     import botocore.session
-    import httpx
+    import httpx2
     from botocore.auth import SigV4Auth
     from botocore.awsrequest import AWSRequest
 
@@ -80,10 +80,13 @@ def _create_openai_client(base_url, region, async_client):
     credentials = session.get_credentials()
     if credentials is None:
         raise ValueError("No AWS credentials found. Configure AWS credentials for Bedrock access.")
-    frozen_credentials = credentials.get_frozen_credentials()
 
-    class SigV4AuthFlow(httpx.Auth):
+    class SigV4AuthFlow(httpx2.Auth):
+        requires_request_body = True
+
         def auth_flow(self, request):
+            # Cached clients must pick up refreshed role/session credentials on every request.
+            frozen_credentials = credentials.get_frozen_credentials()
             aws_request = AWSRequest(
                 method=request.method,
                 url=str(request.url),
@@ -96,14 +99,14 @@ def _create_openai_client(base_url, region, async_client):
             yield request
 
     if async_client:
-        http_client = httpx.AsyncClient(auth=SigV4AuthFlow())
+        http_client = openai.DefaultAsyncHttpx2Client(auth=SigV4AuthFlow())
         return openai.AsyncOpenAI(
             base_url=base_url,
             api_key="bedrock",  # dummy, SigV4 handles auth
             http_client=http_client,
         )
     else:
-        http_client = httpx.Client(auth=SigV4AuthFlow())
+        http_client = openai.DefaultHttpx2Client(auth=SigV4AuthFlow())
         return openai.OpenAI(
             base_url=base_url,
             api_key="bedrock",  # dummy, SigV4 handles auth

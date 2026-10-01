@@ -1,4 +1,4 @@
-# Ground Truth (updated 2026-09-19)
+# Ground Truth (updated 2026-10-01)
 
 litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its DSPy contract and seven providers have been verified live; everything beyond the evidence below is untested.
 
@@ -6,8 +6,18 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 
 - **DSPy integration:** All 7 DSPy execution paths work (Predict, CoT, typed signatures, streaming, embeddings, ReAct, multi-output). 10 live smoke tests, re-certified 2026-09-11.
 - **7 providers verified live:** openai, anthropic, groq, mistral, xai, openrouter, azure. 45 live tests covering basic completion, streaming, streaming+usage, tool calls, streaming tool calls, embeddings, error mapping; all re-certified 2026-09-11.
-- **265 own tests pass**, 55 skipped (live tests needing API keys), including a 2026-09-19 local gate run against the current lock.
+- **299 own tests pass**, 55 skipped (live tests needing API keys), verified on Python 3.10 and 3.14 on 2026-10-01. The 49-node upstream contract gate also passes.
 - **Current classified ported baseline:** 75 tests pass against LiteLLM `9a715df2` from 2026-09-11. After explicit contract-based scope review, no remaining assertion/runtime failure is actionable. Raw counts are not comparable to the March baseline because upstream's test layout and conftest behavior changed substantially.
+
+## Immediate feedback fixes (2026-10-01)
+
+- OpenAI/Azure and Bedrock clients now use the OpenAI SDK's HTTPX2 adapters. Direct dependencies: `openai[httpx2]>=2.54.0,<3` and `httpx2>=2.12.0,<3`; Anthropic extra: `anthropic>=1.5.0`. HTTPX remains an OpenAI transitive dependency, so this is not an HTTPX-free installation.
+- Non-empty `fallbacks=` now raises `ValueError` instead of being silently discarded. Failover execution remains out of scope pending the product-direction decision.
+- Unknown provider prefixes require an explicit endpoint at real client creation. Parsing/introspection and mock responses remain permissive. Nested OpenRouter model IDs are preserved.
+- Registered local providers use an SDK placeholder key only when no explicit/provider-env key exists. Bedrock parsing no longer attempts `os.environ.get(None)`.
+- SigV4 obtains frozen credentials for each request instead of retaining the initial credentials for the lifetime of a cached client. New sync/async streaming and non-streaming mocked-transport tests verify body signing, region, session tokens, and rotation. This is not live Bedrock evidence.
+- Live HTTPX2 check: **51 passed, 1 failed, 3 deselected** across provider/DSPy suites. The failure is OpenAI's retired `gpt-3.5-turbo-instruct` model (HTTP 404), not a transport error. The three context-window tests were deliberately excluded. Do not repeat the older claim below that this legacy model remains available.
+- The ported conftest substitutes SDK HTTPX adapters so unmodified upstream HTTPX/respx mocks still intercept requests. Own tests cover real HTTPX2 adapters; the fast ported gate forbids real socket connections. Historical audit counts below refer to their stated dates.
 
 ## What's NOT Proven
 

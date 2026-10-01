@@ -60,6 +60,42 @@ def test_prepare_call_strips_litellm_kwargs():
     assert cleaned["temperature"] == 0.5
 
 
+@pytest.mark.parametrize("async_call", [False, True])
+def test_fallbacks_fail_before_client_creation(async_call):
+    with (
+        mock.patch("litelm._completion.get_sync_client") as sync_client,
+        mock.patch("litelm._completion.get_async_client") as async_client,
+    ):
+        with pytest.raises(ValueError, match="fallbacks.*not supported"):
+            if async_call:
+                asyncio.run(acompletion("openai/test", messages=[], fallbacks=["openai/backup"]))
+            else:
+                completion("openai/test", messages=[], fallbacks=["openai/backup"])
+        sync_client.assert_not_called()
+        async_client.assert_not_called()
+
+
+@pytest.mark.parametrize("fallbacks", [None, []])
+def test_empty_fallbacks_are_accepted(fallbacks):
+    assert "fallbacks" not in _prepare_call("openai/test", {"fallbacks": fallbacks})[-1]
+
+
+@pytest.mark.parametrize("async_call", [False, True])
+@pytest.mark.parametrize("env", [{}, {"OPENAI_API_KEY": "unrelated-key", "OPENROUTER_API_KEY": "router-key"}])
+def test_unknown_provider_fails_before_client_creation(async_call, env):
+    with mock.patch.dict("os.environ", env, clear=True), mock.patch("litelm._client_cache._require_openai") as sdk:
+        with pytest.raises(ValueError, match="Unknown provider 'z-ai'.*provider/model.*api_base"):
+            if async_call:
+                asyncio.run(acompletion("z-ai/glm-5.3-flash", messages=[]))
+            else:
+                completion("z-ai/glm-5.3-flash", messages=[])
+        sdk.assert_not_called()
+
+
+def test_unknown_provider_mock_does_not_require_an_endpoint():
+    assert completion("custom/test", messages=[], mock_response="hello").choices[0].message.content == "hello"
+
+
 def test_prepare_call_maps_max_retries_to_client_retries():
     kwargs = {"max_retries": 4, "api_key": "sk-test"}
     *_, num_retries, _atp, cleaned = _prepare_call("openai/gpt-4o", kwargs)
