@@ -61,6 +61,7 @@
     "Sequence",
     "ServiceUnavailableError",
     "Timeout",
+    "ToolLoopMaxRoundsExceeded",
     "TopazModelInfo",
     "UnprocessableEntityError",
     "UnsupportedParamsError",
@@ -103,6 +104,7 @@
     "allm_passthrough_route",
     "arealtime_calls",
     "aresponses_api_with_mcp",
+    "arun_tool_loop",
     "avector_store_file_content",
     "avector_store_file_create",
     "avector_store_file_delete",
@@ -165,6 +167,7 @@
     "request_timeout",
     "request_timeout_explicitly_set",
     "run_server",
+    "run_tool_loop",
     "rust",
     "set_global_bitbucket_config",
     "set_global_gitlab_config",
@@ -772,6 +775,7 @@
       "headers",
       "custom_llm_provider",
       "aspeech",
+      "base_url",
       "**kwargs"
     ],
     "stream_chunk_builder": [
@@ -827,6 +831,7 @@
       "api_version",
       "max_retries",
       "custom_llm_provider",
+      "base_url",
       "**kwargs"
     ]
   }
