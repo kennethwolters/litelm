@@ -17,6 +17,8 @@
     "BadRequestError",
     "BudgetExceededError",
     "BudgetManager",
+    "CallerCredentialAuthenticationError",
+    "CallerCredentialRateLimitError",
     "ContentPolicyViolationError",
     "ContextWindowExceededError",
     "CustomLLM",
@@ -30,6 +32,8 @@
     "DEFAULT_REPLICATE_POLLING_RETRIES",
     "DEFAULT_SOFT_BUDGET",
     "DatadogInitParams",
+    "DefaultAsyncHttpxClient",
+    "DefaultHttpxClient",
     "GeminiModelInfo",
     "HUMANLOOP_PROMPT_CACHE_TTL_SECONDS",
     "ImageFetchError",
@@ -49,6 +53,7 @@
     "OPENAI_FINISH_REASONS",
     "OpenAIError",
     "PalmConfig",
+    "PaymentRequiredError",
     "PermissionDeniedError",
     "PointFiveInitParams",
     "PromptSpec",
@@ -166,13 +171,14 @@
     "replicate_models",
     "request_timeout",
     "request_timeout_explicitly_set",
-    "run_server",
     "run_tool_loop",
     "rust",
     "set_global_bitbucket_config",
     "set_global_gitlab_config",
     "set_verbose",
     "together_ai_models",
+    "turn_on_debug",
+    "turn_on_json",
     "vector_store_file_content",
     "vector_store_file_create",
     "vector_store_file_delete",
@@ -305,6 +311,9 @@
     "_complete_maritalk": [
       "ctx"
     ],
+    "_complete_microsoft_365_copilot": [
+      "ctx"
+    ],
     "_complete_minimax": [
       "ctx"
     ],
@@ -356,6 +365,9 @@
     "_complete_sap": [
       "ctx"
     ],
+    "_complete_scaledown": [
+      "ctx"
+    ],
     "_complete_snowflake": [
       "ctx"
     ],
@@ -398,9 +410,6 @@
     "_custom_api_first_output": [
       "resp"
     ],
-    "_delta_carries_more_than_text": [
-      "delta"
-    ],
     "_dev_env_hot_reload_enabled": [],
     "_dispatch_client_azure": [
       "ctx"
@@ -440,12 +449,6 @@
       "custom_llm_provider",
       "model"
     ],
-    "_is_openai_backed_api_base": [
-      "api_base"
-    ],
-    "_joined_streamed_citations": [
-      "streamed_citations"
-    ],
     "_load_default_encoding": [],
     "_load_module_encoding": [],
     "_locals_snapshot": [
@@ -469,9 +472,6 @@
       "kwargs",
       "model_info"
     ],
-    "_reported_cost_is_priced_by_calculator": [
-      "logging_obj"
-    ],
     "_resolve_control_options": [
       "kwargs",
       "model"
@@ -482,39 +482,14 @@
     "_resolve_dispatched_text_completion_response": [
       "pending"
     ],
-    "_resolve_openai_api_base": [
-      "api_base"
-    ],
     "_resolve_pending_chat_response": [
       "pending"
-    ],
-    "_set_stream_builder_response_cost": [
-      "response",
-      "logging_obj"
-    ],
-    "_simple_text_part": [
-      "choices"
     ],
     "_sleep_for_timeout": [
       "timeout"
     ],
     "_sleep_for_timeout_async": [
       "timeout"
-    ],
-    "_stamp_streaming_usage_cost": [
-      "usage",
-      "response",
-      "logging_obj"
-    ],
-    "_stream_builder_model_map_cost": [
-      "response"
-    ],
-    "_stream_builder_response_cost": [
-      "response",
-      "logging_obj"
-    ],
-    "_stream_choice_delta": [
-      "choice"
     ],
     "_transcription_response_from_cached_dict": [
       "cached_response_dict"
@@ -737,15 +712,6 @@
     "print_verbose": [
       "print_statement"
     ],
-    "responses_api_bridge_check": [
-      "model",
-      "custom_llm_provider",
-      "web_search_options",
-      "tools",
-      "reasoning_effort",
-      "reasoning_summary",
-      "api_base"
-    ],
     "responses_with_retries": [
       "*args",
       "**kwargs"
@@ -777,18 +743,6 @@
       "aspeech",
       "base_url",
       "**kwargs"
-    ],
-    "stream_chunk_builder": [
-      "chunks",
-      "messages",
-      "start_time",
-      "end_time",
-      "logging_obj",
-      "count_prompt_tokens"
-    ],
-    "stream_chunk_builder_text_completion": [
-      "chunks",
-      "messages"
     ],
     "text_completion": [
       "prompt",

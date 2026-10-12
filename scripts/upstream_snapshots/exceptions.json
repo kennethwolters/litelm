@@ -4,7 +4,9 @@
       "bases": [
         "openai.APIConnectionError"
       ],
-      "fields": []
+      "fields": [
+        "request"
+      ]
     },
     "APIError": {
       "bases": [
@@ -16,7 +18,10 @@
       "bases": [
         "openai.APIResponseValidationError"
       ],
-      "fields": []
+      "fields": [
+        "request",
+        "response"
+      ]
     },
     "AuthenticationError": {
       "bases": [
@@ -28,7 +33,10 @@
       "bases": [
         "openai.APIStatusError"
       ],
-      "fields": []
+      "fields": [
+        "request",
+        "response"
+      ]
     },
     "BadRequestError": {
       "bases": [
@@ -45,6 +53,18 @@
     "BudgetExceededError": {
       "bases": [
         "Exception"
+      ],
+      "fields": []
+    },
+    "CallerCredentialAuthenticationError": {
+      "bases": [
+        "AuthenticationError"
+      ],
+      "fields": []
+    },
+    "CallerCredentialRateLimitError": {
+      "bases": [
+        "RateLimitError"
       ],
       "fields": []
     },
@@ -76,13 +96,19 @@
       "bases": [
         "openai.InternalServerError"
       ],
-      "fields": []
+      "fields": [
+        "request",
+        "response"
+      ]
     },
     "InvalidRequestError": {
       "bases": [
         "openai.BadRequestError"
       ],
-      "fields": []
+      "fields": [
+        "request",
+        "response"
+      ]
     },
     "JSONSchemaValidationError": {
       "bases": [
@@ -132,6 +158,12 @@
       ],
       "fields": []
     },
+    "PaymentRequiredError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    },
     "PermissionDeniedError": {
       "bases": [
         "openai.PermissionDeniedError"
@@ -142,7 +174,10 @@
       "bases": [
         "openai.RateLimitError"
       ],
-      "fields": []
+      "fields": [
+        "request",
+        "response"
+      ]
     },
     "RateLimitErrorCategory": {
       "bases": [
@@ -180,7 +215,9 @@
       "bases": [
         "openai.APITimeoutError"
       ],
-      "fields": []
+      "fields": [
+        "request"
+      ]
     },
     "UnprocessableEntityError": {
       "bases": [
