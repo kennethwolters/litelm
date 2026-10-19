@@ -44,6 +44,7 @@
     "LITELLM_CHAT_PROVIDERS",
     "LITELLM_EXCEPTION_TYPES",
     "LlmProviders",
+    "MalformedRequestFieldError",
     "Mapping",
     "MockException",
     "ModelNotMappedError",
@@ -197,6 +198,10 @@
       "custom_llm_provider",
       "args"
     ],
+    "_azure_completion_fakes_stream": [
+      "model",
+      "base_model"
+    ],
     "_build_custom_pricing_entry": [
       "custom_llm_provider",
       "kwargs",
@@ -261,6 +266,9 @@
       "ctx"
     ],
     "_complete_databricks": [
+      "ctx"
+    ],
+    "_complete_databricks_agent": [
       "ctx"
     ],
     "_complete_datarobot": [
@@ -407,10 +415,22 @@
     "_complete_xai": [
       "ctx"
     ],
+    "_completion_fakes_stream": [
+      "model",
+      "custom_llm_provider",
+      "provider_config",
+      "optional_params",
+      "base_model",
+      "bridges_to_responses_api"
+    ],
+    "_converse_native_output_fallback": [
+      "ctx",
+      "first_attempt_params",
+      "first_attempt_litellm_params"
+    ],
     "_custom_api_first_output": [
       "resp"
     ],
-    "_dev_env_hot_reload_enabled": [],
     "_dispatch_client_azure": [
       "ctx"
     ],
@@ -445,6 +465,11 @@
       "timeout",
       "model"
     ],
+    "_history_without_unanswered_tool_search_calls": [
+      "messages",
+      "custom_llm_provider",
+      "provider_config"
+    ],
     "_is_claude_tool_target": [
       "custom_llm_provider",
       "model"
@@ -456,6 +481,15 @@
     ],
     "_model_response_from_cached_dict": [
       "cached_response_dict"
+    ],
+    "_native_output_attempt_timeout": [
+      "ctx",
+      "fallback"
+    ],
+    "_native_output_fallback": [
+      "ctx",
+      "first_attempt_params",
+      "first_attempt_litellm_params"
     ],
     "_populate_provider_model_sets": [
       "model_cost_map"

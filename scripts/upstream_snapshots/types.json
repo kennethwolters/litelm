@@ -21,6 +21,14 @@
         "from_deployment"
       ]
     },
+    "BaseUrlRoutingHint": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "base_url"
+      ]
+    },
     "BudgetConfig": {
       "bases": [
         "LiteLLMBaseModel"
@@ -222,6 +230,13 @@
         "output_cost_per_token"
       ]
     },
+    "CountContextManagement": {
+      "bases": [],
+      "fields": [
+        "drop_invalid_edits",
+        "spec"
+      ]
+    },
     "CustomHuggingfaceTokenizer": {
       "bases": [
         "TypedDict"
@@ -242,7 +257,6 @@
         "cache_creation_input_audio_token_cost",
         "cache_creation_input_token_cost_above_100k_tokens",
         "cache_creation_input_token_cost_above_100k_tokens_batches",
-        "cache_creation_input_token_cost_above_1hr",
         "cache_creation_input_token_cost_above_1hr_above_100k_tokens",
         "cache_creation_input_token_cost_above_200k_tokens",
         "cache_creation_input_token_cost_above_200k_tokens_batches",
@@ -288,6 +302,7 @@
         "input_cost_per_pixel",
         "input_cost_per_query",
         "input_cost_per_second",
+        "input_cost_per_text_message",
         "input_cost_per_token_above_100k_tokens",
         "input_cost_per_token_above_100k_tokens_batches",
         "input_cost_per_token_above_128k_tokens",
@@ -624,6 +639,7 @@
       ],
       "fields": [
         "_hidden_params",
+        "id",
         "results",
         "service_tier",
         "usage"
@@ -648,6 +664,7 @@
         "custom_llm_provider",
         "force_timeout",
         "input_cost_per_second",
+        "input_cost_per_text_message",
         "input_cost_per_token",
         "litellm_call_id",
         "litellm_metadata",
@@ -686,6 +703,7 @@
         "provider_specific_fields",
         "reasoning_content",
         "reasoning_items",
+        "refusal",
         "role",
         "thinking_blocks",
         "tool_calls"
@@ -697,6 +715,7 @@
       ],
       "fields": [
         "cache_creation_input_token_cost",
+        "cache_creation_input_token_cost_above_1hr",
         "cache_read_input_token_cost",
         "input_cost_per_character",
         "input_cost_per_token",
@@ -768,6 +787,7 @@
         "input_cost_per_image_token_batches",
         "input_cost_per_query",
         "input_cost_per_second",
+        "input_cost_per_text_message",
         "input_cost_per_token",
         "input_cost_per_token_above_100k_tokens",
         "input_cost_per_token_above_100k_tokens_batches",
@@ -959,6 +979,7 @@
         "google_maps_grounding_requests",
         "image_count",
         "image_tokens",
+        "initial_prompt_tokens",
         "query_count",
         "text_tokens",
         "tool_use_tokens",
@@ -978,13 +999,23 @@
         "field_value"
       ]
     },
+    "ProviderRoutingHints": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "api_base",
+        "custom_llm_provider"
+      ]
+    },
     "ProviderSpecificHeader": {
       "bases": [
         "TypedDict"
       ],
       "fields": [
         "custom_llm_provider",
-        "extra_headers"
+        "extra_headers",
+        "native_anthropic_messages_only"
       ]
     },
     "ProviderSpecificModelInfo": {
@@ -1003,6 +1034,8 @@
         "supports_assistant_prefill",
         "supports_audio_input",
         "supports_audio_output",
+        "supports_bedrock_native_structured_output",
+        "supports_box_questions",
         "supports_computer_use",
         "supports_embedding_image_input",
         "supports_function_calling",
@@ -1028,10 +1061,14 @@
         "supports_tool_choice",
         "supports_tool_search",
         "supports_url_context",
+        "supports_video_input",
         "supports_vision",
         "supports_web_search",
         "supports_xhigh_reasoning_effort",
         "thinking_always_on",
+        "token_count_framing",
+        "token_count_model",
+        "token_count_tokenizer",
         "vertex_ai_audio_api"
       ]
     },
@@ -1128,6 +1165,57 @@
         "table_name",
         "updated_at",
         "updated_values"
+      ]
+    },
+    "StandardBatchLineItem": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "batch_id",
+        "custom_id",
+        "custom_llm_provider",
+        "metadata",
+        "model",
+        "request",
+        "response",
+        "response_cost",
+        "status",
+        "usage"
+      ]
+    },
+    "StandardBatchLineItemMetadata": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "user_api_key_alias",
+        "user_api_key_hash",
+        "user_api_key_org_id",
+        "user_api_key_team_alias",
+        "user_api_key_team_id",
+        "user_api_key_user_id"
+      ]
+    },
+    "StandardBatchLineItemUsage": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "completion_tokens",
+        "prompt_tokens",
+        "total_tokens"
+      ]
+    },
+    "StandardBatchLineItemsPayload": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "batch_id",
+        "finished_at",
+        "lines",
+        "part"
       ]
     },
     "StandardBuiltInToolsParams": {
@@ -1601,10 +1689,12 @@
         "LiteLLMPydanticObjectBase"
       ],
       "fields": [
+        "count_source",
         "error",
         "error_message",
         "model_used",
         "original_response",
+        "rejected_before_provider_call",
         "request_model",
         "status_code",
         "tokenizer_type",
@@ -1680,6 +1770,10 @@
       "bases": [
         "OpenAIObject"
       ],
+      "fields": []
+    },
+    "_UnsetSystemFingerprint": {
+      "bases": [],
       "fields": []
     }
   }
