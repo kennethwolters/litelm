@@ -117,7 +117,6 @@
     "avector_store_file_list",
     "avector_store_file_retrieve",
     "avector_store_file_update",
-    "baseten_models",
     "bedrock_embedding_models",
     "cancel_eval",
     "cancel_responses",
@@ -346,6 +345,9 @@
     "_complete_oobabooga": [
       "ctx"
     ],
+    "_complete_opencode_go": [
+      "ctx"
+    ],
     "_complete_openrouter": [
       "ctx"
     ],
@@ -474,6 +476,9 @@
       "custom_llm_provider",
       "model"
     ],
+    "_is_past_deprecation_date": [
+      "value"
+    ],
     "_load_default_encoding": [],
     "_load_module_encoding": [],
     "_locals_snapshot": [
@@ -525,6 +530,9 @@
     "_sleep_for_timeout_async": [
       "timeout"
     ],
+    "_text_completion_response_from_cached_dict": [
+      "cached_response_dict"
+    ],
     "_transcription_response_from_cached_dict": [
       "cached_response_dict"
     ],
@@ -573,6 +581,7 @@
       "service_tier",
       "store",
       "prompt_cache_key",
+      "prompt_cache_retention",
       "base_url",
       "api_version",
       "api_key",
@@ -679,6 +688,7 @@
       "service_tier",
       "store",
       "prompt_cache_key",
+      "prompt_cache_retention",
       "functions",
       "function_call",
       "base_url",
