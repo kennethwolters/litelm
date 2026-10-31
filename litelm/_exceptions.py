@@ -71,6 +71,12 @@ class APIStatusError(LitelmError):
     pass
 
 
+class APIResponseValidationError(LitelmError):
+    """A successful provider response violated the requested contract; do not retry."""
+
+    _default_status_code = 200
+
+
 class PermissionDeniedError(LitelmError):
     _default_status_code = 403
 
@@ -113,6 +119,7 @@ LITELLM_EXCEPTION_TYPES = [
     InternalServerError,
     APIConnectionError,
     APIStatusError,
+    APIResponseValidationError,
     PermissionDeniedError,
     NotFoundError,
     UnprocessableEntityError,

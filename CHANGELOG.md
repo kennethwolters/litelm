@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 (2026-10-31)
+
+- Add native `systemone` / `asystemone` transport for TypeSafe and Microsoft Foundry, with typed noul/choice/score questions and durable probability evidence. Keep this operation separate from generative endpoints, callbacks and unsupported generation controls.
+- Validate request/answer identity and distributions; bound transport bodies and explicit retries, refresh Entra credentials per attempt, refuse redirects and compressed responses, and omit sensitive HTTP objects, exception contexts and provider bodies from exceptions. Declare Pydantic directly (already transitive through OpenAI).
+- Offline verification: 680 passed, 59 skipped on Python 3.10–3.13, plus the 49-node upstream public-contract gate. New System One live tests are opt-in; neither native provider is live-certified by this release.
 
 ## 0.5.3 (2026-09-19)
 

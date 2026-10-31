@@ -1,14 +1,26 @@
 """litelm — thin OpenAI-SDK wrapper replacing litellm in DSPy."""
 
-__version__ = "0.5.4"
+__version__ = "0.6.0"
 
 from litelm._callbacks import failure_callback, success_callback, success_callbacks
 from litelm._client_cache import close_async_clients as close_litelm_async_clients
 from litelm._completion import acompletion, completion, mock_completion, stream_chunk_builder
+from litelm._decision_types import (
+    ChoiceAnswer,
+    ChoiceQuestion,
+    DecisionUsage,
+    NoulAnswer,
+    NoulQuestion,
+    ScoreAnswer,
+    ScoreQuestion,
+    SystemOneRequest,
+    SystemOneResponse,
+)
 from litelm._embedding import aembedding, embedding
 from litelm._exceptions import (
     LITELLM_EXCEPTION_TYPES,
     APIConnectionError,
+    APIResponseValidationError,
     APIStatusError,
     AuthenticationError,
     BadGatewayError,
@@ -24,6 +36,7 @@ from litelm._exceptions import (
     UnprocessableEntityError,
 )
 from litelm._responses import aresponses, responses
+from litelm._systemone import asystemone, supports_systemone, systemone
 from litelm._text_completion import atext_completion, text_completion
 from litelm._types import (
     ChatCompletionMessageToolCall,
@@ -121,6 +134,19 @@ def get_secret(secret_name, **kwargs):
 
 
 __all__ = [
+    "asystemone",
+    "systemone",
+    "supports_systemone",
+    "SystemOneRequest",
+    "SystemOneResponse",
+    "NoulQuestion",
+    "ChoiceQuestion",
+    "ScoreQuestion",
+    "NoulAnswer",
+    "ChoiceAnswer",
+    "ScoreAnswer",
+    "DecisionUsage",
+    "APIResponseValidationError",
     "acompletion",
     "aembedding",
     "aresponses",

@@ -9,6 +9,10 @@ litelm is a 2,912 LOC reimplementation of litellm's core routing+formatting. Its
 - **580 own tests pass**, 55 skipped (live tests needing API keys), verified on Python 3.10 and 3.14 on 2026-10-01. The 49-node upstream contract gate also passes.
 - **Current classified ported baseline:** 75 tests pass against LiteLLM `9a715df2` from 2026-09-11. After explicit contract-based scope review, no remaining assertion/runtime failure is actionable. Raw counts are not comparable to the March baseline because upstream's test layout and conftest behavior changed substantially.
 
+## Native System One (2026-10-31)
+
+Explicit `systemone` / `asystemone` operations support typed noul/choice/score requests for TypeSafe and Microsoft Foundry. This is separate from generic chat routing and capability defaults. Request/response validation, bounded uncompressed bodies, per-attempt Entra refresh and exception privacy are covered by 100 new offline tests. Current own suite: 680 passed, 59 skipped on Python 3.10–3.13; the 49-node ported public-contract gate passes. New native live checks are opt-in and have not been run; do not describe either native provider as live-certified.
+
 ## Core resilience fixes (2026-10-01)
 
 - Release 0.5.4 lock refresh: urllib3 2.7.0 → 2.8.0 addresses Dependabot alerts #45–#47 (proxy TLS configuration, unbounded chunk headers, and deflate streaming). No new base dependency was added.
@@ -210,7 +214,7 @@ Strip litellm to its core routing+formatting logic, prove correctness against it
 
 # Project Context
 
-Version: `0.5.4` (in both `pyproject.toml` and `litelm/__init__.__version__`).
+Version: `0.6.0` (in both `pyproject.toml` and `litelm/__init__.__version__`).
 
 ## Ported Tests
 
@@ -429,7 +433,7 @@ Exported API surface + DSPy compat shims + capability functions.
 
 | Attr/Function | Purpose |
 |---|---|
-| `__version__ = "0.5.4"` | Package version |
+| `__version__ = "0.6.0"` | Package version |
 | `telemetry = False` | DSPy disables litellm telemetry |
 | `cache = None` | DSPy disables litellm caching |
 | `suppress_debug_info = False` | DSPy logging config |
