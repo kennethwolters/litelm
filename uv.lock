@@ -1019,11 +1019,12 @@ wheels = [
 
 [[package]]
 name = "litelm"
-version = "0.5.4"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx2" },
     { name = "openai", extra = ["httpx2"] },
+    { name = "pydantic" },
 ]
 
 [package.optional-dependencies]
@@ -1057,6 +1058,7 @@ requires-dist = [
     { name = "boto3", marker = "extra == 'bedrock'", specifier = ">=1.28.0" },
     { name = "httpx2", specifier = ">=2.12.0,<3" },
     { name = "openai", extras = ["httpx2"], specifier = ">=2.54.0,<3" },
+    { name = "pydantic", specifier = ">=2.11,<3" },
 ]
 provides-extras = ["cloudflare", "anthropic", "bedrock", "all"]
 

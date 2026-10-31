@@ -18,7 +18,7 @@ pip install litelm[bedrock]       # + boto3
 pip install litelm[all]           # everything
 ```
 
-The two direct runtime dependencies are `openai[httpx2]>=2.54.0,<3` and `httpx2>=2.12.0,<3`. Requests use HTTPX2; OpenAI still installs HTTPX as a transitive dependency. The Anthropic extra requires `anthropic>=1.5.0`, which also uses HTTPX2.
+The direct runtime dependencies are `openai[httpx2]>=2.54.0,<3`, `httpx2>=2.12.0,<3`, and `pydantic>=2.11,<3` (already required transitively by OpenAI). Requests use HTTPX2; OpenAI still installs HTTPX as a transitive dependency. The Anthropic extra requires `anthropic>=1.5.0`, which also uses HTTPX2.
 
 ## Usage
 
@@ -87,6 +87,36 @@ The first segment selects the provider; the remainder is the model identifier. F
 | Ollama | — | OpenAI-compat | No |
 | vLLM | — | OpenAI-compat | No |
 | LM Studio | — | OpenAI-compat | No |
+
+## Native decisions
+
+`systemone` / `asystemone` call native decision APIs, not chat completions:
+
+```python
+response = litelm.systemone(
+    "typesafe/jev-latest",
+    state={"text": "Die Rechnung wurde doppelt bezahlt."},
+    questions={
+        "billing": {
+            "type": "noul",
+            "instructions": "Betrifft der Text eine Zahlungsfrage?",
+        },
+    },
+)
+print(response.answers["billing"].noul)  # True-probability, not generated confidence
+```
+
+- **TypeSafe:** `TYPESAFE_API_KEY`, optional `TYPESAFE_API_BASE` (default `https://api.typesafe.ai`).
+- **Microsoft Foundry:** `azure_ai/<deployment-name>`, `AZURE_AI_API_KEY` and `AZURE_AI_API_BASE` (resource root). API keys use `api-key`; alternatively pass `azure_ad_token_provider=callback`. Async calls accept synchronous or asynchronous callbacks, refreshed on every attempt.
+- Both accept text/JSON `state` and named `noul`, `choice` or `score` questions. Typed `NoulQuestion`, `ChoiceQuestion` and `ScoreQuestion` are also accepted. Choice criteria map 2–255 string labels to JSON descriptions; score criteria contain 2–10 ordered levels. At most 128 questions are supported.
+- Results are `SystemOneResponse` objects with typed answers, provider distributions and optional usage. `model_dump_json()` / `model_validate_json()` preserve evidence. Missing usage remains `None`; no token counts or costs are invented. Thresholds, abstention and downstream actions belong to the application and require task-specific evaluation. Provider confidence and native probabilities are different signals.
+- Unknown, missing or mismatched answers, nonfinite/out-of-range probabilities, incomplete distributions and distributions not summing to one within 0.001 raise `APIResponseValidationError`. These successful-but-invalid responses are never retried.
+- Default timeout is 30 seconds **per attempt**, with zero retries. Explicit `num_retries` (0–10) retries only transport errors and HTTP 408/429/500/502/503/504, using bounded backoff. Repeated attempts can incur additional charges.
+- No generation, tools, streaming, media, fallback, custom headers or completion callbacks. Unsupported arguments fail rather than being ignored. Select this explicit operation for decision deployments; provider prefixes alone do not identify a deployment's capabilities, and existing generic routing remains unchanged.
+- Requests/responses are bounded to 2 MB/1 MB. HTTPS is required except for loopback development; redirects and compressed responses are refused. Requests specify `Accept-Encoding: identity` to enforce the response byte bound without unbounded decompression. API bases cannot contain credentials, queries or fragments. Exceptions omit provider bodies, requests and credentials.
+- Optional `http_client=` borrows a sync/async HTTPX2 client without closing it. Otherwise each call owns and closes its client. Applications should reuse clients for sustained throughput.
+
+These are protocol-level guarantees, not evidence of model accuracy or data residency. Verify the deployment's processing zone and applicable data-protection terms before sending personal data; a resource's geographic location alone is insufficient.
 
 ## API Keys
 
