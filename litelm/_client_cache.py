@@ -19,7 +19,21 @@ def _require_openai():
         raise ImportError("The openai SDK is required for this provider. Install it with: pip install litelm")
 
 
-def get_sync_client(provider, base_url, api_key, max_retries=0, api_version=None, azure_ad_token_provider=None):
+def get_sync_client(
+    provider, base_url, api_key, max_retries=0, api_version=None, azure_ad_token_provider=None, *, http_client=None
+):
+    if http_client is not None:
+        # Borrowed pools must not enter cache ownership or global cleanup.
+        return _make_client(
+            provider,
+            base_url,
+            api_key,
+            max_retries,
+            api_version,
+            async_client=False,
+            azure_ad_token_provider=azure_ad_token_provider,
+            http_client=http_client,
+        )
     key = ("sync", provider, base_url, api_key, max_retries, api_version, id(azure_ad_token_provider))
     if key not in _sync_clients:
         with _lock:
@@ -36,7 +50,20 @@ def get_sync_client(provider, base_url, api_key, max_retries=0, api_version=None
     return _sync_clients[key]
 
 
-def get_async_client(provider, base_url, api_key, max_retries=0, api_version=None, azure_ad_token_provider=None):
+def get_async_client(
+    provider, base_url, api_key, max_retries=0, api_version=None, azure_ad_token_provider=None, *, http_client=None
+):
+    if http_client is not None:
+        return _make_client(
+            provider,
+            base_url,
+            api_key,
+            max_retries,
+            api_version,
+            async_client=True,
+            azure_ad_token_provider=azure_ad_token_provider,
+            http_client=http_client,
+        )
     key = ("async", provider, base_url, api_key, max_retries, api_version, id(azure_ad_token_provider))
     if key not in _async_clients:
         with _lock:
@@ -61,13 +88,17 @@ async def close_async_clients():
         _async_clients.clear()
 
 
-def _make_client(provider, base_url, api_key, max_retries, api_version, async_client, azure_ad_token_provider=None):
+def _make_client(
+    provider, base_url, api_key, max_retries, api_version, async_client, azure_ad_token_provider=None, http_client=None
+):
     if provider not in PROVIDERS and not base_url:
         raise ValueError(
             f"Unknown provider {provider!r}. Use 'provider/model' (for example, "
             "'openrouter/z-ai/glm-5.3-flash'), or pass api_base for a custom OpenAI-compatible endpoint."
         )
     openai = _require_openai()
+    if http_client is None:
+        http_client = openai.DefaultAsyncHttpx2Client() if async_client else openai.DefaultHttpx2Client()
     if provider == "azure":
         cls = openai.AsyncAzureOpenAI if async_client else openai.AzureOpenAI
         azure_kwargs = dict(
@@ -75,7 +106,7 @@ def _make_client(provider, base_url, api_key, max_retries, api_version, async_cl
             api_key=api_key,
             api_version=api_version or "2024-02-01",
             max_retries=max_retries,
-            http_client=openai.DefaultAsyncHttpx2Client() if async_client else openai.DefaultHttpx2Client(),
+            http_client=http_client,
         )
         if azure_ad_token_provider is not None:
             azure_kwargs["azure_ad_token_provider"] = azure_ad_token_provider
@@ -85,7 +116,7 @@ def _make_client(provider, base_url, api_key, max_retries, api_version, async_cl
         kwargs = {
             "api_key": api_key,
             "max_retries": max_retries,
-            "http_client": openai.DefaultAsyncHttpx2Client() if async_client else openai.DefaultHttpx2Client(),
+            "http_client": http_client,
         }
         if base_url:
             kwargs["base_url"] = base_url
