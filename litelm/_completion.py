@@ -203,6 +203,7 @@ def _wrap_context_window_error(e):
 
 def _completion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
     """Synchronous chat completion implementation."""
+    http_client = kwargs.pop("http_client", None)
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
@@ -237,6 +238,8 @@ def _completion(model, messages=None, *, timeout=None, stream=False, shared_sess
 
     handler = get_handler(provider)
     if handler:
+        if http_client is not None:
+            raise ValueError(f"http_client is not supported for the {provider!r} chat handler")
         result = handler.completion(
             model_name,
             messages,
@@ -256,6 +259,7 @@ def _completion(model, messages=None, *, timeout=None, stream=False, shared_sess
         max_retries=num_retries,
         api_version=api_version,
         azure_ad_token_provider=azure_ad_token_provider,
+        http_client=http_client,
     )
 
     try:
@@ -275,6 +279,7 @@ def _completion(model, messages=None, *, timeout=None, stream=False, shared_sess
 
 async def _acompletion(model, messages=None, *, timeout=None, stream=False, shared_session=None, **kwargs):
     """Async chat completion implementation."""
+    http_client = kwargs.pop("http_client", None)
     mock = kwargs.pop("mock_response", None)
     n = kwargs.pop("n", None) or 1
     (provider, model_name, base_url, api_key, api_version, num_retries, azure_ad_token_provider, kwargs) = (
@@ -309,6 +314,8 @@ async def _acompletion(model, messages=None, *, timeout=None, stream=False, shar
 
     handler = get_handler(provider)
     if handler:
+        if http_client is not None:
+            raise ValueError(f"http_client is not supported for the {provider!r} chat handler")
         result = await handler.acompletion(
             model_name,
             messages,
@@ -328,6 +335,7 @@ async def _acompletion(model, messages=None, *, timeout=None, stream=False, shar
         max_retries=num_retries,
         api_version=api_version,
         azure_ad_token_provider=azure_ad_token_provider,
+        http_client=http_client,
     )
 
     try:

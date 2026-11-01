@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.1 (2026-11-01)
+
+- Borrow caller-owned HTTP clients in shared OpenAI-compatible and Azure chat completions, including sync/async streams. Keep borrowed pools out of SDK-client caches and global cleanup; preserve caller ownership and existing retry/error behavior. Custom chat handlers reject the transport override explicitly.
+- Verify routing, streaming, pool reuse, cleanup ownership and zero-retry error mapping through real SDKs with offline HTTPX2 transports. This change does not certify new live provider behavior.
+
 ## 0.6.0 (2026-10-31)
 
 - Add native `systemone` / `asystemone` transport for TypeSafe and Microsoft Foundry, with typed noul/choice/score questions and durable probability evidence. Keep this operation separate from generative endpoints, callbacks and unsupported generation controls.

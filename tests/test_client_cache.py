@@ -1,6 +1,7 @@
 """Tests for the client cache module."""
 
 import json
+import socket
 
 import httpx2
 import openai
@@ -127,6 +128,133 @@ async def test_httpx2_errors_are_mapped(monkeypatch, async_call, failure):
         for client in _sync_clients.values():
             client.close()
         await close_async_clients()
+
+
+@pytest.fixture
+def owned_wire(monkeypatch):
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Unexpected default transport or network connection")
+
+    monkeypatch.setattr(socket.socket, "connect", forbidden)
+    monkeypatch.setattr(socket.socket, "connect_ex", forbidden)
+    monkeypatch.setattr(openai, "DefaultHttpx2Client", forbidden)
+    monkeypatch.setattr(openai, "DefaultAsyncHttpx2Client", forbidden)
+
+
+@pytest.mark.parametrize("provider", ["openai", "azure"])
+@pytest.mark.parametrize("async_call", [False, True])
+@pytest.mark.parametrize("stream", [False, True])
+@pytest.mark.asyncio
+async def test_completion_borrows_owned_http_client(owned_wire, provider, async_call, stream):
+    requests = []
+
+    def handle(request):
+        requests.append(request)
+        assert "http_client" not in json.loads(request.content)
+        if json.loads(request.content).get("stream"):
+            chunk = {
+                "id": "test",
+                "model": "test",
+                "choices": [{"index": 0, "delta": {"content": "hello"}, "finish_reason": None}],
+            }
+            return httpx2.Response(
+                200,
+                headers={"content-type": "text/event-stream"},
+                content=f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n",
+            )
+        return httpx2.Response(
+            200,
+            json={
+                "id": "test",
+                "model": "test",
+                "choices": [
+                    {"index": 0, "message": {"role": "assistant", "content": "hello"}, "finish_reason": "stop"}
+                ],
+            },
+        )
+
+    cls = httpx2.AsyncClient if async_call else httpx2.Client
+    client = cls(transport=httpx2.MockTransport(handle), trust_env=False)
+    kwargs = dict(
+        messages=[],
+        api_key="test-key",
+        api_base="https://provider.test",
+        api_version="2024-02-01",
+        http_client=client,
+        num_retries=0,
+        stream=stream,
+    )
+    try:
+        result = (
+            await litelm.acompletion(f"{provider}/test", **kwargs)
+            if async_call
+            else litelm.completion(f"{provider}/test", **kwargs)
+        )
+        if stream:
+            chunks = [chunk async for chunk in result] if async_call else list(result)
+            assert chunks[0].choices[0].delta.content == "hello"
+        else:
+            assert result.choices[0].message.content == "hello"
+        assert len(requests) == 1
+        assert requests[0].url.host == "provider.test"
+        assert not _sync_clients and not _async_clients
+        await close_async_clients()
+        assert not client.is_closed
+        # A second call reuses the caller's pool, not a cached SDK wrapper.
+        result = (
+            await litelm.acompletion(f"{provider}/test", **{**kwargs, "stream": False})
+            if async_call
+            else litelm.completion(f"{provider}/test", **{**kwargs, "stream": False})
+        )
+        assert result.choices[0].message.content == "hello"
+        assert len(requests) == 2 and not client.is_closed
+    finally:
+        await client.aclose() if async_call else client.close()
+
+
+@pytest.mark.parametrize("async_call", [False, True])
+@pytest.mark.parametrize("status", [400, 429, 503, "timeout"])
+@pytest.mark.asyncio
+async def test_owned_completion_transport_preserves_errors_without_retry(owned_wire, async_call, status):
+    attempts = []
+
+    def handle(request):
+        attempts.append(request)
+        if status == "timeout":
+            raise httpx2.ReadTimeout("timed out", request=request)
+        return httpx2.Response(status, json={"error": {"message": "test failure"}})
+
+    client = (httpx2.AsyncClient if async_call else httpx2.Client)(transport=httpx2.MockTransport(handle))
+    expected = {
+        400: litelm.BadRequestError,
+        429: litelm.RateLimitError,
+        503: litelm.InternalServerError,
+        "timeout": litelm.Timeout,
+    }[status]
+    try:
+        with pytest.raises(expected):
+            kwargs = dict(messages=[], api_key="test-key", http_client=client, num_retries=0)
+            if async_call:
+                await litelm.acompletion("openai/test", **kwargs)
+            else:
+                litelm.completion("openai/test", **kwargs)
+        assert len(attempts) == 1
+        assert not client.is_closed
+        assert not _sync_clients and not _async_clients
+    finally:
+        await client.aclose() if async_call else client.close()
+
+
+@pytest.mark.parametrize("async_call", [False, True])
+@pytest.mark.parametrize("provider", ["anthropic", "bedrock", "cloudflare", "mistral"])
+@pytest.mark.asyncio
+async def test_custom_completion_handler_rejects_owned_transport(owned_wire, async_call, provider):
+    with pytest.raises(ValueError, match="http_client.*not supported"):
+        kwargs = dict(messages=[], api_key="test-key", http_client=object())
+        if async_call:
+            await litelm.acompletion(f"{provider}/test", **kwargs)
+        else:
+            litelm.completion(f"{provider}/test", **kwargs)
 
 
 def test_sync_client_creation():

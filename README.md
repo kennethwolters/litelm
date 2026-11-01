@@ -39,6 +39,8 @@ response = litelm.embedding("openai/text-embedding-3-small", input=["hello world
 
 Every function has an async variant: `acompletion`, `aembedding`, `aresponses`, `atext_completion`.
 
+For OpenAI, Azure and other routes using the shared OpenAI-compatible chat client, `completion` / `acompletion` accept `http_client=` with a caller-owned sync/async HTTPX2 client (the SDK also accepts HTTPX). The supplied pool is borrowed, never cached or closed by litelm, including during streaming and global async-client cleanup. Keep it open until streams finish, then close it yourself. Custom Anthropic, Bedrock, Cloudflare and Mistral chat handlers reject this argument; it is not a general transport override for embeddings, text completions or Responses.
+
 The supported functions use LiteLLM-style arguments and response access patterns. This is a scoped compatibility layer, not a full drop-in replacement: check the feature table before changing imports. Non-empty `fallbacks=` raises `ValueError`; litelm does not execute failover. Empty or `None` fallbacks are accepted.
 
 ## What's in / what's out
