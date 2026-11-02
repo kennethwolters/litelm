@@ -80,6 +80,12 @@
       ],
       "fields": []
     },
+    "EndpointNotSupportedByModelError": {
+      "bases": [
+        "BadRequestError"
+      ],
+      "fields": []
+    },
     "GuardrailRaisedException": {
       "bases": [
         "Exception"
@@ -228,6 +234,12 @@
     "UnprocessableEntityError": {
       "bases": [
         "openai.UnprocessableEntityError"
+      ],
+      "fields": []
+    },
+    "UnsupportedEndpointError": {
+      "bases": [
+        "BadRequestError"
       ],
       "fields": []
     },

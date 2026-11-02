@@ -70,6 +70,7 @@
     "ToolLoopMaxRoundsExceeded",
     "TopazModelInfo",
     "UnprocessableEntityError",
+    "UnsupportedEndpointError",
     "UnsupportedParamsError",
     "VectorStoreIndexRegistry",
     "VectorStoreRegistry",
@@ -149,6 +150,7 @@
     "identify",
     "interactions",
     "is_bedrock_pricing_only_model",
+    "is_hidden_as_retired",
     "is_openai_finetune_model",
     "json_logs",
     "known_tokenizer_config",
@@ -176,6 +178,7 @@
     "set_global_bitbucket_config",
     "set_global_gitlab_config",
     "set_verbose",
+    "suppress_startup_output",
     "together_ai_models",
     "turn_on_debug",
     "turn_on_json",
@@ -430,8 +433,23 @@
       "first_attempt_params",
       "first_attempt_litellm_params"
     ],
+    "_cost_map_pdf_input_support": [
+      "model",
+      "custom_llm_provider"
+    ],
     "_custom_api_first_output": [
       "resp"
+    ],
+    "_declared_pdf_input_support": [
+      "model",
+      "custom_llm_provider",
+      "model_info",
+      "base_model"
+    ],
+    "_deployment_pdf_input_support": [
+      "model",
+      "base_model",
+      "custom_llm_provider"
     ],
     "_dispatch_client_azure": [
       "ctx"
@@ -447,6 +465,12 @@
     ],
     "_drop_anthropic_only_tool_keys": [
       "tools"
+    ],
+    "_embedding_headers": [
+      "param",
+      "configured",
+      "model",
+      "drop_params"
     ],
     "_get_encoding": [],
     "_get_router_deployment_id": [
@@ -472,17 +496,29 @@
       "custom_llm_provider",
       "provider_config"
     ],
-    "_is_claude_tool_target": [
-      "custom_llm_provider",
-      "model"
-    ],
-    "_is_past_deprecation_date": [
-      "value"
-    ],
     "_load_default_encoding": [],
     "_load_module_encoding": [],
     "_locals_snapshot": [
       "values"
+    ],
+    "_messages_readable_by_model": [
+      "messages",
+      "model",
+      "custom_llm_provider",
+      "model_info",
+      "base_model",
+      "drop_params",
+      "ensure_alternating_roles",
+      "user_continue_message",
+      "assistant_continue_message"
+    ],
+    "_messages_without_unreadable_pdfs": [
+      "messages",
+      "model",
+      "custom_llm_provider",
+      "model_info",
+      "base_model",
+      "drop_params"
     ],
     "_model_response_from_cached_dict": [
       "cached_response_dict"
@@ -496,6 +532,16 @@
       "first_attempt_params",
       "first_attempt_litellm_params"
     ],
+    "_parse_supplemental_provider_params": [
+      "kwargs"
+    ],
+    "_pdf_input_unreadable": [
+      "model",
+      "custom_llm_provider",
+      "model_info",
+      "base_model",
+      "drop_params"
+    ],
     "_populate_provider_model_sets": [
       "model_cost_map"
     ],
@@ -504,6 +550,12 @@
     ],
     "_proxy_auth_headers": [
       "proxy_auth"
+    ],
+    "_record_agentic_loop_params": [
+      "logging_obj",
+      "requested_model",
+      "custom_llm_provider",
+      "owns_agentic_loop"
     ],
     "_register_custom_pricing_for_request": [
       "model",
@@ -529,6 +581,10 @@
     ],
     "_sleep_for_timeout_async": [
       "timeout"
+    ],
+    "_supplemental_provider_params": [
+      "kwargs",
+      "model"
     ],
     "_text_completion_response_from_cached_dict": [
       "cached_response_dict"

@@ -167,7 +167,8 @@
         "OpenAIObject"
       ],
       "fields": [
-        "content"
+        "content",
+        "refusal"
       ]
     },
     "Choices": {
@@ -401,7 +402,8 @@
         "regional_endpoint_uplift_multiplier",
         "regional_processing_uplift_multiplier_eu",
         "regional_processing_uplift_multiplier_us",
-        "search_context_cost_per_query"
+        "search_context_cost_per_query",
+        "search_queries_cost_per_query"
       ]
     },
     "CustomStreamingDecoder": {
@@ -639,6 +641,7 @@
       ],
       "fields": [
         "_hidden_params",
+        "object",
         "usage"
       ]
     },
@@ -924,6 +927,7 @@
         "rpm",
         "search_context_cost_per_query",
         "search_free_requests",
+        "search_queries_cost_per_query",
         "supported_endpoints",
         "tiered_pricing",
         "tpm",
@@ -1084,7 +1088,9 @@
         "bedrock_converse_supports_strict_tools",
         "bedrock_output_config_effort_ceiling",
         "default_reasoning_effort",
+        "reasoning_contexts",
         "reasoning_effort_levels",
+        "reasoning_modes",
         "supported_audio_formats",
         "supports_adaptive_thinking",
         "supports_anthropic_compaction",
@@ -1437,6 +1443,7 @@
         "litellm_overhead_time_ms",
         "model_id",
         "response_cost",
+        "upstream_provider",
         "usage_object"
       ]
     },
@@ -1475,6 +1482,7 @@
       "fields": [
         "applied_guardrails",
         "cold_storage_object_key",
+        "is_silent_experiment",
         "kubernetes_pod_routing",
         "mcp_tool_call_metadata",
         "prompt_management_metadata",
@@ -1530,6 +1538,7 @@
         "completionStartTime",
         "completion_tokens",
         "cost_breakdown",
+        "cost_finalized",
         "custom_llm_provider",
         "endTime",
         "end_user",
@@ -1625,6 +1634,11 @@
         "classifier_efficient_p_solve",
         "classifier_error_type",
         "classifier_failure_reason",
+        "classifier_input_budget_status",
+        "classifier_input_budget_tokens",
+        "classifier_input_count_method",
+        "classifier_input_tokens",
+        "classifier_input_truncated",
         "classifier_max_quality_gap",
         "classifier_model",
         "classifier_p_solve",
@@ -1848,10 +1862,39 @@
       "fields": [
         "_cache_creation_input_tokens",
         "_cache_read_input_tokens",
+        "_dropped_non_finite_cost",
         "completion_tokens_details",
         "cost",
         "prompt_tokens_details",
         "server_tool_use"
+      ]
+    },
+    "_BatchInputTokensDetails": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "cached_tokens"
+      ]
+    },
+    "_BatchOutputTokensDetails": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "reasoning_tokens"
+      ]
+    },
+    "_BatchTokenCounts": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "input_tokens",
+        "input_tokens_details",
+        "output_tokens",
+        "output_tokens_details",
+        "total_tokens"
       ]
     },
     "_CustomToolCallAccess": {
@@ -1859,6 +1902,15 @@
         "OpenAIObject"
       ],
       "fields": []
+    },
+    "_ProviderBatchUsageDetails": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "input_tokens_details",
+        "output_tokens_details"
+      ]
     },
     "_UnsetSystemFingerprint": {
       "bases": [],
