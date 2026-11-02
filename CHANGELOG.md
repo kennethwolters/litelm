@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.2 (2026-11-02)
+
+- Add `suppress_callbacks()` for context-local suppression of canonical success/failure and legacy success completion observers, without constructing observer payloads or mutating shared registries.
+- Preserve independent-task callbacks, inherit suppression into child tasks, and restore nested policies after exceptions and cancellation. Offline SDK/transport tests cover success and failure; no new live-provider certification is claimed.
+
 ## 0.6.1 (2026-11-01)
 
 - Borrow caller-owned HTTP clients in shared OpenAI-compatible and Azure chat completions, including sync/async streams. Keep borrowed pools out of SDK-client caches and global cleanup; preserve caller ownership and existing retry/error behavior. Custom chat handlers reject the transport override explicitly.
