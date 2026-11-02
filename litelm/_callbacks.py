@@ -14,6 +14,8 @@ from __future__ import annotations
 import logging
 import sys
 from collections.abc import Callable
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime
 from typing import Any
 
@@ -26,6 +28,23 @@ failure_callback: list[Callback] = []
 success_callbacks: list[Callable[[dict[str, Any]], None]] = []
 
 
+_suppressed: ContextVar[bool] = ContextVar("litelm_callbacks_suppressed", default=False)
+
+
+@contextmanager
+def suppress_callbacks():
+    """Suppress completion observers in this context and inherited child tasks.
+
+    Does not mutate process-wide registries or affect independent tasks. Nesting
+    and exception/cancellation unwinding restore the previous context policy.
+    """
+    token = _suppressed.set(True)
+    try:
+        yield
+    finally:
+        _suppressed.reset(token)
+
+
 def _public_registry(name: str, fallback: list[Callback]) -> list[Callback]:
     """Read the public registry dynamically so module-level assignment works."""
     module = sys.modules.get("litelm")
@@ -35,12 +54,12 @@ def _public_registry(name: str, fallback: list[Callback]) -> list[Callback]:
 
 def has_success_callbacks() -> bool:
     """Return whether canonical or legacy success observers are registered."""
-    return bool(_public_registry("success_callback", success_callback) or success_callbacks)
+    return not _suppressed.get() and bool(_public_registry("success_callback", success_callback) or success_callbacks)
 
 
 def has_failure_callbacks() -> bool:
     """Return whether failure observers are registered."""
-    return bool(_public_registry("failure_callback", failure_callback))
+    return not _suppressed.get() and bool(_public_registry("failure_callback", failure_callback))
 
 
 def _invoke(callbacks: list[Callback], args: tuple[Any, ...], name: str) -> None:
@@ -53,6 +72,8 @@ def _invoke(callbacks: list[Callback], args: tuple[Any, ...], name: str) -> None
 
 def fire_success(call_kwargs: dict[str, Any], response: Any, start_time: datetime, end_time: datetime) -> None:
     """Invoke canonical and legacy success callbacks without propagating errors."""
+    if _suppressed.get():
+        return
     callbacks = _public_registry("success_callback", success_callback)
     if callbacks:
         _invoke(callbacks, (call_kwargs, response, start_time, end_time), "success_callback")
@@ -75,6 +96,8 @@ def fire_success(call_kwargs: dict[str, Any], response: Any, start_time: datetim
 
 def fire_failure(call_kwargs: dict[str, Any], response: Any, start_time: datetime, end_time: datetime) -> None:
     """Invoke LiteLLM-compatible failure callbacks without propagating errors."""
+    if _suppressed.get():
+        return
     callbacks = _public_registry("failure_callback", failure_callback)
     if callbacks:
         _invoke(callbacks, (call_kwargs, response, start_time, end_time), "failure_callback")

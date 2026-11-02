@@ -7,6 +7,7 @@ import datetime
 import logging
 from unittest import mock
 
+import httpx2
 import openai
 import pytest
 
@@ -172,6 +173,169 @@ def test_callback_dispatch_short_circuits_empty_registries(monkeypatch):
     _callbacks.fire_failure(callback_kwargs, None, datetime.datetime.now(), datetime.datetime.now())
 
     _callbacks._invoke.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", [False, True])
+def test_suppression_prevents_all_observers_and_callback_payload_construction(monkeypatch, failure):
+    observer, build = mock.Mock(), mock.Mock()
+    litelm.success_callback = [observer]
+    litelm.failure_callback = [observer]
+    litelm.success_callbacks.append(observer)
+    monkeypatch.setattr("litelm._completion._callback_call_details", build)
+    if failure:
+        monkeypatch.setattr("litelm._completion._prepare_call", mock.Mock(side_effect=ValueError("toy-error")))
+    with litelm.suppress_callbacks():
+        if failure:
+            with pytest.raises(ValueError, match="toy-error"):
+                litelm.completion("toy/model", messages=_messages(), api_key="toy-key")
+        else:
+            result = litelm.completion("toy/model", messages=_messages(), api_key="toy-key", mock_response="toy-answer")
+            assert result.choices[0].message.content == "toy-answer"
+    observer.assert_not_called()
+    build.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", [False, True])
+def test_async_suppression_is_task_local_inherited_and_restored(monkeypatch, failure):
+    observed = []
+    litelm.success_callback.append(lambda details, *args: observed.append(details["messages"][0]["content"]))
+    litelm.failure_callback.append(lambda details, *args: observed.append(details["messages"][0]["content"]))
+    if failure:
+
+        async def underlying(*args, **kwargs):
+            await asyncio.sleep(0)
+            raise ValueError("toy-error")
+
+        monkeypatch.setattr("litelm._completion._acompletion", underlying)
+
+    async def call(label):
+        try:
+            result = await litelm.acompletion(
+                "toy/model",
+                messages=[{"role": "user", "content": label}],
+                api_key="toy-key",
+                mock_response="toy-answer",
+            )
+            assert not failure and result.choices[0].message.content == "toy-answer"
+        except ValueError as error:
+            assert failure and str(error) == "toy-error"
+
+    async def main():
+        active, other_finished = asyncio.Event(), asyncio.Event()
+
+        async def private():
+            try:
+                with litelm.suppress_callbacks():
+                    with litelm.suppress_callbacks():
+                        await call("private-nested")
+                    await asyncio.create_task(call("private-child"))
+                    active.set()
+                    await other_finished.wait()
+                    await call("private-after-other")
+                    raise RuntimeError("scope-exit")
+            except RuntimeError:
+                pass
+            await call("restored")
+
+        async def other():
+            await active.wait()
+            await call("public")
+            other_finished.set()
+
+        await asyncio.gather(private(), other())
+
+    asyncio.run(main())
+    assert observed == ["public", "restored"]
+
+
+@pytest.mark.parametrize("failure", [False, True])
+async def test_suppression_through_real_async_sdk_and_borrowed_transport(failure):
+    observer = mock.Mock()
+    litelm.success_callback.append(observer)
+    litelm.failure_callback.append(observer)
+    litelm.success_callbacks.append(observer)
+    sent = []
+
+    async def handle(request):
+        sent.append(request)
+        if failure:
+            return httpx2.Response(503, json={"error": {"message": "toy-error"}})
+        return httpx2.Response(
+            200,
+            json={
+                "id": "toy",
+                "model": "toy",
+                "choices": [
+                    {"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "toy-answer"}}
+                ],
+            },
+        )
+
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(handle), trust_env=False) as client:
+        with litelm.suppress_callbacks():
+            if failure:
+                with pytest.raises(litelm.InternalServerError):
+                    await litelm.acompletion(
+                        "openai/toy",
+                        messages=_messages(),
+                        api_key="toy-key",
+                        api_base="https://example.invalid/v1",
+                        http_client=client,
+                    )
+            else:
+                result = await litelm.acompletion(
+                    "openai/toy",
+                    messages=_messages(),
+                    api_key="toy-key",
+                    api_base="https://example.invalid/v1",
+                    http_client=client,
+                )
+                assert result.choices[0].message.content == "toy-answer"
+        assert not client.is_closed
+    assert len(sent) == 1
+    observer.assert_not_called()
+
+
+async def test_cancellation_restores_suppression_policy_in_the_same_task(monkeypatch):
+    observer = mock.Mock()
+    litelm.success_callback.append(observer)
+    entered = asyncio.Event()
+
+    async def blocked(*args, **kwargs):
+        entered.set()
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr("litelm._completion._acompletion", blocked)
+
+    async def private():
+        try:
+            with litelm.suppress_callbacks():
+                await litelm.acompletion("toy/model", messages=_messages(), api_key="toy-key")
+        except asyncio.CancelledError:
+            assert _callbacks.has_success_callbacks()
+            raise
+
+    task = asyncio.create_task(private())
+    await entered.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert _callbacks.has_success_callbacks()
+    observer.assert_not_called()
+
+
+def test_suppressed_dispatch_covers_observers_registered_inside_scope():
+    observer = mock.Mock()
+    with litelm.suppress_callbacks():
+        litelm.success_callback.append(observer)
+        litelm.failure_callback.append(observer)
+        litelm.success_callbacks.append(observer)
+        now = datetime.datetime.now()
+        _callbacks.fire_success({}, None, now, now)
+        _callbacks.fire_failure({}, None, now, now)
+    observer.assert_not_called()
+    _callbacks.fire_success({}, None, now, now)
+    assert observer.call_count == 2
 
 
 def test_completion_does_not_build_callback_payload_without_observers(monkeypatch):

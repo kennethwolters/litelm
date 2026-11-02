@@ -180,6 +180,8 @@ litelm.failure_callback.append(on_failure)
 
 The older `success_callbacks` one-event-dict registry remains available for litelm 0.5.0 compatibility.
 
+For calls that must not reach completion observers, use `with litelm.suppress_callbacks():` around `completion(...)` or an awaited `acompletion(...)`. It suppresses all three registries without constructing callback payloads or changing global lists. The policy is context-local, nested, inherited by child tasks, and restored on scope exit, including exceptions and cancellation; independent tasks keep their own policy. This only controls litelm completion observers, not provider/transport logging or other libraries' instrumentation.
+
 ## Tool Calling
 
 ```python
