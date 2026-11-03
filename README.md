@@ -11,6 +11,8 @@ It does not include LiteLLM's Router, proxy server, response caching, or cost tr
 
 ## Install
 
+Requires Python 3.11 or newer; CI covers Python 3.11 through 3.14. Version 0.7.0 drops Python 3.10 so the development environment can use patched filelock 4.2.1 without a vulnerable fallback. filelock is not a runtime dependency.
+
 ```bash
 pip install litelm                # openai + httpx2
 pip install litelm[anthropic]     # + anthropic SDK

@@ -214,7 +214,7 @@ Strip litellm to its core routing+formatting logic, prove correctness against it
 
 # Project Context
 
-Version: `0.6.0` (in both `pyproject.toml` and `litelm/__init__.__version__`).
+Version: `0.7.0` (in both `pyproject.toml` and `litelm/__init__.__version__`). Python 3.11+ is required; the development graph pins patched filelock 4.2.1.
 
 ## Ported Tests
 
@@ -433,7 +433,7 @@ Exported API surface + DSPy compat shims + capability functions.
 
 | Attr/Function | Purpose |
 |---|---|
-| `__version__ = "0.6.0"` | Package version |
+| `__version__ = "0.7.0"` | Package version |
 | `telemetry = False` | DSPy disables litellm telemetry |
 | `cache = None` | DSPy disables litellm caching |
 | `suppress_debug_info = False` | DSPy logging config |
@@ -729,7 +729,7 @@ CI-triggered via GitHub Actions (`.github/workflows/publish.yml`). Uses PyPI tru
 
 **Do NOT `uv publish` manually** — it races with CI and causes `400 Bad Request` on duplicate uploads.
 
-Tests run on every push/PR via `.github/workflows/test.yml` (Python 3.10–3.13).
+Tests run on every push/PR via `.github/workflows/test.yml` (Python 3.11–3.14).
 
 ## API Keys (in `.env.test`)
 
