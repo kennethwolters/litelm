@@ -18,3 +18,19 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - run: uv python install ${{ matrix.python-version }}
       - run: uv run --extra all --python ${{ matrix.python-version }} pytest tests/ -x --ignore=tests/ported --timeout=10
+  sdk-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.14"]
+        openai-version: ["2.54.0", "3.13.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv python install ${{ matrix.python-version }}
+      # Upstream DSPy in the dev group still requires OpenAI 2.x. Test our runtime independently.
+      - run: >-
+          uv run --isolated --no-project --python ${{ matrix.python-version }}
+          --with '.[all]' --with 'openai==${{ matrix.openai-version }}'
+          --with pytest --with pytest-asyncio --with pytest-timeout --with pytest-mock --with respx
+          pytest tests/ -x --ignore=tests/ported --ignore=tests/test_dspy_smoke.py --timeout=10

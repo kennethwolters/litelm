@@ -18,7 +18,7 @@ pip install litelm[bedrock]       # + boto3
 pip install litelm[all]           # everything
 ```
 
-The direct runtime dependencies are `openai[httpx2]>=2.54.0,<3`, `httpx2>=2.12.0,<3`, and `pydantic>=2.11,<3` (already required transitively by OpenAI). Requests use HTTPX2; OpenAI still installs HTTPX as a transitive dependency. The Anthropic extra requires `anthropic>=1.5.0`, which also uses HTTPX2.
+The direct runtime dependencies are `openai>=2.54.0,<4`, `httpx2>=2.12.0,<3`, and `pydantic>=2.11,<3` (already required transitively by OpenAI). Requests use HTTPX2 with both OpenAI SDK 2 and 3; SDK 2 also installs legacy HTTPX as a transitive dependency. The Anthropic extra requires `anthropic>=1.5.0`, which also uses HTTPX2.
 
 ## Usage
 
