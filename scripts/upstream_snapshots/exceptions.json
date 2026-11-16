@@ -80,6 +80,12 @@
       ],
       "fields": []
     },
+    "DeploymentCredentialAuthenticationError": {
+      "bases": [
+        "AuthenticationError"
+      ],
+      "fields": []
+    },
     "EndpointNotSupportedByModelError": {
       "bases": [
         "BadRequestError"
@@ -103,6 +109,7 @@
         "openai.InternalServerError"
       ],
       "fields": [
+        "provider_status_code",
         "request",
         "response"
       ]
@@ -137,6 +144,12 @@
     "MidStreamFallbackError": {
       "bases": [
         "ServiceUnavailableError"
+      ],
+      "fields": []
+    },
+    "MissingMessageRoleError": {
+      "bases": [
+        "MalformedRequestFieldError"
       ],
       "fields": []
     },
@@ -211,6 +224,15 @@
       ],
       "fields": []
     },
+    "RequestOverDeploymentTpmError": {
+      "bases": [
+        "RateLimitError"
+      ],
+      "fields": [
+        "logged_error_class",
+        "prometheus_exception_class_name"
+      ]
+    },
     "SensitiveDataRouteException": {
       "bases": [
         "Exception"
@@ -220,6 +242,13 @@
     "ServiceUnavailableError": {
       "bases": [
         "openai.APIStatusError"
+      ],
+      "fields": []
+    },
+    "SyncRequestOverDeploymentTpmError": {
+      "bases": [
+        "RequestOverDeploymentTpmError",
+        "ValueError"
       ],
       "fields": []
     },
@@ -252,6 +281,12 @@
     "VectorStoreSearchError": {
       "bases": [
         "BadRequestError"
+      ],
+      "fields": []
+    },
+    "_SupportsTrunc": {
+      "bases": [
+        "Protocol"
       ],
       "fields": []
     }

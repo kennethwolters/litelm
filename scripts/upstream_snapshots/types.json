@@ -298,6 +298,7 @@
         "cache_read_input_audio_token_cost_flex",
         "cache_read_input_audio_token_cost_priority",
         "cache_read_input_image_token_cost",
+        "cache_read_input_image_token_cost_batches",
         "cache_read_input_token_cost_above_100k_tokens",
         "cache_read_input_token_cost_above_100k_tokens_batches",
         "cache_read_input_token_cost_above_200k_tokens",
@@ -316,10 +317,15 @@
         "cache_read_input_token_cost_ultrafast",
         "citation_cost_per_token",
         "cost_per_second",
+        "fedramp_uplift_multiplier",
         "google_maps_grounding_cost_per_query",
         "input_cost_per_audio_per_second",
         "input_cost_per_audio_per_second_above_128k_tokens",
         "input_cost_per_audio_token",
+        "input_cost_per_audio_token_above_200k_tokens",
+        "input_cost_per_audio_token_above_200k_tokens_batches",
+        "input_cost_per_audio_token_above_200k_tokens_flex",
+        "input_cost_per_audio_token_above_200k_tokens_priority",
         "input_cost_per_audio_token_batches",
         "input_cost_per_audio_token_flex",
         "input_cost_per_audio_token_priority",
@@ -337,6 +343,7 @@
         "input_cost_per_token_above_128k_tokens",
         "input_cost_per_token_above_200k_tokens",
         "input_cost_per_token_above_200k_tokens_batches",
+        "input_cost_per_token_above_200k_tokens_flex",
         "input_cost_per_token_above_200k_tokens_priority",
         "input_cost_per_token_above_272k_tokens",
         "input_cost_per_token_above_272k_tokens_batches",
@@ -361,13 +368,17 @@
         "ocr_cost_per_page_batches",
         "output_cost_per_audio_per_second",
         "output_cost_per_audio_token",
+        "output_cost_per_billable_unit",
         "output_cost_per_character_above_128k_tokens",
         "output_cost_per_image",
         "output_cost_per_image_1024",
         "output_cost_per_image_1536",
+        "output_cost_per_image_1K",
+        "output_cost_per_image_2K",
         "output_cost_per_image_512",
         "output_cost_per_image_token",
         "output_cost_per_image_token_batches",
+        "output_cost_per_image_token_priority",
         "output_cost_per_pixel",
         "output_cost_per_reasoning_token",
         "output_cost_per_reasoning_token_flex",
@@ -384,6 +395,7 @@
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
         "output_cost_per_token_above_200k_tokens_batches",
+        "output_cost_per_token_above_200k_tokens_flex",
         "output_cost_per_token_above_200k_tokens_priority",
         "output_cost_per_token_above_272k_tokens",
         "output_cost_per_token_above_272k_tokens_batches",
@@ -396,6 +408,8 @@
         "output_cost_per_token_flex",
         "output_cost_per_token_priority",
         "output_cost_per_token_ultrafast",
+        "output_cost_per_video",
+        "output_cost_per_video_clip",
         "output_cost_per_video_per_second",
         "output_cost_per_video_token",
         "output_vector_size",
@@ -812,6 +826,7 @@
         "cache_read_input_audio_token_cost_flex",
         "cache_read_input_audio_token_cost_priority",
         "cache_read_input_image_token_cost",
+        "cache_read_input_image_token_cost_batches",
         "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_100k_tokens",
         "cache_read_input_token_cost_above_100k_tokens_batches",
@@ -832,9 +847,14 @@
         "citation_cost_per_token",
         "cost_per_second",
         "explicit_cache_read_input_token_cost",
+        "fedramp_uplift_multiplier",
         "google_maps_grounding_cost_per_query",
         "input_cost_per_audio_per_second",
         "input_cost_per_audio_token",
+        "input_cost_per_audio_token_above_200k_tokens",
+        "input_cost_per_audio_token_above_200k_tokens_batches",
+        "input_cost_per_audio_token_above_200k_tokens_flex",
+        "input_cost_per_audio_token_above_200k_tokens_priority",
         "input_cost_per_audio_token_batches",
         "input_cost_per_audio_token_flex",
         "input_cost_per_audio_token_priority",
@@ -852,6 +872,7 @@
         "input_cost_per_token_above_128k_tokens",
         "input_cost_per_token_above_200k_tokens",
         "input_cost_per_token_above_200k_tokens_batches",
+        "input_cost_per_token_above_200k_tokens_flex",
         "input_cost_per_token_above_200k_tokens_priority",
         "input_cost_per_token_above_272k_tokens",
         "input_cost_per_token_above_272k_tokens_batches",
@@ -879,14 +900,18 @@
         "off_peak_pricing",
         "output_cost_per_audio_per_second",
         "output_cost_per_audio_token",
+        "output_cost_per_billable_unit",
         "output_cost_per_character",
         "output_cost_per_character_above_128k_tokens",
         "output_cost_per_image",
         "output_cost_per_image_1024",
         "output_cost_per_image_1536",
+        "output_cost_per_image_1K",
+        "output_cost_per_image_2K",
         "output_cost_per_image_512",
         "output_cost_per_image_token",
         "output_cost_per_image_token_batches",
+        "output_cost_per_image_token_priority",
         "output_cost_per_pixel",
         "output_cost_per_reasoning_token",
         "output_cost_per_reasoning_token_flex",
@@ -904,6 +929,7 @@
         "output_cost_per_token_above_128k_tokens",
         "output_cost_per_token_above_200k_tokens",
         "output_cost_per_token_above_200k_tokens_batches",
+        "output_cost_per_token_above_200k_tokens_flex",
         "output_cost_per_token_above_200k_tokens_priority",
         "output_cost_per_token_above_272k_tokens",
         "output_cost_per_token_above_272k_tokens_batches",
@@ -916,6 +942,8 @@
         "output_cost_per_token_flex",
         "output_cost_per_token_priority",
         "output_cost_per_token_ultrafast",
+        "output_cost_per_video",
+        "output_cost_per_video_clip",
         "output_cost_per_video_per_second",
         "output_cost_per_video_token",
         "output_vector_size",
@@ -934,6 +962,15 @@
         "use_openai_responses_path",
         "uses_embed_content",
         "web_search_billing_unit"
+      ]
+    },
+    "ModelLimitBorrowingConfig": {
+      "bases": [
+        "LiteLLMBaseModel"
+      ],
+      "fields": [
+        "borrow_idle_capacity",
+        "max_borrow_multiple"
       ]
     },
     "ModelResponse": {
@@ -1006,6 +1043,14 @@
         "allowed_user_roles"
       ]
     },
+    "PriorityClassShareConfig": {
+      "bases": [
+        "LiteLLMBaseModel"
+      ],
+      "fields": [
+        "split_equally_among_active"
+      ]
+    },
     "PriorityReservationDict": {
       "bases": [
         "TypedDict"
@@ -1021,6 +1066,8 @@
       ],
       "fields": [
         "default_priority",
+        "model_limit_borrowing_config",
+        "priority_class_share_config",
         "saturation_check_cache_ttl",
         "saturation_threshold"
       ]
@@ -1099,8 +1146,10 @@
         "supports_audio_input",
         "supports_audio_output",
         "supports_bedrock_native_structured_output",
+        "supports_bedrock_native_structured_output_by_default",
         "supports_box_questions",
         "supports_computer_use",
+        "supports_continuation",
         "supports_embedding_image_input",
         "supports_function_calling",
         "supports_image_size",
@@ -1115,6 +1164,7 @@
         "supports_output_config",
         "supports_parallel_function_calling",
         "supports_pdf_input",
+        "supports_per_turn_control",
         "supports_prompt_cache_breakpoint",
         "supports_prompt_caching",
         "supports_reasoning",
@@ -1131,9 +1181,13 @@
         "supports_web_search",
         "supports_xhigh_reasoning_effort",
         "thinking_always_on",
+        "thinking_on_by_default",
         "token_count_framing",
         "token_count_model",
+        "token_count_responses_framing",
+        "token_count_responses_tool_framing",
         "token_count_tokenizer",
+        "token_count_tool_framing",
         "vertex_ai_audio_api"
       ]
     },
@@ -1665,6 +1719,9 @@
         "savings_baseline_model",
         "score",
         "signals",
+        "switchyard_algorithm",
+        "switchyard_evidence",
+        "switchyard_fallback_reason",
         "tier",
         "tier_boundaries",
         "tier_label",
@@ -1689,6 +1746,14 @@
         "user_api_key_alias",
         "user_api_key_auth_metadata",
         "user_api_key_budget_reset_at",
+        "user_api_key_customer_budget_scopes",
+        "user_api_key_customer_hierarchy",
+        "user_api_key_customer_member_alias",
+        "user_api_key_customer_member_id",
+        "user_api_key_customer_org_alias",
+        "user_api_key_customer_org_id",
+        "user_api_key_customer_team_alias",
+        "user_api_key_customer_team_id",
         "user_api_key_end_user_id",
         "user_api_key_hash",
         "user_api_key_max_budget",
@@ -1807,6 +1872,14 @@
         "token"
       ]
     },
+    "TranscriptionDetectedLanguage": {
+      "bases": [
+        "LiteLLMBaseModel"
+      ],
+      "fields": [
+        "code"
+      ]
+    },
     "TranscriptionResponse": {
       "bases": [
         "OpenAIObject"
@@ -1814,6 +1887,7 @@
       "fields": [
         "_hidden_params",
         "_response_headers",
+        "languages",
         "text",
         "usage"
       ]

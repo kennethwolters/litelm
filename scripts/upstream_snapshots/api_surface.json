@@ -46,6 +46,7 @@
     "LlmProviders",
     "MalformedRequestFieldError",
     "Mapping",
+    "MissingMessageRoleError",
     "MockException",
     "ModelNotMappedError",
     "NewRelicInitParams",
@@ -63,6 +64,7 @@
     "RateLimitError",
     "RateLimitErrorCategory",
     "RateLimitType",
+    "RequestOverDeploymentTpmError",
     "Router",
     "Sequence",
     "ServiceUnavailableError",
@@ -88,6 +90,7 @@
     "acreate_eval",
     "acreate_realtime_client_secret",
     "acreate_realtime_transcription_session",
+    "acreate_realtime_translation_client_secret",
     "acreate_run",
     "acreate_skill",
     "add_known_models",
@@ -110,6 +113,7 @@
     "alist_skills",
     "allm_passthrough_route",
     "arealtime_calls",
+    "arealtime_translation_calls",
     "aresponses_api_with_mcp",
     "arun_tool_loop",
     "avector_store_file_content",
@@ -139,6 +143,8 @@
     "delete_skill",
     "drop_params_env_flag",
     "empower_models",
+    "env_flag",
+    "generate_content",
     "get_agent",
     "get_eval",
     "get_litellm_gateway_api_key",
@@ -198,18 +204,20 @@
       "response",
       "model",
       "custom_llm_provider",
-      "args"
+      "litellm_params"
     ],
     "_azure_completion_fakes_stream": [
       "model",
       "base_model"
     ],
-    "_build_custom_pricing_entry": [
-      "custom_llm_provider",
-      "kwargs",
-      "model_info"
+    "_buffered_stream_fallback": [
+      "first_attempt_params",
+      "first_attempt_litellm_params"
     ],
     "_build_models_by_provider": [],
+    "_carry_failed_attempt": [
+      "retry_state"
+    ],
     "_complete_a2a": [
       "ctx"
     ],
@@ -473,9 +481,6 @@
       "drop_params"
     ],
     "_get_encoding": [],
-    "_get_router_deployment_id": [
-      "kwargs"
-    ],
     "_handle_mock_potential_exceptions": [
       "mock_response",
       "model",
@@ -495,6 +500,9 @@
       "messages",
       "custom_llm_provider",
       "provider_config"
+    ],
+    "_is_not_resent_failure": [
+      "error"
     ],
     "_load_default_encoding": [],
     "_load_module_encoding": [],
@@ -557,12 +565,6 @@
       "custom_llm_provider",
       "owns_agentic_loop"
     ],
-    "_register_custom_pricing_for_request": [
-      "model",
-      "custom_llm_provider",
-      "kwargs",
-      "model_info"
-    ],
     "_resolve_control_options": [
       "kwargs",
       "model"
@@ -575,6 +577,18 @@
     ],
     "_resolve_pending_chat_response": [
       "pending"
+    ],
+    "_responses_bridge_optional_params": [
+      "optional_params",
+      "summary_alias",
+      "requested",
+      "custom_llm_provider",
+      "model",
+      "base_model",
+      "api_base",
+      "deployment_model_info",
+      "drop_params",
+      "additional_drop_params"
     ],
     "_sleep_for_timeout": [
       "timeout"
@@ -591,6 +605,13 @@
     ],
     "_transcription_response_from_cached_dict": [
       "cached_response_dict"
+    ],
+    "_validate_gpt_transcription_request": [
+      "model",
+      "pricing_model",
+      "custom_llm_provider",
+      "response_format",
+      "drop_params"
     ],
     "_without_anthropic_only_tool_keys": [
       "tool"
@@ -886,6 +907,9 @@
       "max_retries",
       "custom_llm_provider",
       "base_url",
+      "languages",
+      "keywords",
+      "stream",
       "**kwargs"
     ]
   }
