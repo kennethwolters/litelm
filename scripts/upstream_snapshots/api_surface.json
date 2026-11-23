@@ -19,6 +19,7 @@
     "BudgetManager",
     "CallerCredentialAuthenticationError",
     "CallerCredentialRateLimitError",
+    "Collection",
     "ContentPolicyViolationError",
     "ContextWindowExceededError",
     "CustomLLM",
@@ -205,6 +206,9 @@
       "model",
       "custom_llm_provider",
       "litellm_params"
+    ],
+    "_awaited_stream": [
+      "pending"
     ],
     "_azure_completion_fakes_stream": [
       "model",
@@ -433,8 +437,12 @@
       "custom_llm_provider",
       "provider_config",
       "optional_params",
+      "fake_stream_requested",
       "base_model",
       "bridges_to_responses_api"
+    ],
+    "_completion_supports_httpx_timeout": [
+      "custom_llm_provider"
     ],
     "_converse_native_output_fallback": [
       "ctx",
@@ -528,8 +536,16 @@
       "base_model",
       "drop_params"
     ],
+    "_missing_provider_key_error": [
+      "ctx"
+    ],
     "_model_response_from_cached_dict": [
       "cached_response_dict"
+    ],
+    "_moderation_provider_route": [
+      "model",
+      "custom_llm_provider",
+      "optional_params"
     ],
     "_native_output_attempt_timeout": [
       "ctx",
@@ -539,6 +555,9 @@
       "ctx",
       "first_attempt_params",
       "first_attempt_litellm_params"
+    ],
+    "_openai_key_fallback": [
+      "custom_llm_provider"
     ],
     "_parse_supplemental_provider_params": [
       "kwargs"
@@ -564,6 +583,23 @@
       "requested_model",
       "custom_llm_provider",
       "owns_agentic_loop"
+    ],
+    "_replayed_answer": [
+      "done",
+      "replay"
+    ],
+    "_replayed_as_stream": [
+      "dispatched",
+      "replay"
+    ],
+    "_replayed_stream": [
+      "response",
+      "logging_obj",
+      "stream_options"
+    ],
+    "_replayed_when_done": [
+      "pending",
+      "replay"
     ],
     "_resolve_control_options": [
       "kwargs",
@@ -612,6 +648,12 @@
       "custom_llm_provider",
       "response_format",
       "drop_params"
+    ],
+    "_validate_vispark_api_key": [
+      "provider",
+      "api_key",
+      "model",
+      "has_client"
     ],
     "_without_anthropic_only_tool_keys": [
       "tool"
@@ -863,6 +905,7 @@
       "custom_llm_provider",
       "aspeech",
       "base_url",
+      "stream",
       "**kwargs"
     ],
     "text_completion": [

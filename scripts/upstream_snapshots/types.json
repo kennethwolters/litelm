@@ -193,6 +193,16 @@
         "originating_request_masked"
       ]
     },
+    "ClaudeSubscriptionUsage": {
+      "bases": [
+        "TypedDict"
+      ],
+      "fields": [
+        "is_overage",
+        "overage_status",
+        "status"
+      ]
+    },
     "CompletionTokensDetailsWrapper": {
       "bases": [
         "CompletionTokensDetails"
@@ -220,6 +230,8 @@
         "additional_costs",
         "cache_creation_cost",
         "cache_read_cost",
+        "customer_margin_amount",
+        "customer_margin_percent",
         "data_residency",
         "discount_amount",
         "discount_percent",
@@ -299,6 +311,7 @@
         "cache_read_input_audio_token_cost_priority",
         "cache_read_input_image_token_cost",
         "cache_read_input_image_token_cost_batches",
+        "cache_read_input_image_token_cost_priority",
         "cache_read_input_token_cost_above_100k_tokens",
         "cache_read_input_token_cost_above_100k_tokens_batches",
         "cache_read_input_token_cost_above_200k_tokens",
@@ -334,6 +347,7 @@
         "input_cost_per_image_above_128k_tokens",
         "input_cost_per_image_token",
         "input_cost_per_image_token_batches",
+        "input_cost_per_image_token_priority",
         "input_cost_per_pixel",
         "input_cost_per_query",
         "input_cost_per_second",
@@ -465,6 +479,7 @@
       ],
       "fields": [
         "_hidden_params",
+        "_item_usage",
         "_response_headers",
         "_response_ms",
         "data",
@@ -612,7 +627,20 @@
       ],
       "fields": [
         "_hidden_params",
+        "svg_usage",
         "usage"
+      ]
+    },
+    "ImageSVGUsage": {
+      "bases": [
+        "BaseModel"
+      ],
+      "fields": [
+        "input_tokens",
+        "model",
+        "output_tokens",
+        "reasoning_tokens",
+        "total_tokens"
       ]
     },
     "ImageUsage": {
@@ -631,6 +659,8 @@
         "BaseLiteLLMOpenAIResponseObject"
       ],
       "fields": [
+        "cached_tokens",
+        "cached_tokens_details",
         "image_tokens",
         "text_tokens"
       ]
@@ -827,6 +857,7 @@
         "cache_read_input_audio_token_cost_priority",
         "cache_read_input_image_token_cost",
         "cache_read_input_image_token_cost_batches",
+        "cache_read_input_image_token_cost_priority",
         "cache_read_input_token_cost",
         "cache_read_input_token_cost_above_100k_tokens",
         "cache_read_input_token_cost_above_100k_tokens_batches",
@@ -863,6 +894,7 @@
         "input_cost_per_image",
         "input_cost_per_image_token",
         "input_cost_per_image_token_batches",
+        "input_cost_per_image_token_priority",
         "input_cost_per_query",
         "input_cost_per_second",
         "input_cost_per_text_message",
@@ -1145,6 +1177,7 @@
         "supports_assistant_prefill",
         "supports_audio_input",
         "supports_audio_output",
+        "supports_bedrock_converse_cache_point",
         "supports_bedrock_native_structured_output",
         "supports_bedrock_native_structured_output_by_default",
         "supports_box_questions",
@@ -1161,6 +1194,7 @@
         "supports_native_streaming",
         "supports_native_structured_output",
         "supports_none_reasoning_effort",
+        "supports_openai_prompt_cache_breakpoint",
         "supports_output_config",
         "supports_parallel_function_calling",
         "supports_pdf_input",
@@ -1535,6 +1569,7 @@
       ],
       "fields": [
         "applied_guardrails",
+        "claude_subscription_usage",
         "cold_storage_object_key",
         "is_silent_experiment",
         "kubernetes_pod_routing",
@@ -1744,6 +1779,9 @@
       ],
       "fields": [
         "user_api_key_alias",
+        "user_api_key_app_alias",
+        "user_api_key_app_group_id",
+        "user_api_key_app_id",
         "user_api_key_auth_metadata",
         "user_api_key_budget_reset_at",
         "user_api_key_customer_budget_scopes",
